@@ -47,7 +47,7 @@ export default function Contracts() {
   });
 
   const openNew = () => {
-    if (clients.length === 0) { toast.error("Cadastre um cliente primeiro!"); return; }
+    if (clients.length === 0) { toast.error("Cadastre um cliente antes de criar um contrato"); return; }
     setEditing(null); setForm({ ...emptyForm, clientId: clients[0].id }); setOpen(true);
   };
 
@@ -59,8 +59,8 @@ export default function Contracts() {
 
   const handleSave = () => {
     if (!form.clientId || !form.eventDate) { toast.error("Cliente e data são obrigatórios"); return; }
-    if (editing) { updateContract(editing.id, form); toast.success("Contrato atualizado!"); }
-    else { addContract(form); toast.success("Contrato criado!"); }
+    if (editing) { updateContract(editing.id, form); toast.success("Informações salvas com sucesso"); }
+    else { addContract(form); toast.success("Contrato criado com sucesso"); }
     setOpen(false); load();
   };
 
@@ -72,24 +72,24 @@ export default function Contracts() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-3xl font-display font-semibold tracking-tight">Contratos</h1>
-          <p className="text-sm text-muted-foreground mt-1">{contracts.length} contratos</p>
+          <p className="text-sm text-muted-foreground mt-1">Gestão de contratos e eventos</p>
         </div>
         <Button onClick={openNew} size="sm" className="gap-2 h-9">
-          <Plus size={15} /> Novo Contrato
+          <Plus size={15} /> Novo contrato
         </Button>
       </div>
 
       <div className="flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Buscar cliente..." className="pl-9 h-9 text-sm" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input placeholder="Buscar por nome, e-mail ou CPF" className="pl-9 h-9 text-sm" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[180px] h-9 text-sm">
-            <SelectValue />
+            <SelectValue placeholder="Todos os status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos os Status</SelectItem>
+            <SelectItem value="all">Todos os status</SelectItem>
             {Object.entries(CONTRACT_STATUS_LABELS).map(([k, v]) => (
               <SelectItem key={k} value={k}>{v}</SelectItem>
             ))}
@@ -105,14 +105,14 @@ export default function Contracts() {
               <th className="hidden sm:table-cell">Evento</th>
               <th className="hidden md:table-cell">Data</th>
               <th className="hidden lg:table-cell">Valor</th>
-              <th>Status</th>
+              <th>Contrato</th>
               <th className="hidden md:table-cell">Pagamento</th>
               <th className="text-right">Ações</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
-              <tr><td colSpan={7} className="!py-10 text-center text-muted-foreground">Nenhum contrato encontrado</td></tr>
+              <tr><td colSpan={7} className="!py-10 text-center text-muted-foreground">Nenhum registro encontrado</td></tr>
             ) : (
               filtered.map((c) => (
                 <tr key={c.id}>
@@ -150,7 +150,7 @@ export default function Contracts() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="font-display text-xl">{editing ? "Editar Contrato" : "Novo Contrato"}</DialogTitle>
+            <DialogTitle className="font-display text-xl">{editing ? "Editar contrato" : "Novo contrato"}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-2">
             <div className="grid gap-1.5">
@@ -161,7 +161,7 @@ export default function Contracts() {
               </Select>
             </div>
             <div className="grid gap-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">Tipo de Evento</Label>
+              <Label className="text-xs font-medium text-muted-foreground">Tipo de evento</Label>
               <Select value={form.eventType} onValueChange={(v) => set("eventType", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{EVENT_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
@@ -169,7 +169,7 @@ export default function Contracts() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">Data do Evento *</Label>
+                <Label className="text-xs font-medium text-muted-foreground">Data do evento *</Label>
                 <Input type="date" value={form.eventDate} onChange={(e) => set("eventDate", e.target.value)} />
               </div>
               <div className="grid gap-1.5">
@@ -183,7 +183,7 @@ export default function Contracts() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">Valor Total (R$)</Label>
+                <Label className="text-xs font-medium text-muted-foreground">Valor total (R$)</Label>
                 <Input type="number" value={form.totalValue} onChange={(e) => set("totalValue", +e.target.value)} />
               </div>
               <div className="grid gap-1.5">
@@ -192,13 +192,13 @@ export default function Contracts() {
               </div>
             </div>
             <div className="grid gap-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">Status</Label>
+              <Label className="text-xs font-medium text-muted-foreground">Status do contrato</Label>
               <Select value={form.status} onValueChange={(v) => set("status", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{Object.entries(CONTRACT_STATUS_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <Button onClick={handleSave} className="mt-2">{editing ? "Salvar Alterações" : "Criar Contrato"}</Button>
+            <Button onClick={handleSave} className="mt-2">{editing ? "Salvar alterações" : "Criar contrato"}</Button>
           </div>
         </DialogContent>
       </Dialog>

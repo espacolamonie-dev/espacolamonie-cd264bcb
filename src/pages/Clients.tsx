@@ -36,13 +36,13 @@ export default function Clients() {
   };
 
   const handleSave = () => {
-    if (!form.name.trim()) { toast.error("Nome é obrigatório"); return; }
-    if (editing) { updateClient(editing.id, form); toast.success("Cliente atualizado!"); }
-    else { addClient(form); toast.success("Cliente cadastrado!"); }
+    if (!form.name.trim()) { toast.error("Preencha o nome do cliente"); return; }
+    if (editing) { updateClient(editing.id, form); toast.success("Informações salvas com sucesso"); }
+    else { addClient(form); toast.success("Cliente cadastrado com sucesso"); }
     setOpen(false); load();
   };
 
-  const handleDelete = (id: string) => { deleteClient(id); toast.success("Cliente excluído"); load(); };
+  const handleDelete = (id: string) => { deleteClient(id); toast.success("Cliente removido"); load(); };
   const set = (field: string, value: string) => setForm((p) => ({ ...p, [field]: value }));
 
   return (
@@ -53,13 +53,13 @@ export default function Clients() {
           <p className="text-sm text-muted-foreground mt-1">{clients.length} clientes cadastrados</p>
         </div>
         <Button onClick={openNew} size="sm" className="gap-2 h-9">
-          <Plus size={15} /> Novo Cliente
+          <Plus size={15} /> Novo cliente
         </Button>
       </div>
 
       <div className="relative max-w-sm">
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-        <Input placeholder="Buscar por nome, CPF ou e-mail..." className="pl-9 h-9 text-sm" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <Input placeholder="Buscar por nome, e-mail ou CPF" className="pl-9 h-9 text-sm" value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
 
       <div className="rounded-lg border border-border/60 bg-card overflow-x-auto">
@@ -75,7 +75,7 @@ export default function Clients() {
           </thead>
           <tbody>
             {filtered.length === 0 ? (
-              <tr><td colSpan={5} className="!py-10 text-center text-muted-foreground">Nenhum cliente encontrado</td></tr>
+              <tr><td colSpan={5} className="!py-10 text-center text-muted-foreground">Nenhum registro encontrado</td></tr>
             ) : (
               filtered.map((c) => (
                 <tr key={c.id}>
@@ -103,7 +103,7 @@ export default function Clients() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle className="font-display text-xl">{editing ? "Editar Cliente" : "Novo Cliente"}</DialogTitle>
+            <DialogTitle className="font-display text-xl">{editing ? "Editar cliente" : "Novo cliente"}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-2">
             <div className="grid gap-1.5">
@@ -132,7 +132,7 @@ export default function Clients() {
               <Label className="text-xs font-medium text-muted-foreground">Observações</Label>
               <Textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={3} />
             </div>
-            <Button onClick={handleSave} className="mt-2">{editing ? "Salvar Alterações" : "Cadastrar Cliente"}</Button>
+            <Button onClick={handleSave} className="mt-2">{editing ? "Salvar alterações" : "Cadastrar cliente"}</Button>
           </div>
         </DialogContent>
       </Dialog>
