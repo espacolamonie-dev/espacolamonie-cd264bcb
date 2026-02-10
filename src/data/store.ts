@@ -159,17 +159,46 @@ export const getDocuments = async () => {
   return (data || []).map(mapDocument);
 };
 
-export const addDocument = async (d: { contractId: string; name: string; type: string; fileName: string }) => {
+export const addDocument = async (d: { contractId: string; name: string; type: string; file: File }) => {
   const userId = await getUserId();
+  const fileExt = d.file.name.split(".").pop();
+  const filePath = `${userId}/${d.contractId}/${Date.now()}.${fileExt}`;
+
+  // Upload file to storage
+  const { error: uploadError } = await supabase.storage
+    .from("documents")
+    .upload(filePath, d.file);
+  if (uploadError) throw uploadError;
+
+  // Save document record
   const { data, error } = await supabase.from("documents").insert({
     user_id: userId,
     contract_id: d.contractId,
     name: d.name,
     type: d.type,
-    file_name: d.fileName,
+    file_name: filePath,
   }).select().single();
   if (error) throw error;
   return mapDocument(data);
+};
+
+export const getDocumentUrl = (filePath: string) => {
+  const { data } = supabase.storage.from("documents").getPublicUrl(filePath);
+  return data.publicUrl;
+};
+
+export const getDocumentSignedUrl = async (filePath: string) => {
+  const { data, error } = await supabase.storage
+    .from("documents")
+    .createSignedUrl(filePath, 3600);
+  if (error) throw error;
+  return data.signedUrl;
+};
+
+export const deleteDocument = async (id: string, filePath: string) => {
+  await supabase.storage.from("documents").remove([filePath]);
+  const { error } = await supabase.from("documents").delete().eq("id", id);
+  if (error) throw error;
 };
 
 // EXPENSES

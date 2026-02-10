@@ -1,13 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { CalendarDays, Users, DollarSign, FileText, Plus, AlertTriangle } from "lucide-react";
+import { CalendarDays, Users, DollarSign, FileText, Plus, AlertTriangle, Upload, Trash2, Download } from "lucide-react";
 import {
   getContracts, getClients, getPayments, getDocuments, addPayment, updateContract,
+  addDocument, deleteDocument, getDocumentSignedUrl,
 } from "@/data/store";
 import { CONTRACT_STATUS_LABELS, CONTRACT_STATUS_COLORS, PAYMENT_STATUS_LABELS, PAYMENT_STATUS_COLORS } from "@/types";
 import type { Contract, Client, Payment, Document } from "@/types";
@@ -22,6 +24,9 @@ export default function ContractDetailModal({ contractId, onClose }: Props) {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [docs, setDocs] = useState<Document[]>([]);
   const [payForm, setPayForm] = useState({ amount: 0, date: new Date().toISOString().split("T")[0], description: "" });
+  const [uploading, setUploading] = useState(false);
+  const [docType, setDocType] = useState<string>("other");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const load = async () => {
     try {
@@ -58,6 +63,38 @@ export default function ContractDetailModal({ contractId, onClose }: Props) {
       await updateContract(contractId, { status: "cancelled", cancelledAt: new Date().toISOString(), cancelledBy: "Administrador" });
       toast.success("Contrato cancelado"); await load();
     } catch (e: any) { toast.error(e.message); }
+  };
+
+  const handleUploadDoc = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      await addDocument({ contractId, name: file.name, type: docType, file });
+      toast.success("Documento enviado com sucesso");
+      setDocType("other");
+      await load();
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao enviar documento");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleDeleteDoc = async (doc: Document) => {
+    try {
+      await deleteDocument(doc.id, doc.fileName);
+      toast.success("Documento removido");
+      await load();
+    } catch (err: any) { toast.error(err.message); }
+  };
+
+  const handleDownloadDoc = async (doc: Document) => {
+    try {
+      const url = await getDocumentSignedUrl(doc.fileName);
+      window.open(url, "_blank");
+    } catch (err: any) { toast.error(err.message); }
   };
 
   const docStatus = docs.length === 0 ? "Nenhum documento" : docs.length < 3 ? "Documentos pendentes" : "Documentos completos";
@@ -174,15 +211,51 @@ export default function ContractDetailModal({ contractId, onClose }: Props) {
               ) : (
                 docs.map((d) => (
                   <div key={d.id} className="flex items-center justify-between px-4 py-3">
-                    <div>
-                      <p className="text-sm font-medium">{d.name}</p>
-                      <p className="text-xs text-muted-foreground">{d.type.toUpperCase()} • {d.fileName}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{d.name}</p>
+                      <p className="text-xs text-muted-foreground">{d.type.toUpperCase()} • {new Date(d.createdAt).toLocaleDateString("pt-BR")}</p>
                     </div>
-                    <span className="text-xs text-muted-foreground">{new Date(d.createdAt).toLocaleDateString("pt-BR")}</span>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDownloadDoc(d)}>
+                        <Download size={14} />
+                      </Button>
+                      {contract.status !== "cancelled" && (
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteDoc(d)}>
+                          <Trash2 size={14} />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 ))
               )}
             </div>
+
+            {contract.status !== "cancelled" && (
+              <div className="rounded-md border border-border/60 bg-muted/20 p-4 space-y-3">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Enviar Documento</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Tipo de documento</Label>
+                    <Select value={docType} onValueChange={setDocType}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="rg">RG</SelectItem>
+                        <SelectItem value="cpf">CPF</SelectItem>
+                        <SelectItem value="contract">Contrato</SelectItem>
+                        <SelectItem value="receipt">Recibo</SelectItem>
+                        <SelectItem value="other">Outro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-end">
+                    <input ref={fileInputRef} type="file" className="hidden" onChange={handleUploadDoc} accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" />
+                    <Button size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="gap-1 h-9 text-xs w-full">
+                      <Upload size={13} /> {uploading ? "Enviando..." : "Escolher arquivo"}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="history" className="space-y-4 pt-4">
