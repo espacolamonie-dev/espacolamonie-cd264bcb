@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import { NumericInput } from "@/components/NumericInput";
 import { Plus, TrendingUp, TrendingDown, Wallet, Trash2, FileText, HandCoins } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -341,7 +342,7 @@ export default function Financial() {
               </div>
               <div className="grid gap-1.5">
                 <Label className="text-xs font-medium text-muted-foreground">Valor (R$)</Label>
-                <Input type="number" value={expForm.amount} onChange={(e) => setExp("amount", +e.target.value)} />
+                <NumericInput value={expForm.amount} onChange={(v) => setExp("amount", v)} placeholder="Digite o valor" />
               </div>
             </div>
             <div className="grid gap-1.5">
@@ -374,7 +375,7 @@ export default function Financial() {
               </div>
               <div className="grid gap-1.5">
                 <Label className="text-xs font-medium text-muted-foreground">Valor (R$) *</Label>
-                <Input type="number" value={entryForm.amount} onChange={(e) => setEntry("amount", +e.target.value)} />
+                <NumericInput value={entryForm.amount} onChange={(v) => setEntry("amount", v)} placeholder="Digite o valor" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">

@@ -11,6 +11,7 @@ import { CONTRACT_STATUS_LABELS, CONTRACT_STATUS_COLORS, PAYMENT_STATUS_LABELS, 
 import type { Contract, ContractStatus, EventType, Client } from "@/types";
 import ContractDetailModal from "@/components/ContractDetailModal";
 import { ContractStatusSelect, PaymentStatusSelect } from "@/components/ContractStatusSelect";
+import { NumericInput } from "@/components/NumericInput";
 
 const EVENT_TYPES: EventType[] = [
   "Aniversário Adulto", "Aniversário Infantil", "Casamento", "Confraternização", "Evento Corporativo",
@@ -210,16 +211,16 @@ export default function Contracts() {
             </div>
             <div className="grid gap-1.5">
               <Label className="text-xs font-medium text-muted-foreground">Convidados</Label>
-              <Input type="number" value={form.guestCount} onChange={(e) => set("guestCount", +e.target.value)} />
+              <NumericInput value={form.guestCount} onChange={(v) => set("guestCount", v)} placeholder="Nº de convidados" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-1.5">
                 <Label className="text-xs font-medium text-muted-foreground">Valor total (R$)</Label>
-                <Input type="number" value={form.totalValue} onChange={(e) => set("totalValue", +e.target.value)} />
+                <NumericInput value={form.totalValue} onChange={(v) => set("totalValue", v)} placeholder="Digite o valor" />
               </div>
               <div className="grid gap-1.5">
                 <Label className="text-xs font-medium text-muted-foreground">Sinal (%)</Label>
-                <Input type="number" value={form.depositPercent} onChange={(e) => set("depositPercent", +e.target.value)} />
+                <NumericInput value={form.depositPercent} onChange={(v) => set("depositPercent", v)} placeholder="30" selectOnFocus />
               </div>
             </div>
             <div className="grid gap-1.5">

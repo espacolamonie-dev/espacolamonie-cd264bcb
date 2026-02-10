@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { NumericInput } from "@/components/NumericInput";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -185,7 +186,7 @@ export default function ContractDetailModal({ contractId, onClose }: Props) {
                 <div className="grid grid-cols-3 gap-3">
                   <div>
                     <Label className="text-xs text-muted-foreground">Valor (R$)</Label>
-                    <Input type="number" value={payForm.amount} onChange={(e) => setPayForm((p) => ({ ...p, amount: +e.target.value }))} />
+                    <NumericInput value={payForm.amount} onChange={(v) => setPayForm((p) => ({ ...p, amount: v }))} placeholder="Digite o valor" />
                   </div>
                   <div>
                     <Label className="text-xs text-muted-foreground">Data</Label>
