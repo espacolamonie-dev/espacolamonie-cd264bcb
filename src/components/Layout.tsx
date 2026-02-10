@@ -6,9 +6,11 @@ import {
   CreditCard,
   Menu,
   X,
+  LogOut,
 } from "lucide-react";
 import { useState } from "react";
 import logo from "@/assets/logo.png";
+import { useAuth } from "@/hooks/useAuth";
 
 const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -20,6 +22,7 @@ const navItems = [
 export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { signOut } = useAuth();
 
   return (
     <div className="flex min-h-screen">
@@ -83,7 +86,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </nav>
 
         {/* Footer */}
-        <div className="px-5 py-4">
+        <div className="px-5 py-4 space-y-3">
+          <button
+            onClick={signOut}
+            className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-[13px] font-medium text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/40 transition-all duration-150"
+          >
+            <LogOut size={17} strokeWidth={1.5} />
+            Sair
+          </button>
           <p className="text-[11px] text-sidebar-foreground/30 tracking-wide uppercase">
             Espaço Lamoniê © 2025
           </p>
