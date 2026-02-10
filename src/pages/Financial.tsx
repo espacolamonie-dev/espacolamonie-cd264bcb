@@ -28,12 +28,8 @@ const PAYMENT_METHODS: PaymentMethod[] = ["Pix", "Dinheiro", "Cartão", "Transfe
 const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 type CombinedEntry = {
-  id: string;
-  date: string;
-  description: string;
-  amount: number;
-  origin: "contract" | "manual";
-  originLabel: string;
+  id: string; date: string; description: string; amount: number;
+  origin: "contract" | "manual"; originLabel: string;
 };
 
 export default function Financial() {
@@ -55,18 +51,14 @@ export default function Financial() {
   });
 
   const load = () => {
-    setPayments(getPayments());
-    setManualEntries(getManualEntries());
-    setExpenses(getExpenses());
-    setTotalIn(getTotalEntries());
-    setTotalOut(getTotalExpenses());
-    setBalance(getBalance());
+    setPayments(getPayments()); setManualEntries(getManualEntries()); setExpenses(getExpenses());
+    setTotalIn(getTotalEntries()); setTotalOut(getTotalExpenses()); setBalance(getBalance());
   };
   useEffect(load, []);
 
   const handleAddExpense = () => {
     if (!expForm.description.trim() || expForm.amount <= 0) { toast.error("Preencha descrição e valor"); return; }
-    addExpense(expForm); toast.success("Despesa registrada!");
+    addExpense(expForm); toast.success("Despesa registrada com sucesso");
     setExpOpen(false);
     setExpForm({ description: "", category: "Outros", amount: 0, date: new Date().toISOString().split("T")[0] });
     load();
@@ -74,14 +66,14 @@ export default function Financial() {
 
   const handleAddEntry = () => {
     if (!entryForm.description.trim() || entryForm.amount <= 0) { toast.error("Preencha descrição e valor"); return; }
-    addManualEntry(entryForm); toast.success("Entrada registrada!");
+    addManualEntry(entryForm); toast.success("Entrada registrada com sucesso");
     setEntryOpen(false);
     setEntryForm({ description: "", category: "Outro", amount: 0, date: new Date().toISOString().split("T")[0], paymentMethod: "Pix", notes: "" });
     load();
   };
 
-  const handleDeleteExpense = (id: string) => { deleteExpense(id); toast.success("Despesa excluída"); load(); };
-  const handleDeleteManualEntry = (id: string) => { deleteManualEntry(id); toast.success("Entrada excluída"); load(); };
+  const handleDeleteExpense = (id: string) => { deleteExpense(id); toast.success("Despesa removida"); load(); };
+  const handleDeleteManualEntry = (id: string) => { deleteManualEntry(id); toast.success("Entrada removida"); load(); };
 
   const setExp = (field: string, value: any) => setExpForm((p) => ({ ...p, [field]: value }));
   const setEntry = (field: string, value: any) => setEntryForm((p) => ({ ...p, [field]: value }));
@@ -92,7 +84,6 @@ export default function Financial() {
     contracts.map((c) => [c.id, clients.find((cl) => cl.id === c.clientId)?.name || "—"])
   );
 
-  // Combine contract payments + manual entries for the entries tab
   const combinedEntries: CombinedEntry[] = [
     ...payments.map((p): CombinedEntry => ({
       id: p.id, date: p.date, description: p.description || contractClientMap[p.contractId] || "Pagamento",
@@ -108,7 +99,7 @@ export default function Financial() {
     <div className="animate-fade-in space-y-6">
       <div>
         <h1 className="text-3xl font-display font-semibold tracking-tight">Financeiro</h1>
-        <p className="text-sm text-muted-foreground mt-1">Controle de entradas e saídas</p>
+        <p className="text-sm text-muted-foreground mt-1">Controle financeiro do Espaço Lamoniê</p>
       </div>
 
       {/* Summary */}
@@ -116,23 +107,26 @@ export default function Financial() {
         <div className="stat-card">
           <div className="flex items-center gap-2 mb-2">
             <TrendingUp size={14} className="text-success" />
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Total Entradas</p>
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Entradas</p>
           </div>
           <p className="text-xl font-semibold text-success tracking-tight">{fmt(totalIn)}</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">Valores recebidos</p>
         </div>
         <div className="stat-card">
           <div className="flex items-center gap-2 mb-2">
             <TrendingDown size={14} className="text-danger" />
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Total Saídas</p>
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Saídas</p>
           </div>
           <p className="text-xl font-semibold text-danger tracking-tight">{fmt(totalOut)}</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">Despesas registradas</p>
         </div>
         <div className="stat-card !border-primary/20">
           <div className="flex items-center gap-2 mb-2">
             <Wallet size={14} className="text-primary" />
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Saldo Atual</p>
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Saldo atual</p>
           </div>
           <p className={`text-xl font-semibold tracking-tight ${balance >= 0 ? "text-primary" : "text-danger"}`}>{fmt(balance)}</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">Saldo disponível do espaço</p>
         </div>
       </div>
 
@@ -144,9 +138,13 @@ export default function Financial() {
         </TabsList>
 
         <TabsContent value="entries">
-          <div className="flex justify-end mb-3">
+          <div className="flex items-end justify-between mb-3">
+            <div>
+              <h2 className="text-lg font-display font-semibold">Entradas financeiras</h2>
+              <p className="text-xs text-muted-foreground">Valores recebidos pelo espaço</p>
+            </div>
             <Button onClick={() => setEntryOpen(true)} size="sm" className="gap-2 h-9">
-              <Plus size={15} /> Entrada Manual
+              <Plus size={15} /> Adicionar entrada
             </Button>
           </div>
           <div className="rounded-lg border border-border/60 bg-card overflow-x-auto">
@@ -162,7 +160,7 @@ export default function Financial() {
               </thead>
               <tbody>
                 {combinedEntries.length === 0 ? (
-                  <tr><td colSpan={5} className="!py-10 text-center text-muted-foreground">Nenhuma entrada registrada</td></tr>
+                  <tr><td colSpan={5} className="!py-10 text-center text-muted-foreground">Nenhum registro encontrado</td></tr>
                 ) : (
                   combinedEntries.map((entry) => (
                     <tr key={entry.id}>
@@ -170,9 +168,7 @@ export default function Financial() {
                       <td className="font-medium">{entry.description}</td>
                       <td className="hidden sm:table-cell">
                         <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-medium ${
-                          entry.origin === "contract"
-                            ? "bg-primary/10 text-primary"
-                            : "bg-accent/15 text-accent-foreground"
+                          entry.origin === "contract" ? "bg-primary/10 text-primary" : "bg-accent/15 text-accent-foreground"
                         }`}>
                           {entry.origin === "contract" ? <FileText size={10} /> : <HandCoins size={10} />}
                           {entry.origin === "contract" ? "Contrato" : "Manual"}
@@ -195,9 +191,13 @@ export default function Financial() {
         </TabsContent>
 
         <TabsContent value="expenses">
-          <div className="flex justify-end mb-3">
+          <div className="flex items-end justify-between mb-3">
+            <div>
+              <h2 className="text-lg font-display font-semibold">Despesas</h2>
+              <p className="text-xs text-muted-foreground">Gastos operacionais do espaço</p>
+            </div>
             <Button onClick={() => setExpOpen(true)} size="sm" className="gap-2 h-9">
-              <Plus size={15} /> Nova Despesa
+              <Plus size={15} /> Adicionar despesa
             </Button>
           </div>
           <div className="rounded-lg border border-border/60 bg-card overflow-x-auto">
@@ -213,7 +213,7 @@ export default function Financial() {
               </thead>
               <tbody>
                 {expenses.length === 0 ? (
-                  <tr><td colSpan={5} className="!py-10 text-center text-muted-foreground">Nenhuma despesa registrada</td></tr>
+                  <tr><td colSpan={5} className="!py-10 text-center text-muted-foreground">Nenhum registro encontrado</td></tr>
                 ) : (
                   expenses.map((e) => (
                     <tr key={e.id}>
@@ -241,7 +241,7 @@ export default function Financial() {
       <Dialog open={expOpen} onOpenChange={setExpOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-display text-xl">Nova Despesa</DialogTitle>
+            <DialogTitle className="font-display text-xl">Adicionar despesa</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-2">
             <div className="grid gap-1.5">
@@ -265,7 +265,7 @@ export default function Financial() {
               <Label className="text-xs font-medium text-muted-foreground">Data</Label>
               <Input type="date" value={expForm.date} onChange={(e) => setExp("date", e.target.value)} />
             </div>
-            <Button onClick={handleAddExpense} className="mt-2">Registrar Despesa</Button>
+            <Button onClick={handleAddExpense} className="mt-2">Registrar despesa</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -274,7 +274,7 @@ export default function Financial() {
       <Dialog open={entryOpen} onOpenChange={setEntryOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-display text-xl">Entrada Manual</DialogTitle>
+            <DialogTitle className="font-display text-xl">Adicionar entrada</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-2">
             <div className="grid gap-1.5">
@@ -300,7 +300,7 @@ export default function Financial() {
                 <Input type="date" value={entryForm.date} onChange={(e) => setEntry("date", e.target.value)} />
               </div>
               <div className="grid gap-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">Forma de Recebimento</Label>
+                <Label className="text-xs font-medium text-muted-foreground">Forma de recebimento</Label>
                 <Select value={entryForm.paymentMethod} onValueChange={(v) => setEntry("paymentMethod", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{PAYMENT_METHODS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
@@ -311,7 +311,7 @@ export default function Financial() {
               <Label className="text-xs font-medium text-muted-foreground">Observações</Label>
               <Textarea value={entryForm.notes} onChange={(e) => setEntry("notes", e.target.value)} rows={2} placeholder="Informações adicionais (opcional)" />
             </div>
-            <Button onClick={handleAddEntry} className="mt-2">Registrar Entrada</Button>
+            <Button onClick={handleAddEntry} className="mt-2">Registrar entrada</Button>
           </div>
         </DialogContent>
       </Dialog>

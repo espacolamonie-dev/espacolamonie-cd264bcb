@@ -39,9 +39,9 @@ export default function ContractDetailModal({ contractId, onClose }: Props) {
   const totalPaid = payments.reduce((s, p) => s + p.amount, 0);
 
   const handleAddPayment = () => {
-    if (payForm.amount <= 0) { toast.error("Informe o valor"); return; }
+    if (payForm.amount <= 0) { toast.error("Informe o valor do pagamento"); return; }
     addPayment({ ...payForm, contractId });
-    toast.success("Pagamento registrado!");
+    toast.success("Pagamento registrado com sucesso");
     setPayForm({ amount: 0, date: new Date().toISOString().split("T")[0], description: "" });
     load();
   };
