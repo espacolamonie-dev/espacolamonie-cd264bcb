@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Plus, TrendingUp, TrendingDown, Wallet, Trash2, FileText, HandCoins } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,15 +14,13 @@ import {
   getTotalEntries, getTotalExpenses, getBalance, getContracts, getClients,
 } from "@/data/store";
 import type { Payment, Expense, ExpenseCategory, ManualEntry, ManualEntryCategory, PaymentMethod } from "@/types";
+import EntryFiltersBar, { type EntryFilters, defaultEntryFilters, hasActiveEntryFilters } from "@/components/EntryFiltersBar";
+import ExpenseFiltersBar, { type ExpenseFilters, defaultExpenseFilters, hasActiveExpenseFilters } from "@/components/ExpenseFiltersBar";
 
 const EXPENSE_CATEGORIES: ExpenseCategory[] = [
   "Luz", "Água", "Funcionários", "Manutenção", "Compras", "Marketing", "Outros",
 ];
-
-const ENTRY_CATEGORIES: ManualEntryCategory[] = [
-  "Aluguel extra", "Taxa adicional", "Serviço avulso", "Outro",
-];
-
+const ENTRY_CATEGORIES: ManualEntryCategory[] = ["Aluguel extra", "Taxa adicional", "Serviço avulso", "Outro"];
 const PAYMENT_METHODS: PaymentMethod[] = ["Pix", "Dinheiro", "Cartão", "Transferência"];
 
 const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -30,17 +28,20 @@ const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", curren
 type CombinedEntry = {
   id: string; date: string; description: string; amount: number;
   origin: "contract" | "manual"; originLabel: string;
+  category?: string; paymentMethod?: string;
 };
 
 export default function Financial() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [manualEntries, setManualEntries] = useState<ManualEntry[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [totalIn, setTotalIn] = useState(0);
-  const [totalOut, setTotalOut] = useState(0);
-  const [balance, setBalance] = useState(0);
+  const [globalTotalIn, setGlobalTotalIn] = useState(0);
+  const [globalTotalOut, setGlobalTotalOut] = useState(0);
+  const [globalBalance, setGlobalBalance] = useState(0);
   const [expOpen, setExpOpen] = useState(false);
   const [entryOpen, setEntryOpen] = useState(false);
+  const [entryFilters, setEntryFilters] = useState<EntryFilters>(defaultEntryFilters);
+  const [expenseFilters, setExpenseFilters] = useState<ExpenseFilters>(defaultExpenseFilters);
   const [expForm, setExpForm] = useState({
     description: "", category: "Outros" as ExpenseCategory, amount: 0,
     date: new Date().toISOString().split("T")[0],
@@ -52,10 +53,11 @@ export default function Financial() {
 
   const load = () => {
     setPayments(getPayments()); setManualEntries(getManualEntries()); setExpenses(getExpenses());
-    setTotalIn(getTotalEntries()); setTotalOut(getTotalExpenses()); setBalance(getBalance());
+    setGlobalTotalIn(getTotalEntries()); setGlobalTotalOut(getTotalExpenses()); setGlobalBalance(getBalance());
   };
   useEffect(load, []);
 
+  // Handlers
   const handleAddExpense = () => {
     if (!expForm.description.trim() || expForm.amount <= 0) { toast.error("Preencha descrição e valor"); return; }
     addExpense(expForm); toast.success("Despesa registrada com sucesso");
@@ -63,7 +65,6 @@ export default function Financial() {
     setExpForm({ description: "", category: "Outros", amount: 0, date: new Date().toISOString().split("T")[0] });
     load();
   };
-
   const handleAddEntry = () => {
     if (!entryForm.description.trim() || entryForm.amount <= 0) { toast.error("Preencha descrição e valor"); return; }
     addManualEntry(entryForm); toast.success("Entrada registrada com sucesso");
@@ -71,20 +72,19 @@ export default function Financial() {
     setEntryForm({ description: "", category: "Outro", amount: 0, date: new Date().toISOString().split("T")[0], paymentMethod: "Pix", notes: "" });
     load();
   };
-
   const handleDeleteExpense = (id: string) => { deleteExpense(id); toast.success("Despesa removida"); load(); };
   const handleDeleteManualEntry = (id: string) => { deleteManualEntry(id); toast.success("Entrada removida"); load(); };
-
   const setExp = (field: string, value: any) => setExpForm((p) => ({ ...p, [field]: value }));
   const setEntry = (field: string, value: any) => setEntryForm((p) => ({ ...p, [field]: value }));
 
+  // Build combined entries
   const contracts = getContracts();
   const clients = getClients();
   const contractClientMap = Object.fromEntries(
     contracts.map((c) => [c.id, clients.find((cl) => cl.id === c.clientId)?.name || "—"])
   );
 
-  const combinedEntries: CombinedEntry[] = [
+  const allEntries: CombinedEntry[] = useMemo(() => [
     ...payments.map((p): CombinedEntry => ({
       id: p.id, date: p.date, description: p.description || contractClientMap[p.contractId] || "Pagamento",
       amount: p.amount, origin: "contract", originLabel: contractClientMap[p.contractId] || "Contrato",
@@ -92,8 +92,48 @@ export default function Financial() {
     ...manualEntries.map((e): CombinedEntry => ({
       id: e.id, date: e.date, description: e.description,
       amount: e.amount, origin: "manual", originLabel: e.category,
+      category: e.category, paymentMethod: e.paymentMethod,
     })),
-  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()), [payments, manualEntries]);
+
+  // Apply entry filters
+  const filteredEntries = useMemo(() => {
+    const f = entryFilters;
+    return allEntries.filter((e) => {
+      if (f.search && !e.description.toLowerCase().includes(f.search.toLowerCase())) return false;
+      if (f.dateFrom && e.date < f.dateFrom) return false;
+      if (f.dateTo && e.date > f.dateTo) return false;
+      if (f.origin !== "all" && e.origin !== f.origin) return false;
+      if (f.category !== "all" && e.origin === "manual" && e.category !== f.category) return false;
+      if (f.category !== "all" && e.origin === "contract") return false;
+      if (f.paymentMethod !== "all" && e.origin === "manual" && e.paymentMethod !== f.paymentMethod) return false;
+      if (f.paymentMethod !== "all" && e.origin === "contract") return false;
+      if (f.minValue && e.amount < Number(f.minValue)) return false;
+      if (f.maxValue && e.amount > Number(f.maxValue)) return false;
+      return true;
+    });
+  }, [allEntries, entryFilters]);
+
+  // Apply expense filters
+  const filteredExpenses = useMemo(() => {
+    const f = expenseFilters;
+    return expenses.filter((e) => {
+      if (f.search && !e.description.toLowerCase().includes(f.search.toLowerCase())) return false;
+      if (f.dateFrom && e.date < f.dateFrom) return false;
+      if (f.dateTo && e.date > f.dateTo) return false;
+      if (f.category !== "all" && e.category !== f.category) return false;
+      if (f.minValue && e.amount < Number(f.minValue)) return false;
+      if (f.maxValue && e.amount > Number(f.maxValue)) return false;
+      return true;
+    });
+  }, [expenses, expenseFilters]);
+
+  // Filtered totals
+  const entryFiltersActive = hasActiveEntryFilters(entryFilters);
+  const expenseFiltersActive = hasActiveExpenseFilters(expenseFilters);
+  const filteredTotalIn = entryFiltersActive ? filteredEntries.reduce((s, e) => s + e.amount, 0) : globalTotalIn;
+  const filteredTotalOut = expenseFiltersActive ? filteredExpenses.reduce((s, e) => s + e.amount, 0) : globalTotalOut;
+  const displayBalance = entryFiltersActive || expenseFiltersActive ? filteredTotalIn - filteredTotalOut : globalBalance;
 
   return (
     <div className="animate-fade-in space-y-6">
@@ -109,23 +149,27 @@ export default function Financial() {
             <TrendingUp size={14} className="text-success" />
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Entradas</p>
           </div>
-          <p className="text-xl font-semibold text-success tracking-tight">{fmt(totalIn)}</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">Valores recebidos</p>
+          <p className="text-xl font-semibold text-success tracking-tight">{fmt(filteredTotalIn)}</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">
+            {entryFiltersActive ? `${filteredEntries.length} registros filtrados` : "Valores recebidos"}
+          </p>
         </div>
         <div className="stat-card">
           <div className="flex items-center gap-2 mb-2">
             <TrendingDown size={14} className="text-danger" />
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Saídas</p>
           </div>
-          <p className="text-xl font-semibold text-danger tracking-tight">{fmt(totalOut)}</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">Despesas registradas</p>
+          <p className="text-xl font-semibold text-danger tracking-tight">{fmt(filteredTotalOut)}</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">
+            {expenseFiltersActive ? `${filteredExpenses.length} registros filtrados` : "Despesas registradas"}
+          </p>
         </div>
         <div className="stat-card !border-primary/20">
           <div className="flex items-center gap-2 mb-2">
             <Wallet size={14} className="text-primary" />
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Saldo atual</p>
           </div>
-          <p className={`text-xl font-semibold tracking-tight ${balance >= 0 ? "text-primary" : "text-danger"}`}>{fmt(balance)}</p>
+          <p className={`text-xl font-semibold tracking-tight ${displayBalance >= 0 ? "text-primary" : "text-danger"}`}>{fmt(displayBalance)}</p>
           <p className="text-[11px] text-muted-foreground mt-0.5">Saldo disponível do espaço</p>
         </div>
       </div>
@@ -137,8 +181,8 @@ export default function Financial() {
           <TabsTrigger value="expenses">Saídas</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="entries">
-          <div className="flex items-end justify-between mb-3">
+        <TabsContent value="entries" className="space-y-4">
+          <div className="flex items-end justify-between">
             <div>
               <h2 className="text-lg font-display font-semibold">Entradas financeiras</h2>
               <p className="text-xs text-muted-foreground">Valores recebidos pelo espaço</p>
@@ -147,6 +191,9 @@ export default function Financial() {
               <Plus size={15} /> Adicionar entrada
             </Button>
           </div>
+
+          <EntryFiltersBar filters={entryFilters} onChange={setEntryFilters} />
+
           <div className="rounded-lg border border-border/60 bg-card overflow-x-auto">
             <table className="table-premium">
               <thead>
@@ -159,10 +206,10 @@ export default function Financial() {
                 </tr>
               </thead>
               <tbody>
-                {combinedEntries.length === 0 ? (
+                {filteredEntries.length === 0 ? (
                   <tr><td colSpan={5} className="!py-10 text-center text-muted-foreground">Nenhum registro encontrado</td></tr>
                 ) : (
-                  combinedEntries.map((entry) => (
+                  filteredEntries.map((entry) => (
                     <tr key={entry.id}>
                       <td className="text-muted-foreground tabular-nums">{new Date(entry.date).toLocaleDateString("pt-BR")}</td>
                       <td className="font-medium">{entry.description}</td>
@@ -188,10 +235,15 @@ export default function Financial() {
               </tbody>
             </table>
           </div>
+          {entryFiltersActive && (
+            <p className="text-xs text-muted-foreground text-right">
+              Exibindo {filteredEntries.length} de {allEntries.length} entradas • Total filtrado: <span className="font-medium text-success">{fmt(filteredTotalIn)}</span>
+            </p>
+          )}
         </TabsContent>
 
-        <TabsContent value="expenses">
-          <div className="flex items-end justify-between mb-3">
+        <TabsContent value="expenses" className="space-y-4">
+          <div className="flex items-end justify-between">
             <div>
               <h2 className="text-lg font-display font-semibold">Despesas</h2>
               <p className="text-xs text-muted-foreground">Gastos operacionais do espaço</p>
@@ -200,6 +252,9 @@ export default function Financial() {
               <Plus size={15} /> Adicionar despesa
             </Button>
           </div>
+
+          <ExpenseFiltersBar filters={expenseFilters} onChange={setExpenseFilters} />
+
           <div className="rounded-lg border border-border/60 bg-card overflow-x-auto">
             <table className="table-premium">
               <thead>
@@ -212,10 +267,10 @@ export default function Financial() {
                 </tr>
               </thead>
               <tbody>
-                {expenses.length === 0 ? (
+                {filteredExpenses.length === 0 ? (
                   <tr><td colSpan={5} className="!py-10 text-center text-muted-foreground">Nenhum registro encontrado</td></tr>
                 ) : (
-                  expenses.map((e) => (
+                  filteredExpenses.map((e) => (
                     <tr key={e.id}>
                       <td className="text-muted-foreground tabular-nums">{new Date(e.date).toLocaleDateString("pt-BR")}</td>
                       <td className="font-medium">{e.description}</td>
@@ -234,6 +289,11 @@ export default function Financial() {
               </tbody>
             </table>
           </div>
+          {expenseFiltersActive && (
+            <p className="text-xs text-muted-foreground text-right">
+              Exibindo {filteredExpenses.length} de {expenses.length} despesas • Total filtrado: <span className="font-medium text-danger">{fmt(filteredTotalOut)}</span>
+            </p>
+          )}
         </TabsContent>
       </Tabs>
 
