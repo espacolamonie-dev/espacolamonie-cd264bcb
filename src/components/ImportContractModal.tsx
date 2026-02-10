@@ -178,7 +178,7 @@ export default function ImportContractModal({ open, onOpenChange, onImported }: 
           await addDocument({
             contractId: contract.id,
             name: "Contrato importado (PDF)",
-            type: "contract",
+            type: "contrato",
             file,
           });
         } catch (docErr) {

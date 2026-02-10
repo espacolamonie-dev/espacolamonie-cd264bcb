@@ -56,7 +56,7 @@ export interface Document {
   id: string;
   contractId: string;
   name: string;
-  type: "rg" | "cpf" | "contract" | "receipt" | "other";
+  type: "identidade" | "cnh" | "contrato" | "recibo" | "outro";
   fileName: string;
   createdAt: string;
 }
