@@ -77,8 +77,16 @@ export const updateContract = async (id: string, updates: Record<string, any>) =
     mapped[keyMap[k] || k] = v;
   }
 
+  // Handle cancellation — remove associated payments
+  if (updates.status === "cancelled") {
+    const userId = await getUserId();
+    await supabase.from("payments").delete().eq("contract_id", id);
+    mapped.payment_status = "pending";
+    mapped.remaining_value = 0;
+  }
+
   // Auto-create payments when payment status changes
-  if (updates.paymentStatus && updates.paymentStatus !== "pending") {
+  if (updates.paymentStatus && updates.paymentStatus !== "pending" && updates.status !== "cancelled") {
     const contractRes = await supabase.from("contracts").select("*").eq("id", id).single();
     if (contractRes.data) {
       const contract = mapContract(contractRes.data);

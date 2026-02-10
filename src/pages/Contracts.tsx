@@ -10,6 +10,7 @@ import { getContracts, getClients, addContract, updateContract } from "@/data/st
 import { CONTRACT_STATUS_LABELS, CONTRACT_STATUS_COLORS, PAYMENT_STATUS_LABELS, PAYMENT_STATUS_COLORS } from "@/types";
 import type { Contract, ContractStatus, EventType, Client } from "@/types";
 import ContractDetailModal from "@/components/ContractDetailModal";
+import { ContractStatusSelect, PaymentStatusSelect } from "@/components/ContractStatusSelect";
 
 const EVENT_TYPES: EventType[] = [
   "Aniversário Adulto", "Aniversário Infantil", "Casamento", "Confraternização", "Evento Corporativo",
@@ -143,18 +144,19 @@ export default function Contracts() {
                     {isCancelled ? <span className="text-muted-foreground line-through">{fmt(c.totalValue)}</span> : fmt(c.totalValue)}
                   </td>
                   <td>
-                    <span className={`inline-block rounded-full px-2.5 py-0.5 text-[10px] font-medium ${CONTRACT_STATUS_COLORS[c.status]}`}>
-                      {CONTRACT_STATUS_LABELS[c.status]}
-                    </span>
+                    <ContractStatusSelect
+                      contractId={c.id}
+                      value={c.status}
+                      onChanged={load}
+                    />
                   </td>
                   <td className="hidden md:table-cell">
-                    {isCancelled ? (
-                      <span className="text-[10px] text-muted-foreground">—</span>
-                    ) : (
-                      <span className={`inline-block rounded-full px-2.5 py-0.5 text-[10px] font-medium ${PAYMENT_STATUS_COLORS[c.paymentStatus]}`}>
-                        {PAYMENT_STATUS_LABELS[c.paymentStatus]}
-                      </span>
-                    )}
+                    <PaymentStatusSelect
+                      contractId={c.id}
+                      value={c.paymentStatus}
+                      isCancelled={isCancelled}
+                      onChanged={load}
+                    />
                   </td>
                   <td className="text-right">
                     <div className="flex items-center justify-end gap-0.5">
