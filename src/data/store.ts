@@ -76,6 +76,44 @@ export const updateContract = async (id: string, updates: Record<string, any>) =
   for (const [k, v] of Object.entries(updates)) {
     mapped[keyMap[k] || k] = v;
   }
+
+  // Auto-create payments when payment status changes
+  if (updates.paymentStatus && updates.paymentStatus !== "pending") {
+    const contractRes = await supabase.from("contracts").select("*").eq("id", id).single();
+    if (contractRes.data) {
+      const contract = mapContract(contractRes.data);
+      const existingPayments = await supabase.from("payments").select("amount").eq("contract_id", id);
+      const totalPaid = (existingPayments.data || []).reduce((s, p) => s + Number(p.amount), 0);
+      const userId = await getUserId();
+
+      if (updates.paymentStatus === "deposit_paid") {
+        const depositValue = (contract.totalValue * contract.depositPercent) / 100;
+        const alreadyPaidDeposit = totalPaid >= depositValue;
+        if (!alreadyPaidDeposit) {
+          const depositToPay = depositValue - totalPaid;
+          if (depositToPay > 0) {
+            await supabase.from("payments").insert({
+              user_id: userId, contract_id: id, amount: depositToPay,
+              date: new Date().toISOString().split("T")[0],
+              description: "Sinal pago automaticamente",
+            });
+          }
+        }
+        mapped.remaining_value = Math.max(0, contract.totalValue - depositValue);
+      } else if (updates.paymentStatus === "paid_full") {
+        const remaining = contract.totalValue - totalPaid;
+        if (remaining > 0) {
+          await supabase.from("payments").insert({
+            user_id: userId, contract_id: id, amount: remaining,
+            date: new Date().toISOString().split("T")[0],
+            description: "Pagamento total registrado automaticamente",
+          });
+        }
+        mapped.remaining_value = 0;
+      }
+    }
+  }
+
   const { error } = await supabase.from("contracts").update(mapped).eq("id", id);
   if (error) throw error;
 };
@@ -183,11 +221,17 @@ export const deleteManualEntry = async (id: string) => {
   if (error) throw error;
 };
 
-// FINANCIAL HELPERS
+// FINANCIAL HELPERS — exclude payments from cancelled contracts
+export const getActivePayments = async () => {
+  const [payments, contracts] = await Promise.all([getPayments(), getContracts()]);
+  const cancelledIds = new Set(contracts.filter(c => c.status === "cancelled").map(c => c.id));
+  return payments.filter(p => !cancelledIds.has(p.contractId));
+};
+
 export const getTotalEntries = async (): Promise<number> => {
-  const payments = await getPayments();
+  const activePayments = await getActivePayments();
   const manual = await getManualEntries();
-  return payments.reduce((s, p) => s + p.amount, 0) + manual.reduce((s, e) => s + e.amount, 0);
+  return activePayments.reduce((s, p) => s + p.amount, 0) + manual.reduce((s, e) => s + e.amount, 0);
 };
 
 export const getTotalExpenses = async (): Promise<number> => {
