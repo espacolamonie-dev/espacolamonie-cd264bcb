@@ -65,8 +65,19 @@ export default function Contracts() {
   const handleSave = async () => {
     if (!form.clientId || !form.eventDate) { toast.error("Cliente e data são obrigatórios"); return; }
     try {
-      if (editing) { await updateContract(editing.id, form); toast.success("Informações salvas com sucesso"); }
-      else { await addContract(form); toast.success("Contrato criado com sucesso"); }
+      if (editing) {
+        // Check if payment status changed — handle auto-payment
+        const paymentStatusChanged = form.paymentStatus !== editing.paymentStatus;
+        const updates: Record<string, any> = { ...form };
+        if (paymentStatusChanged) {
+          updates.paymentStatus = form.paymentStatus;
+        }
+        await updateContract(editing.id, updates);
+        toast.success("Informações salvas com sucesso");
+      } else {
+        await addContract(form);
+        toast.success("Contrato criado com sucesso");
+      }
       setOpen(false); await load();
     } catch (e: any) { toast.error(e.message); }
   };
@@ -121,34 +132,45 @@ export default function Contracts() {
             {filtered.length === 0 ? (
               <tr><td colSpan={7} className="!py-10 text-center text-muted-foreground">Nenhum registro encontrado</td></tr>
             ) : (
-              filtered.map((c) => (
-                <tr key={c.id}>
+              filtered.map((c) => {
+                const isCancelled = c.status === "cancelled";
+                return (
+                <tr key={c.id} className={isCancelled ? "opacity-60" : ""}>
                   <td className="font-medium">{clientMap[c.clientId]?.name || "—"}</td>
                   <td className="hidden sm:table-cell text-muted-foreground">{c.eventType}</td>
                   <td className="hidden md:table-cell text-muted-foreground tabular-nums">{new Date(c.eventDate).toLocaleDateString("pt-BR")}</td>
-                  <td className="hidden lg:table-cell font-medium tabular-nums">{fmt(c.totalValue)}</td>
+                  <td className="hidden lg:table-cell font-medium tabular-nums">
+                    {isCancelled ? <span className="text-muted-foreground line-through">{fmt(c.totalValue)}</span> : fmt(c.totalValue)}
+                  </td>
                   <td>
                     <span className={`inline-block rounded-full px-2.5 py-0.5 text-[10px] font-medium ${CONTRACT_STATUS_COLORS[c.status]}`}>
                       {CONTRACT_STATUS_LABELS[c.status]}
                     </span>
                   </td>
                   <td className="hidden md:table-cell">
-                    <span className={`inline-block rounded-full px-2.5 py-0.5 text-[10px] font-medium ${PAYMENT_STATUS_COLORS[c.paymentStatus]}`}>
-                      {PAYMENT_STATUS_LABELS[c.paymentStatus]}
-                    </span>
+                    {isCancelled ? (
+                      <span className="text-[10px] text-muted-foreground">—</span>
+                    ) : (
+                      <span className={`inline-block rounded-full px-2.5 py-0.5 text-[10px] font-medium ${PAYMENT_STATUS_COLORS[c.paymentStatus]}`}>
+                        {PAYMENT_STATUS_LABELS[c.paymentStatus]}
+                      </span>
+                    )}
                   </td>
                   <td className="text-right">
                     <div className="flex items-center justify-end gap-0.5">
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDetailId(c.id)}>
                         <Eye size={14} />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(c)}>
-                        <Pencil size={14} />
-                      </Button>
+                      {!isCancelled && (
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(c)}>
+                          <Pencil size={14} />
+                        </Button>
+                      )}
                     </div>
                   </td>
                 </tr>
-              ))
+                );
+              })
             )}
           </tbody>
         </table>
@@ -205,6 +227,21 @@ export default function Contracts() {
                 <SelectContent>{Object.entries(CONTRACT_STATUS_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </div>
+            {editing && form.status !== "cancelled" && (
+              <div className="grid gap-1.5">
+                <Label className="text-xs font-medium text-muted-foreground">Status de pagamento</Label>
+                <Select value={form.paymentStatus} onValueChange={(v) => set("paymentStatus", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{Object.entries(PAYMENT_STATUS_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}</SelectContent>
+                </Select>
+                {form.paymentStatus === "deposit_paid" && (
+                  <p className="text-[11px] text-muted-foreground">O sinal ({form.depositPercent}%) será registrado automaticamente como entrada financeira.</p>
+                )}
+                {form.paymentStatus === "paid_full" && (
+                  <p className="text-[11px] text-muted-foreground">O valor restante será registrado automaticamente como entrada financeira.</p>
+                )}
+              </div>
+            )}
             <Button onClick={handleSave} className="mt-2">{editing ? "Salvar alterações" : "Criar contrato"}</Button>
           </div>
         </DialogContent>

@@ -24,15 +24,16 @@ export default function Dashboard() {
           getContracts(), getClients(), getTotalEntries(), getTotalExpenses(), getBalance(),
         ]);
 
-        const conf = allContracts.filter((c) => c.status === "confirmed").length;
-        const awaitPay = allContracts.filter(
+        const active = allContracts.filter((c) => c.status !== "cancelled");
+        const conf = active.filter((c) => c.status === "confirmed").length;
+        const awaitPay = active.filter(
           (c) => c.paymentStatus === "pending" || c.paymentStatus === "deposit_paid"
         ).length;
-        const future = allContracts.filter(
-          (c) => new Date(c.eventDate) >= new Date() && c.status !== "cancelled"
+        const future = active.filter(
+          (c) => new Date(c.eventDate) >= new Date()
         );
 
-        setContracts(allContracts);
+        setContracts(active);
         setConfirmed(conf);
         setAwaiting(awaitPay);
         setFutureCount(future.length);
@@ -48,8 +49,8 @@ export default function Dashboard() {
         );
 
         setPendingPayments(
-          allContracts
-            .filter((c) => c.paymentStatus !== "paid_full" && c.status !== "cancelled")
+          active
+            .filter((c) => c.paymentStatus !== "paid_full")
             .sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime())
             .slice(0, 5)
             .map((c) => ({ ...c, clientName: clientMap[c.clientId] || "—" }))
@@ -74,7 +75,7 @@ export default function Dashboard() {
             <FileText size={16} className="text-muted-foreground/50" />
           </div>
           <p className="text-2xl font-semibold mt-2 tracking-tight">{contracts.length}</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">Todos os contratos cadastrados</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">Contratos ativos</p>
         </div>
         <div className="stat-card">
           <div className="flex items-center justify-between">

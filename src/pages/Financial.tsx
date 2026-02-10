@@ -97,13 +97,18 @@ export default function Financial() {
   const setExp = (field: string, value: any) => setExpForm((p) => ({ ...p, [field]: value }));
   const setEntry = (field: string, value: any) => setEntryForm((p) => ({ ...p, [field]: value }));
 
-  // Build combined entries
+  // Build combined entries — exclude payments from cancelled contracts
+  const cancelledContractIds = new Set(
+    contracts.filter((c) => c.status === "cancelled").map((c) => c.id)
+  );
   const contractClientMap = Object.fromEntries(
     contracts.map((c) => [c.id, clients.find((cl) => cl.id === c.clientId)?.name || "—"])
   );
 
+  const activePayments = payments.filter((p) => !cancelledContractIds.has(p.contractId));
+
   const allEntries: CombinedEntry[] = useMemo(() => [
-    ...payments.map((p): CombinedEntry => ({
+    ...activePayments.map((p): CombinedEntry => ({
       id: p.id, date: p.date, description: p.description || contractClientMap[p.contractId] || "Pagamento",
       amount: p.amount, origin: "contract", originLabel: contractClientMap[p.contractId] || "Contrato",
     })),
@@ -112,7 +117,7 @@ export default function Financial() {
       amount: e.amount, origin: "manual", originLabel: e.category,
       category: e.category, paymentMethod: e.paymentMethod,
     })),
-  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()), [payments, manualEntries, contractClientMap]);
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()), [activePayments, manualEntries, contractClientMap]);
 
   // Apply entry filters
   const filteredEntries = useMemo(() => {
