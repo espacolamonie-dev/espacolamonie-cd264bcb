@@ -81,6 +81,25 @@ export interface Expense {
   createdAt: string;
 }
 
+export type ManualEntryCategory =
+  | "Aluguel extra"
+  | "Taxa adicional"
+  | "Serviço avulso"
+  | "Outro";
+
+export type PaymentMethod = "Pix" | "Dinheiro" | "Cartão" | "Transferência";
+
+export interface ManualEntry {
+  id: string;
+  description: string;
+  category: ManualEntryCategory;
+  amount: number;
+  date: string;
+  paymentMethod: PaymentMethod;
+  notes: string;
+  createdAt: string;
+}
+
 export const CONTRACT_STATUS_LABELS: Record<ContractStatus, string> = {
   awaiting_documents: "Aguardando Documentos",
   awaiting_signature: "Aguardando Assinatura",
