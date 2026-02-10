@@ -1,19 +1,12 @@
 import { useEffect, useState } from "react";
 import {
-  FileText,
-  CheckCircle,
-  Clock,
-  CalendarDays,
-  TrendingUp,
-  TrendingDown,
-  Wallet,
+  FileText, CheckCircle, Clock, CalendarDays, TrendingUp, TrendingDown, Wallet,
 } from "lucide-react";
-import { getContracts, getClients, getPayments, getTotalEntries, getTotalExpenses, getBalance } from "@/data/store";
+import { getContracts, getClients, getTotalEntries, getTotalExpenses, getBalance } from "@/data/store";
 import type { Contract } from "@/types";
 import { PAYMENT_STATUS_LABELS, PAYMENT_STATUS_COLORS } from "@/types";
 
-const fmt = (v: number) =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 export default function Dashboard() {
   const [contracts, setContracts] = useState<Contract[]>([]);
@@ -25,41 +18,45 @@ export default function Dashboard() {
   const [futureCount, setFutureCount] = useState(0);
 
   useEffect(() => {
-    const allContracts = getContracts();
-    const clients = getClients();
-    const conf = allContracts.filter((c) => c.status === "confirmed").length;
-    const awaitPay = allContracts.filter(
-      (c) => c.paymentStatus === "pending" || c.paymentStatus === "deposit_paid"
-    ).length;
-    const future = allContracts.filter(
-      (c) => new Date(c.eventDate) >= new Date() && c.status !== "cancelled"
-    );
-    const totalIn = getTotalEntries();
-    const totalOut = getTotalExpenses();
-    const balance = getBalance();
+    const loadData = async () => {
+      try {
+        const [allContracts, clients, totalIn, totalOut, balance] = await Promise.all([
+          getContracts(), getClients(), getTotalEntries(), getTotalExpenses(), getBalance(),
+        ]);
 
-    setContracts(allContracts);
-    setConfirmed(conf);
-    setAwaiting(awaitPay);
-    setFutureCount(future.length);
-    setFinancialSummary({ totalIn, totalOut, balance });
+        const conf = allContracts.filter((c) => c.status === "confirmed").length;
+        const awaitPay = allContracts.filter(
+          (c) => c.paymentStatus === "pending" || c.paymentStatus === "deposit_paid"
+        ).length;
+        const future = allContracts.filter(
+          (c) => new Date(c.eventDate) >= new Date() && c.status !== "cancelled"
+        );
 
-    const clientMap = Object.fromEntries(clients.map((c) => [c.id, c.name]));
+        setContracts(allContracts);
+        setConfirmed(conf);
+        setAwaiting(awaitPay);
+        setFutureCount(future.length);
+        setFinancialSummary({ totalIn, totalOut, balance });
 
-    setUpcoming(
-      future
-        .sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime())
-        .slice(0, 5)
-        .map((c) => ({ ...c, clientName: clientMap[c.clientId] || "—" }))
-    );
+        const clientMap = Object.fromEntries(clients.map((c) => [c.id, c.name]));
 
-    setPendingPayments(
-      allContracts
-        .filter((c) => c.paymentStatus !== "paid_full" && c.status !== "cancelled")
-        .sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime())
-        .slice(0, 5)
-        .map((c) => ({ ...c, clientName: clientMap[c.clientId] || "—" }))
-    );
+        setUpcoming(
+          future
+            .sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime())
+            .slice(0, 5)
+            .map((c) => ({ ...c, clientName: clientMap[c.clientId] || "—" }))
+        );
+
+        setPendingPayments(
+          allContracts
+            .filter((c) => c.paymentStatus !== "paid_full" && c.status !== "cancelled")
+            .sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime())
+            .slice(0, 5)
+            .map((c) => ({ ...c, clientName: clientMap[c.clientId] || "—" }))
+        );
+      } catch {}
+    };
+    loadData();
   }, []);
 
   return (

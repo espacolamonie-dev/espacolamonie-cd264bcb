@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { CalendarDays, Users, DollarSign, FileText, Plus, AlertTriangle } from "lucide-react";
 import {
-  getContracts, getClients, getPayments, getDocuments, addPayment, addDocument, updateContract,
+  getContracts, getClients, getPayments, getDocuments, addPayment, updateContract,
 } from "@/data/store";
 import { CONTRACT_STATUS_LABELS, CONTRACT_STATUS_COLORS, PAYMENT_STATUS_LABELS, PAYMENT_STATUS_COLORS } from "@/types";
 import type { Contract, Client, Payment, Document } from "@/types";
@@ -23,32 +23,41 @@ export default function ContractDetailModal({ contractId, onClose }: Props) {
   const [docs, setDocs] = useState<Document[]>([]);
   const [payForm, setPayForm] = useState({ amount: 0, date: new Date().toISOString().split("T")[0], description: "" });
 
-  const load = () => {
-    const c = getContracts().find((c) => c.id === contractId);
-    setContract(c || null);
-    if (c) {
-      setClient(getClients().find((cl) => cl.id === c.clientId) || null);
-      setPayments(getPayments().filter((p) => p.contractId === contractId));
-      setDocs(getDocuments().filter((d) => d.contractId === contractId));
-    }
+  const load = async () => {
+    try {
+      const [allContracts, allClients, allPayments, allDocs] = await Promise.all([
+        getContracts(), getClients(), getPayments(), getDocuments(),
+      ]);
+      const c = allContracts.find((c) => c.id === contractId);
+      setContract(c || null);
+      if (c) {
+        setClient(allClients.find((cl) => cl.id === c.clientId) || null);
+        setPayments(allPayments.filter((p) => p.contractId === contractId));
+        setDocs(allDocs.filter((d) => d.contractId === contractId));
+      }
+    } catch {}
   };
-  useEffect(load, [contractId]);
+  useEffect(() => { load(); }, [contractId]);
 
   if (!contract) return null;
 
   const totalPaid = payments.reduce((s, p) => s + p.amount, 0);
 
-  const handleAddPayment = () => {
+  const handleAddPayment = async () => {
     if (payForm.amount <= 0) { toast.error("Informe o valor do pagamento"); return; }
-    addPayment({ ...payForm, contractId });
-    toast.success("Pagamento registrado com sucesso");
-    setPayForm({ amount: 0, date: new Date().toISOString().split("T")[0], description: "" });
-    load();
+    try {
+      await addPayment({ ...payForm, contractId });
+      toast.success("Pagamento registrado com sucesso");
+      setPayForm({ amount: 0, date: new Date().toISOString().split("T")[0], description: "" });
+      await load();
+    } catch (e: any) { toast.error(e.message); }
   };
 
-  const handleCancel = () => {
-    updateContract(contractId, { status: "cancelled", cancelledAt: new Date().toISOString(), cancelledBy: "Administrador" });
-    toast.success("Contrato cancelado"); load();
+  const handleCancel = async () => {
+    try {
+      await updateContract(contractId, { status: "cancelled", cancelledAt: new Date().toISOString(), cancelledBy: "Administrador" });
+      toast.success("Contrato cancelado"); await load();
+    } catch (e: any) { toast.error(e.message); }
   };
 
   const docStatus = docs.length === 0 ? "Nenhum documento" : docs.length < 3 ? "Documentos pendentes" : "Documentos completos";
@@ -174,9 +183,6 @@ export default function ContractDetailModal({ contractId, onClose }: Props) {
                 ))
               )}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Para upload de documentos, habilite o Lovable Cloud para armazenamento seguro.
-            </p>
           </TabsContent>
 
           <TabsContent value="history" className="space-y-4 pt-4">

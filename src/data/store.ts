@@ -1,133 +1,282 @@
-import { Client, Contract, Payment, Document, Expense, ManualEntry } from "@/types";
+import { supabase } from "@/integrations/supabase/client";
 
-const get = <T>(key: string): T[] => {
-  try {
-    return JSON.parse(localStorage.getItem(key) || "[]");
-  } catch {
-    return [];
-  }
+// Helper to get current user id
+const getUserId = async (): Promise<string> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Usuário não autenticado");
+  return user.id;
 };
-
-const set = <T>(key: string, data: T[]) => {
-  localStorage.setItem(key, JSON.stringify(data));
-};
-
-const genId = () => crypto.randomUUID();
 
 // CLIENTS
-export const getClients = () => get<Client>("lm_clients");
-export const saveClients = (c: Client[]) => set("lm_clients", c);
-export const addClient = (c: Omit<Client, "id" | "createdAt">): Client => {
-  const clients = getClients();
-  const newClient: Client = { ...c, id: genId(), createdAt: new Date().toISOString() };
-  clients.push(newClient);
-  saveClients(clients);
-  return newClient;
+export const getClients = async () => {
+  const { data, error } = await supabase.from("clients").select("*").order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data || []).map(mapClient);
 };
-export const updateClient = (id: string, data: Partial<Client>) => {
-  const clients = getClients().map((c) => (c.id === id ? { ...c, ...data } : c));
-  saveClients(clients);
+
+export const addClient = async (c: { name: string; cpf: string; phone: string; email: string; address: string; notes: string }) => {
+  const userId = await getUserId();
+  const { data, error } = await supabase.from("clients").insert({ ...c, user_id: userId }).select().single();
+  if (error) throw error;
+  return mapClient(data);
 };
-export const deleteClient = (id: string) => {
-  saveClients(getClients().filter((c) => c.id !== id));
+
+export const updateClient = async (id: string, data: Record<string, any>) => {
+  const { error } = await supabase.from("clients").update(data).eq("id", id);
+  if (error) throw error;
+};
+
+export const deleteClient = async (id: string) => {
+  const { error } = await supabase.from("clients").delete().eq("id", id);
+  if (error) throw error;
 };
 
 // CONTRACTS
-export const getContracts = () => get<Contract>("lm_contracts");
-export const saveContracts = (c: Contract[]) => set("lm_contracts", c);
-export const addContract = (c: Omit<Contract, "id" | "createdAt" | "depositValue" | "remainingValue">): Contract => {
-  const contracts = getContracts();
-  const depositValue = (c.totalValue * c.depositPercent) / 100;
-  const newContract: Contract = {
-    ...c,
-    id: genId(),
-    depositValue,
-    remainingValue: c.totalValue,
-    createdAt: new Date().toISOString(),
-  };
-  contracts.push(newContract);
-  saveContracts(contracts);
-  return newContract;
+export const getContracts = async () => {
+  const { data, error } = await supabase.from("contracts").select("*").order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data || []).map(mapContract);
 };
-export const updateContract = (id: string, data: Partial<Contract>) => {
-  const contracts = getContracts().map((c) => (c.id === id ? { ...c, ...data } : c));
-  saveContracts(contracts);
+
+export const addContract = async (c: {
+  clientId: string; eventType: string; eventDate: string; eventTime: string;
+  guestCount: number; totalValue: number; depositPercent: number;
+  status: string; paymentStatus: string;
+}) => {
+  const userId = await getUserId();
+  const depositValue = (c.totalValue * c.depositPercent) / 100;
+  const { data, error } = await supabase.from("contracts").insert({
+    user_id: userId,
+    client_id: c.clientId,
+    event_type: c.eventType,
+    event_date: c.eventDate,
+    event_time: c.eventTime,
+    guest_count: c.guestCount,
+    total_value: c.totalValue,
+    deposit_percent: c.depositPercent,
+    deposit_value: depositValue,
+    remaining_value: c.totalValue,
+    status: c.status,
+    payment_status: c.paymentStatus,
+  }).select().single();
+  if (error) throw error;
+  return mapContract(data);
+};
+
+export const updateContract = async (id: string, updates: Record<string, any>) => {
+  // Map camelCase to snake_case
+  const mapped: Record<string, any> = {};
+  const keyMap: Record<string, string> = {
+    clientId: "client_id", eventType: "event_type", eventDate: "event_date",
+    eventTime: "event_time", guestCount: "guest_count", totalValue: "total_value",
+    depositPercent: "deposit_percent", depositValue: "deposit_value",
+    remainingValue: "remaining_value", paymentStatus: "payment_status",
+    cancelledAt: "cancelled_at", cancelledBy: "cancelled_by",
+  };
+  for (const [k, v] of Object.entries(updates)) {
+    mapped[keyMap[k] || k] = v;
+  }
+  const { error } = await supabase.from("contracts").update(mapped).eq("id", id);
+  if (error) throw error;
 };
 
 // PAYMENTS
-export const getPayments = () => get<Payment>("lm_payments");
-export const savePayments = (p: Payment[]) => set("lm_payments", p);
-export const addPayment = (p: Omit<Payment, "id" | "createdAt">): Payment => {
-  const payments = getPayments();
-  const newPayment: Payment = { ...p, id: genId(), createdAt: new Date().toISOString() };
-  payments.push(newPayment);
-  savePayments(payments);
+export const getPayments = async () => {
+  const { data, error } = await supabase.from("payments").select("*").order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data || []).map(mapPayment);
+};
+
+export const addPayment = async (p: { contractId: string; amount: number; date: string; description: string }) => {
+  const userId = await getUserId();
+  const { data, error } = await supabase.from("payments").insert({
+    user_id: userId,
+    contract_id: p.contractId,
+    amount: p.amount,
+    date: p.date,
+    description: p.description,
+  }).select().single();
+  if (error) throw error;
 
   // Update contract remaining value and payment status
-  const contracts = getContracts();
-  const contract = contracts.find((c) => c.id === p.contractId);
-  if (contract) {
-    const totalPaid = payments
-      .filter((pay) => pay.contractId === p.contractId)
-      .reduce((sum, pay) => sum + pay.amount, 0) + p.amount;
-    const remaining = Math.max(0, contract.totalValue - totalPaid);
-    let paymentStatus: Contract["paymentStatus"] = "pending";
+  const allPayments = await supabase.from("payments").select("amount").eq("contract_id", p.contractId);
+  const contractRes = await supabase.from("contracts").select("total_value").eq("id", p.contractId).single();
+  
+  if (allPayments.data && contractRes.data) {
+    const totalPaid = allPayments.data.reduce((s, pay) => s + Number(pay.amount), 0);
+    const remaining = Math.max(0, Number(contractRes.data.total_value) - totalPaid);
+    let paymentStatus = "pending";
     if (remaining <= 0) paymentStatus = "paid_full";
     else if (totalPaid > 0) paymentStatus = "deposit_paid";
-    updateContract(contract.id, { remainingValue: remaining, paymentStatus });
+    await supabase.from("contracts").update({ remaining_value: remaining, payment_status: paymentStatus }).eq("id", p.contractId);
   }
 
-  return newPayment;
+  return mapPayment(data);
 };
 
 // DOCUMENTS
-export const getDocuments = () => get<Document>("lm_documents");
-export const saveDocuments = (d: Document[]) => set("lm_documents", d);
-export const addDocument = (d: Omit<Document, "id" | "createdAt">): Document => {
-  const docs = getDocuments();
-  const newDoc: Document = { ...d, id: genId(), createdAt: new Date().toISOString() };
-  docs.push(newDoc);
-  saveDocuments(docs);
-  return newDoc;
+export const getDocuments = async () => {
+  const { data, error } = await supabase.from("documents").select("*").order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data || []).map(mapDocument);
+};
+
+export const addDocument = async (d: { contractId: string; name: string; type: string; fileName: string }) => {
+  const userId = await getUserId();
+  const { data, error } = await supabase.from("documents").insert({
+    user_id: userId,
+    contract_id: d.contractId,
+    name: d.name,
+    type: d.type,
+    file_name: d.fileName,
+  }).select().single();
+  if (error) throw error;
+  return mapDocument(data);
 };
 
 // EXPENSES
-export const getExpenses = () => get<Expense>("lm_expenses");
-export const saveExpenses = (e: Expense[]) => set("lm_expenses", e);
-export const addExpense = (e: Omit<Expense, "id" | "createdAt">): Expense => {
-  const expenses = getExpenses();
-  const newExpense: Expense = { ...e, id: genId(), createdAt: new Date().toISOString() };
-  expenses.push(newExpense);
-  saveExpenses(expenses);
-  return newExpense;
+export const getExpenses = async () => {
+  const { data, error } = await supabase.from("expenses").select("*").order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data || []).map(mapExpense);
 };
-export const deleteExpense = (id: string) => {
-  saveExpenses(getExpenses().filter((e) => e.id !== id));
+
+export const addExpense = async (e: { description: string; category: string; amount: number; date: string }) => {
+  const userId = await getUserId();
+  const { data, error } = await supabase.from("expenses").insert({ ...e, user_id: userId }).select().single();
+  if (error) throw error;
+  return mapExpense(data);
+};
+
+export const deleteExpense = async (id: string) => {
+  const { error } = await supabase.from("expenses").delete().eq("id", id);
+  if (error) throw error;
 };
 
 // MANUAL ENTRIES
-export const getManualEntries = () => get<ManualEntry>("lm_manual_entries");
-export const saveManualEntries = (e: ManualEntry[]) => set("lm_manual_entries", e);
-export const addManualEntry = (e: Omit<ManualEntry, "id" | "createdAt">): ManualEntry => {
-  const entries = getManualEntries();
-  const newEntry: ManualEntry = { ...e, id: genId(), createdAt: new Date().toISOString() };
-  entries.push(newEntry);
-  saveManualEntries(entries);
-  return newEntry;
+export const getManualEntries = async () => {
+  const { data, error } = await supabase.from("manual_entries").select("*").order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data || []).map(mapManualEntry);
 };
-export const deleteManualEntry = (id: string) => {
-  saveManualEntries(getManualEntries().filter((e) => e.id !== id));
+
+export const addManualEntry = async (e: {
+  description: string; category: string; amount: number; date: string;
+  paymentMethod: string; notes: string;
+}) => {
+  const userId = await getUserId();
+  const { data, error } = await supabase.from("manual_entries").insert({
+    user_id: userId,
+    description: e.description,
+    category: e.category,
+    amount: e.amount,
+    date: e.date,
+    payment_method: e.paymentMethod,
+    notes: e.notes,
+  }).select().single();
+  if (error) throw error;
+  return mapManualEntry(data);
+};
+
+export const deleteManualEntry = async (id: string) => {
+  const { error } = await supabase.from("manual_entries").delete().eq("id", id);
+  if (error) throw error;
 };
 
 // FINANCIAL HELPERS
-export const getTotalEntries = (): number => {
-  const payments = getPayments().reduce((sum, p) => sum + p.amount, 0);
-  const manual = getManualEntries().reduce((sum, e) => sum + e.amount, 0);
-  return payments + manual;
+export const getTotalEntries = async (): Promise<number> => {
+  const payments = await getPayments();
+  const manual = await getManualEntries();
+  return payments.reduce((s, p) => s + p.amount, 0) + manual.reduce((s, e) => s + e.amount, 0);
 };
-export const getTotalExpenses = (): number => {
-  return getExpenses().reduce((sum, e) => sum + e.amount, 0);
+
+export const getTotalExpenses = async (): Promise<number> => {
+  const expenses = await getExpenses();
+  return expenses.reduce((s, e) => s + e.amount, 0);
 };
-export const getBalance = (): number => {
-  return getTotalEntries() - getTotalExpenses();
+
+export const getBalance = async (): Promise<number> => {
+  const totalIn = await getTotalEntries();
+  const totalOut = await getTotalExpenses();
+  return totalIn - totalOut;
 };
+
+// Mappers: snake_case DB rows → camelCase app types
+function mapClient(row: any) {
+  return {
+    id: row.id,
+    name: row.name,
+    cpf: row.cpf || "",
+    phone: row.phone || "",
+    email: row.email || "",
+    address: row.address || "",
+    notes: row.notes || "",
+    createdAt: row.created_at,
+  };
+}
+
+function mapContract(row: any) {
+  return {
+    id: row.id,
+    clientId: row.client_id,
+    eventType: row.event_type,
+    eventDate: row.event_date,
+    eventTime: row.event_time || "",
+    guestCount: Number(row.guest_count),
+    totalValue: Number(row.total_value),
+    depositPercent: Number(row.deposit_percent),
+    depositValue: Number(row.deposit_value),
+    remainingValue: Number(row.remaining_value),
+    status: row.status,
+    paymentStatus: row.payment_status,
+    createdAt: row.created_at,
+    cancelledAt: row.cancelled_at,
+    cancelledBy: row.cancelled_by,
+  };
+}
+
+function mapPayment(row: any) {
+  return {
+    id: row.id,
+    contractId: row.contract_id,
+    amount: Number(row.amount),
+    date: row.date,
+    description: row.description || "",
+    createdAt: row.created_at,
+  };
+}
+
+function mapDocument(row: any) {
+  return {
+    id: row.id,
+    contractId: row.contract_id,
+    name: row.name,
+    type: row.type,
+    fileName: row.file_name || "",
+    createdAt: row.created_at,
+  };
+}
+
+function mapExpense(row: any) {
+  return {
+    id: row.id,
+    description: row.description,
+    category: row.category,
+    amount: Number(row.amount),
+    date: row.date,
+    createdAt: row.created_at,
+  };
+}
+
+function mapManualEntry(row: any) {
+  return {
+    id: row.id,
+    description: row.description,
+    category: row.category,
+    amount: Number(row.amount),
+    date: row.date,
+    paymentMethod: row.payment_method,
+    notes: row.notes || "",
+    createdAt: row.created_at,
+  };
+}

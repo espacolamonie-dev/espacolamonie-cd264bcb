@@ -13,7 +13,7 @@ import {
   getManualEntries, addManualEntry, deleteManualEntry,
   getTotalEntries, getTotalExpenses, getBalance, getContracts, getClients,
 } from "@/data/store";
-import type { Payment, Expense, ExpenseCategory, ManualEntry, ManualEntryCategory, PaymentMethod } from "@/types";
+import type { Payment, Expense, ExpenseCategory, ManualEntry, ManualEntryCategory, PaymentMethod, Contract, Client } from "@/types";
 import EntryFiltersBar, { type EntryFilters, defaultEntryFilters, hasActiveEntryFilters } from "@/components/EntryFiltersBar";
 import ExpenseFiltersBar, { type ExpenseFilters, defaultExpenseFilters, hasActiveExpenseFilters } from "@/components/ExpenseFiltersBar";
 
@@ -35,6 +35,8 @@ export default function Financial() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [manualEntries, setManualEntries] = useState<ManualEntry[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [contracts, setContracts] = useState<Contract[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [globalTotalIn, setGlobalTotalIn] = useState(0);
   const [globalTotalOut, setGlobalTotalOut] = useState(0);
   const [globalBalance, setGlobalBalance] = useState(0);
@@ -51,35 +53,51 @@ export default function Financial() {
     date: new Date().toISOString().split("T")[0], paymentMethod: "Pix" as PaymentMethod, notes: "",
   });
 
-  const load = () => {
-    setPayments(getPayments()); setManualEntries(getManualEntries()); setExpenses(getExpenses());
-    setGlobalTotalIn(getTotalEntries()); setGlobalTotalOut(getTotalExpenses()); setGlobalBalance(getBalance());
+  const load = async () => {
+    try {
+      const [p, m, e, totalIn, totalOut, bal, c, cl] = await Promise.all([
+        getPayments(), getManualEntries(), getExpenses(),
+        getTotalEntries(), getTotalExpenses(), getBalance(),
+        getContracts(), getClients(),
+      ]);
+      setPayments(p); setManualEntries(m); setExpenses(e);
+      setGlobalTotalIn(totalIn); setGlobalTotalOut(totalOut); setGlobalBalance(bal);
+      setContracts(c); setClients(cl);
+    } catch {}
   };
-  useEffect(load, []);
+  useEffect(() => { load(); }, []);
 
   // Handlers
-  const handleAddExpense = () => {
+  const handleAddExpense = async () => {
     if (!expForm.description.trim() || expForm.amount <= 0) { toast.error("Preencha descrição e valor"); return; }
-    addExpense(expForm); toast.success("Despesa registrada com sucesso");
-    setExpOpen(false);
-    setExpForm({ description: "", category: "Outros", amount: 0, date: new Date().toISOString().split("T")[0] });
-    load();
+    try {
+      await addExpense(expForm); toast.success("Despesa registrada com sucesso");
+      setExpOpen(false);
+      setExpForm({ description: "", category: "Outros", amount: 0, date: new Date().toISOString().split("T")[0] });
+      await load();
+    } catch (e: any) { toast.error(e.message); }
   };
-  const handleAddEntry = () => {
+  const handleAddEntry = async () => {
     if (!entryForm.description.trim() || entryForm.amount <= 0) { toast.error("Preencha descrição e valor"); return; }
-    addManualEntry(entryForm); toast.success("Entrada registrada com sucesso");
-    setEntryOpen(false);
-    setEntryForm({ description: "", category: "Outro", amount: 0, date: new Date().toISOString().split("T")[0], paymentMethod: "Pix", notes: "" });
-    load();
+    try {
+      await addManualEntry(entryForm); toast.success("Entrada registrada com sucesso");
+      setEntryOpen(false);
+      setEntryForm({ description: "", category: "Outro", amount: 0, date: new Date().toISOString().split("T")[0], paymentMethod: "Pix", notes: "" });
+      await load();
+    } catch (e: any) { toast.error(e.message); }
   };
-  const handleDeleteExpense = (id: string) => { deleteExpense(id); toast.success("Despesa removida"); load(); };
-  const handleDeleteManualEntry = (id: string) => { deleteManualEntry(id); toast.success("Entrada removida"); load(); };
+  const handleDeleteExpense = async (id: string) => {
+    try { await deleteExpense(id); toast.success("Despesa removida"); await load(); }
+    catch (e: any) { toast.error(e.message); }
+  };
+  const handleDeleteManualEntry = async (id: string) => {
+    try { await deleteManualEntry(id); toast.success("Entrada removida"); await load(); }
+    catch (e: any) { toast.error(e.message); }
+  };
   const setExp = (field: string, value: any) => setExpForm((p) => ({ ...p, [field]: value }));
   const setEntry = (field: string, value: any) => setEntryForm((p) => ({ ...p, [field]: value }));
 
   // Build combined entries
-  const contracts = getContracts();
-  const clients = getClients();
   const contractClientMap = Object.fromEntries(
     contracts.map((c) => [c.id, clients.find((cl) => cl.id === c.clientId)?.name || "—"])
   );
@@ -94,7 +112,7 @@ export default function Financial() {
       amount: e.amount, origin: "manual", originLabel: e.category,
       category: e.category, paymentMethod: e.paymentMethod,
     })),
-  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()), [payments, manualEntries]);
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()), [payments, manualEntries, contractClientMap]);
 
   // Apply entry filters
   const filteredEntries = useMemo(() => {
