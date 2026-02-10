@@ -79,45 +79,39 @@ export const updateContract = async (id: string, updates: Record<string, any>) =
 
   // Handle cancellation — remove associated payments
   if (updates.status === "cancelled") {
-    const userId = await getUserId();
     await supabase.from("payments").delete().eq("contract_id", id);
     mapped.payment_status = "pending";
     mapped.remaining_value = 0;
   }
 
-  // Auto-create payments when payment status changes
-  if (updates.paymentStatus && updates.paymentStatus !== "pending" && updates.status !== "cancelled") {
+  // Payment status changed — always clear and recreate from scratch
+  if (updates.paymentStatus !== undefined && updates.status !== "cancelled") {
+    const userId = await getUserId();
+    // Always remove all existing payments for this contract first
+    await supabase.from("payments").delete().eq("contract_id", id);
+
     const contractRes = await supabase.from("contracts").select("*").eq("id", id).single();
     if (contractRes.data) {
       const contract = mapContract(contractRes.data);
-      const existingPayments = await supabase.from("payments").select("amount").eq("contract_id", id);
-      const totalPaid = (existingPayments.data || []).reduce((s, p) => s + Number(p.amount), 0);
-      const userId = await getUserId();
 
       if (updates.paymentStatus === "deposit_paid") {
         const depositValue = (contract.totalValue * contract.depositPercent) / 100;
-        const alreadyPaidDeposit = totalPaid >= depositValue;
-        if (!alreadyPaidDeposit) {
-          const depositToPay = depositValue - totalPaid;
-          if (depositToPay > 0) {
-            await supabase.from("payments").insert({
-              user_id: userId, contract_id: id, amount: depositToPay,
-              date: new Date().toISOString().split("T")[0],
-              description: "Sinal pago automaticamente",
-            });
-          }
-        }
+        await supabase.from("payments").insert({
+          user_id: userId, contract_id: id, amount: depositValue,
+          date: new Date().toISOString().split("T")[0],
+          description: "Sinal pago automaticamente",
+        });
         mapped.remaining_value = Math.max(0, contract.totalValue - depositValue);
       } else if (updates.paymentStatus === "paid_full") {
-        const remaining = contract.totalValue - totalPaid;
-        if (remaining > 0) {
-          await supabase.from("payments").insert({
-            user_id: userId, contract_id: id, amount: remaining,
-            date: new Date().toISOString().split("T")[0],
-            description: "Pagamento total registrado automaticamente",
-          });
-        }
+        await supabase.from("payments").insert({
+          user_id: userId, contract_id: id, amount: contract.totalValue,
+          date: new Date().toISOString().split("T")[0],
+          description: "Pagamento total registrado automaticamente",
+        });
         mapped.remaining_value = 0;
+      } else if (updates.paymentStatus === "pending") {
+        // All payments already deleted above
+        mapped.remaining_value = contract.totalValue;
       }
     }
   }
