@@ -1,4 +1,4 @@
-import { Client, Contract, Payment, Document, Expense } from "@/types";
+import { Client, Contract, Payment, Document, Expense, ManualEntry } from "@/types";
 
 const get = <T>(key: string): T[] => {
   try {
@@ -105,9 +105,25 @@ export const deleteExpense = (id: string) => {
   saveExpenses(getExpenses().filter((e) => e.id !== id));
 };
 
+// MANUAL ENTRIES
+export const getManualEntries = () => get<ManualEntry>("lm_manual_entries");
+export const saveManualEntries = (e: ManualEntry[]) => set("lm_manual_entries", e);
+export const addManualEntry = (e: Omit<ManualEntry, "id" | "createdAt">): ManualEntry => {
+  const entries = getManualEntries();
+  const newEntry: ManualEntry = { ...e, id: genId(), createdAt: new Date().toISOString() };
+  entries.push(newEntry);
+  saveManualEntries(entries);
+  return newEntry;
+};
+export const deleteManualEntry = (id: string) => {
+  saveManualEntries(getManualEntries().filter((e) => e.id !== id));
+};
+
 // FINANCIAL HELPERS
 export const getTotalEntries = (): number => {
-  return getPayments().reduce((sum, p) => sum + p.amount, 0);
+  const payments = getPayments().reduce((sum, p) => sum + p.amount, 0);
+  const manual = getManualEntries().reduce((sum, e) => sum + e.amount, 0);
+  return payments + manual;
 };
 export const getTotalExpenses = (): number => {
   return getExpenses().reduce((sum, e) => sum + e.amount, 0);
