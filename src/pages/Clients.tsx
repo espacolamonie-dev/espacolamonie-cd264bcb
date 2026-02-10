@@ -18,8 +18,10 @@ export default function Clients() {
   const [editing, setEditing] = useState<Client | null>(null);
   const [form, setForm] = useState(emptyForm);
 
-  const load = () => setClients(getClients());
-  useEffect(load, []);
+  const load = async () => {
+    try { setClients(await getClients()); } catch {}
+  };
+  useEffect(() => { load(); }, []);
 
   const filtered = clients.filter(
     (c) =>
@@ -35,14 +37,20 @@ export default function Clients() {
     setOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name.trim()) { toast.error("Preencha o nome do cliente"); return; }
-    if (editing) { updateClient(editing.id, form); toast.success("Informações salvas com sucesso"); }
-    else { addClient(form); toast.success("Cliente cadastrado com sucesso"); }
-    setOpen(false); load();
+    try {
+      if (editing) { await updateClient(editing.id, form); toast.success("Informações salvas com sucesso"); }
+      else { await addClient(form); toast.success("Cliente cadastrado com sucesso"); }
+      setOpen(false); await load();
+    } catch (e: any) { toast.error(e.message); }
   };
 
-  const handleDelete = (id: string) => { deleteClient(id); toast.success("Cliente removido"); load(); };
+  const handleDelete = async (id: string) => {
+    try { await deleteClient(id); toast.success("Cliente removido"); await load(); }
+    catch (e: any) { toast.error(e.message); }
+  };
+
   const set = (field: string, value: string) => setForm((p) => ({ ...p, [field]: value }));
 
   return (

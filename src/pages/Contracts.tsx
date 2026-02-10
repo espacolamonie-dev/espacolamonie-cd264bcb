@@ -31,8 +31,13 @@ export default function Contracts() {
   const [form, setForm] = useState(emptyForm);
   const [detailId, setDetailId] = useState<string | null>(null);
 
-  const load = () => { setContracts(getContracts()); setClients(getClients()); };
-  useEffect(load, []);
+  const load = async () => {
+    try {
+      const [c, cl] = await Promise.all([getContracts(), getClients()]);
+      setContracts(c); setClients(cl);
+    } catch {}
+  };
+  useEffect(() => { load(); }, []);
 
   const clientMap = Object.fromEntries(clients.map((c) => [c.id, c]));
 
@@ -57,11 +62,13 @@ export default function Contracts() {
     setOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.clientId || !form.eventDate) { toast.error("Cliente e data são obrigatórios"); return; }
-    if (editing) { updateContract(editing.id, form); toast.success("Informações salvas com sucesso"); }
-    else { addContract(form); toast.success("Contrato criado com sucesso"); }
-    setOpen(false); load();
+    try {
+      if (editing) { await updateContract(editing.id, form); toast.success("Informações salvas com sucesso"); }
+      else { await addContract(form); toast.success("Contrato criado com sucesso"); }
+      setOpen(false); await load();
+    } catch (e: any) { toast.error(e.message); }
   };
 
   const set = (field: string, value: any) => setForm((p) => ({ ...p, [field]: value }));
