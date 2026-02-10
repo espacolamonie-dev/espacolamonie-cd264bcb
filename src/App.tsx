@@ -8,6 +8,7 @@ import Dashboard from "@/pages/Dashboard";
 import Clients from "@/pages/Clients";
 import Contracts from "@/pages/Contracts";
 import Financial from "@/pages/Financial";
+import Agenda from "@/pages/Agenda";
 import Auth from "@/pages/Auth";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "@/hooks/useAuth";
@@ -68,6 +69,7 @@ const App = () => (
                     <Route path="/clients" element={<Clients />} />
                     <Route path="/contracts" element={<Contracts />} />
                     <Route path="/financial" element={<Financial />} />
+                    <Route path="/agenda" element={<Agenda />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Layout>

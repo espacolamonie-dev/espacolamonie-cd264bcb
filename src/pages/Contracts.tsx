@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Search, Eye, Pencil } from "lucide-react";
+import { Plus, Search, Eye, Pencil, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -12,6 +12,7 @@ import type { Contract, ContractStatus, EventType, Client } from "@/types";
 import ContractDetailModal from "@/components/ContractDetailModal";
 import { ContractStatusSelect, PaymentStatusSelect } from "@/components/ContractStatusSelect";
 import { NumericInput } from "@/components/NumericInput";
+import ImportContractModal from "@/components/ImportContractModal";
 
 const EVENT_TYPES: EventType[] = [
   "Aniversário Adulto", "Aniversário Infantil", "Casamento", "Confraternização", "Evento Corporativo",
@@ -32,6 +33,7 @@ export default function Contracts() {
   const [editing, setEditing] = useState<Contract | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   const load = async () => {
     try {
@@ -66,6 +68,17 @@ export default function Contracts() {
 
   const handleSave = async () => {
     if (!form.clientId || !form.eventDate) { toast.error("Cliente e data são obrigatórios"); return; }
+    // Date blocking: check if date is already taken by active contract
+    if (!editing || form.eventDate !== editing.eventDate) {
+      const conflict = contracts.find(
+        (c) => c.eventDate === form.eventDate && c.status !== "cancelled" && c.id !== editing?.id
+      );
+      if (conflict) {
+        const conflictClient = clientMap[conflict.clientId]?.name || "outro evento";
+        toast.error(`Data bloqueada! Já existe um evento em ${new Date(form.eventDate).toLocaleDateString("pt-BR")} (${conflictClient})`);
+        return;
+      }
+    }
     try {
       if (editing) {
         // Check if payment status changed — handle auto-payment
@@ -94,9 +107,14 @@ export default function Contracts() {
           <h1 className="text-3xl font-display font-semibold tracking-tight">Contratos</h1>
           <p className="text-sm text-muted-foreground mt-1">Gestão de contratos e eventos</p>
         </div>
-        <Button onClick={openNew} size="sm" className="gap-2 h-9">
-          <Plus size={15} /> Novo contrato
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" className="gap-2 h-9" onClick={() => setImportOpen(true)}>
+            <Upload size={15} /> Importar PDF
+          </Button>
+          <Button onClick={openNew} size="sm" className="gap-2 h-9">
+            <Plus size={15} /> Novo contrato
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-3">
@@ -251,6 +269,8 @@ export default function Contracts() {
       </Dialog>
 
       {detailId && <ContractDetailModal contractId={detailId} onClose={() => { setDetailId(null); load(); }} />}
+
+      <ImportContractModal open={importOpen} onOpenChange={setImportOpen} onImported={load} />
     </div>
   );
 }

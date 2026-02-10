@@ -4,6 +4,7 @@ import {
   Users,
   FileText,
   CreditCard,
+  CalendarDays,
   Menu,
   X,
   LogOut,
@@ -17,6 +18,7 @@ const navItems = [
   { to: "/clients", label: "Clientes", icon: Users },
   { to: "/contracts", label: "Contratos", icon: FileText },
   { to: "/financial", label: "Financeiro", icon: CreditCard },
+  { to: "/agenda", label: "Agenda", icon: CalendarDays },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
