@@ -8,15 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
-  getPayments,
-  getExpenses,
-  addExpense,
-  deleteExpense,
-  getTotalEntries,
-  getTotalExpenses,
-  getBalance,
-  getContracts,
-  getClients,
+  getPayments, getExpenses, addExpense, deleteExpense,
+  getTotalEntries, getTotalExpenses, getBalance, getContracts, getClients,
 } from "@/data/store";
 import type { Payment, Expense, ExpenseCategory } from "@/types";
 
@@ -24,8 +17,7 @@ const CATEGORIES: ExpenseCategory[] = [
   "Luz", "Água", "Funcionários", "Manutenção", "Compras", "Marketing", "Outros",
 ];
 
-const fmt = (v: number) =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 export default function Financial() {
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -35,42 +27,27 @@ export default function Financial() {
   const [balance, setBalance] = useState(0);
   const [open, setOpen] = useState(false);
   const [expForm, setExpForm] = useState({
-    description: "",
-    category: "Outros" as ExpenseCategory,
-    amount: 0,
+    description: "", category: "Outros" as ExpenseCategory, amount: 0,
     date: new Date().toISOString().split("T")[0],
   });
 
   const load = () => {
-    setPayments(getPayments());
-    setExpenses(getExpenses());
-    setTotalIn(getTotalEntries());
-    setTotalOut(getTotalExpenses());
-    setBalance(getBalance());
+    setPayments(getPayments()); setExpenses(getExpenses());
+    setTotalIn(getTotalEntries()); setTotalOut(getTotalExpenses()); setBalance(getBalance());
   };
   useEffect(load, []);
 
   const handleAddExpense = () => {
-    if (!expForm.description.trim() || expForm.amount <= 0) {
-      toast.error("Preencha descrição e valor");
-      return;
-    }
-    addExpense(expForm);
-    toast.success("Despesa registrada!");
+    if (!expForm.description.trim() || expForm.amount <= 0) { toast.error("Preencha descrição e valor"); return; }
+    addExpense(expForm); toast.success("Despesa registrada!");
     setOpen(false);
     setExpForm({ description: "", category: "Outros", amount: 0, date: new Date().toISOString().split("T")[0] });
     load();
   };
 
-  const handleDeleteExpense = (id: string) => {
-    deleteExpense(id);
-    toast.success("Despesa excluída");
-    load();
-  };
-
+  const handleDeleteExpense = (id: string) => { deleteExpense(id); toast.success("Despesa excluída"); load(); };
   const set = (field: string, value: any) => setExpForm((p) => ({ ...p, [field]: value }));
 
-  // Get contract/client info for payment descriptions
   const contracts = getContracts();
   const clients = getClients();
   const contractClientMap = Object.fromEntries(
@@ -78,46 +55,34 @@ export default function Financial() {
   );
 
   return (
-    <div className="animate-fade-in space-y-4">
+    <div className="animate-fade-in space-y-6">
       <div>
-        <h1 className="text-2xl font-bold font-display">Financeiro</h1>
-        <p className="text-sm text-muted-foreground">Controle de entradas e saídas</p>
+        <h1 className="text-3xl font-display font-semibold tracking-tight">Financeiro</h1>
+        <p className="text-sm text-muted-foreground mt-1">Controle de entradas e saídas</p>
       </div>
 
       {/* Summary */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border bg-card p-4 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-success/15 p-2.5">
-              <TrendingUp size={20} className="text-success" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Total Entradas</p>
-              <p className="text-lg font-semibold">{fmt(totalIn)}</p>
-            </div>
+        <div className="stat-card">
+          <div className="flex items-center gap-2 mb-2">
+            <TrendingUp size={14} className="text-success" />
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Total Entradas</p>
           </div>
+          <p className="text-xl font-semibold text-success tracking-tight">{fmt(totalIn)}</p>
         </div>
-        <div className="rounded-xl border bg-card p-4 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-warning/15 p-2.5">
-              <TrendingDown size={20} className="text-warning" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Total Saídas</p>
-              <p className="text-lg font-semibold">{fmt(totalOut)}</p>
-            </div>
+        <div className="stat-card">
+          <div className="flex items-center gap-2 mb-2">
+            <TrendingDown size={14} className="text-danger" />
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Total Saídas</p>
           </div>
+          <p className="text-xl font-semibold text-danger tracking-tight">{fmt(totalOut)}</p>
         </div>
-        <div className="rounded-xl border bg-card p-4 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className={`rounded-lg p-2.5 ${balance >= 0 ? "bg-primary/15" : "bg-danger/15"}`}>
-              <Wallet size={20} className={balance >= 0 ? "text-primary" : "text-danger"} />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Saldo Atual</p>
-              <p className="text-lg font-semibold">{fmt(balance)}</p>
-            </div>
+        <div className="stat-card !border-primary/20">
+          <div className="flex items-center gap-2 mb-2">
+            <Wallet size={14} className="text-primary" />
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Saldo Atual</p>
           </div>
+          <p className={`text-xl font-semibold tracking-tight ${balance >= 0 ? "text-primary" : "text-danger"}`}>{fmt(balance)}</p>
         </div>
       </div>
 
@@ -129,30 +94,26 @@ export default function Financial() {
         </TabsList>
 
         <TabsContent value="entries">
-          <div className="rounded-xl border bg-card shadow-sm overflow-x-auto">
-            <table className="w-full text-sm">
+          <div className="rounded-lg border border-border/60 bg-card overflow-x-auto">
+            <table className="table-premium">
               <thead>
-                <tr className="border-b bg-muted/50">
-                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">Data</th>
-                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">Cliente</th>
-                  <th className="px-4 py-3 text-left font-medium text-muted-foreground hidden sm:table-cell">Descrição</th>
-                  <th className="px-4 py-3 text-right font-medium text-muted-foreground">Valor</th>
+                <tr>
+                  <th>Data</th>
+                  <th>Cliente</th>
+                  <th className="hidden sm:table-cell">Descrição</th>
+                  <th className="text-right">Valor</th>
                 </tr>
               </thead>
-              <tbody className="divide-y">
+              <tbody>
                 {payments.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">
-                      Nenhuma entrada registrada
-                    </td>
-                  </tr>
+                  <tr><td colSpan={4} className="!py-10 text-center text-muted-foreground">Nenhuma entrada registrada</td></tr>
                 ) : (
                   payments.map((p) => (
-                    <tr key={p.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="px-4 py-3">{new Date(p.date).toLocaleDateString("pt-BR")}</td>
-                      <td className="px-4 py-3 font-medium">{contractClientMap[p.contractId] || "—"}</td>
-                      <td className="px-4 py-3 hidden sm:table-cell">{p.description}</td>
-                      <td className="px-4 py-3 text-right font-medium text-success">{fmt(p.amount)}</td>
+                    <tr key={p.id}>
+                      <td className="text-muted-foreground tabular-nums">{new Date(p.date).toLocaleDateString("pt-BR")}</td>
+                      <td className="font-medium">{contractClientMap[p.contractId] || "—"}</td>
+                      <td className="hidden sm:table-cell text-muted-foreground">{p.description}</td>
+                      <td className="text-right font-medium text-success tabular-nums">{fmt(p.amount)}</td>
                     </tr>
                   ))
                 )}
@@ -163,40 +124,36 @@ export default function Financial() {
 
         <TabsContent value="expenses">
           <div className="flex justify-end mb-3">
-            <Button onClick={() => setOpen(true)} className="gap-2">
-              <Plus size={16} /> Nova Despesa
+            <Button onClick={() => setOpen(true)} size="sm" className="gap-2 h-9">
+              <Plus size={15} /> Nova Despesa
             </Button>
           </div>
-          <div className="rounded-xl border bg-card shadow-sm overflow-x-auto">
-            <table className="w-full text-sm">
+          <div className="rounded-lg border border-border/60 bg-card overflow-x-auto">
+            <table className="table-premium">
               <thead>
-                <tr className="border-b bg-muted/50">
-                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">Data</th>
-                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">Descrição</th>
-                  <th className="px-4 py-3 text-left font-medium text-muted-foreground hidden sm:table-cell">Categoria</th>
-                  <th className="px-4 py-3 text-right font-medium text-muted-foreground">Valor</th>
-                  <th className="px-4 py-3 text-right font-medium text-muted-foreground">Ações</th>
+                <tr>
+                  <th>Data</th>
+                  <th>Descrição</th>
+                  <th className="hidden sm:table-cell">Categoria</th>
+                  <th className="text-right">Valor</th>
+                  <th className="text-right">Ações</th>
                 </tr>
               </thead>
-              <tbody className="divide-y">
+              <tbody>
                 {expenses.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
-                      Nenhuma despesa registrada
-                    </td>
-                  </tr>
+                  <tr><td colSpan={5} className="!py-10 text-center text-muted-foreground">Nenhuma despesa registrada</td></tr>
                 ) : (
                   expenses.map((e) => (
-                    <tr key={e.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="px-4 py-3">{new Date(e.date).toLocaleDateString("pt-BR")}</td>
-                      <td className="px-4 py-3 font-medium">{e.description}</td>
-                      <td className="px-4 py-3 hidden sm:table-cell">
-                        <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs">{e.category}</span>
+                    <tr key={e.id}>
+                      <td className="text-muted-foreground tabular-nums">{new Date(e.date).toLocaleDateString("pt-BR")}</td>
+                      <td className="font-medium">{e.description}</td>
+                      <td className="hidden sm:table-cell">
+                        <span className="rounded-full bg-muted px-2.5 py-0.5 text-[10px] font-medium text-muted-foreground">{e.category}</span>
                       </td>
-                      <td className="px-4 py-3 text-right font-medium text-danger">{fmt(e.amount)}</td>
-                      <td className="px-4 py-3 text-right">
-                        <Button variant="ghost" size="icon" onClick={() => handleDeleteExpense(e.id)}>
-                          <Trash2 size={15} className="text-destructive" />
+                      <td className="text-right font-medium text-danger tabular-nums">{fmt(e.amount)}</td>
+                      <td className="text-right">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteExpense(e.id)}>
+                          <Trash2 size={14} />
                         </Button>
                       </td>
                     </tr>
@@ -208,36 +165,31 @@ export default function Financial() {
         </TabsContent>
       </Tabs>
 
-      {/* New Expense Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-display">Nova Despesa</DialogTitle>
+            <DialogTitle className="font-display text-xl">Nova Despesa</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-2">
             <div className="grid gap-1.5">
-              <Label>Descrição *</Label>
+              <Label className="text-xs font-medium text-muted-foreground">Descrição *</Label>
               <Input value={expForm.description} onChange={(e) => set("description", e.target.value)} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-1.5">
-                <Label>Categoria</Label>
+                <Label className="text-xs font-medium text-muted-foreground">Categoria</Label>
                 <Select value={expForm.category} onValueChange={(v) => set("category", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {CATEGORIES.map((c) => (
-                      <SelectItem key={c} value={c}>{c}</SelectItem>
-                    ))}
-                  </SelectContent>
+                  <SelectContent>{CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="grid gap-1.5">
-                <Label>Valor (R$)</Label>
+                <Label className="text-xs font-medium text-muted-foreground">Valor (R$)</Label>
                 <Input type="number" value={expForm.amount} onChange={(e) => set("amount", +e.target.value)} />
               </div>
             </div>
             <div className="grid gap-1.5">
-              <Label>Data</Label>
+              <Label className="text-xs font-medium text-muted-foreground">Data</Label>
               <Input type="date" value={expForm.date} onChange={(e) => set("date", e.target.value)} />
             </div>
             <Button onClick={handleAddExpense} className="mt-2">Registrar Despesa</Button>
