@@ -26,7 +26,7 @@ export default function ContractDetailModal({ contractId, onClose }: Props) {
   const [docs, setDocs] = useState<Document[]>([]);
   const [payForm, setPayForm] = useState({ amount: 0, date: new Date().toISOString().split("T")[0], description: "" });
   const [uploading, setUploading] = useState(false);
-  const [docType, setDocType] = useState<string>("other");
+  const [docType, setDocType] = useState<string>("outro");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const load = async () => {
@@ -73,7 +73,7 @@ export default function ContractDetailModal({ contractId, onClose }: Props) {
     try {
       await addDocument({ contractId, name: file.name, type: docType, file });
       toast.success("Documento enviado com sucesso");
-      setDocType("other");
+      setDocType("outro");
       await load();
     } catch (err: any) {
       toast.error(err.message || "Erro ao enviar documento");
@@ -240,11 +240,11 @@ export default function ContractDetailModal({ contractId, onClose }: Props) {
                     <Select value={docType} onValueChange={setDocType}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="rg">RG</SelectItem>
-                        <SelectItem value="cpf">CPF</SelectItem>
-                        <SelectItem value="contract">Contrato</SelectItem>
-                        <SelectItem value="receipt">Recibo</SelectItem>
-                        <SelectItem value="other">Outro</SelectItem>
+                        <SelectItem value="identidade">Identidade</SelectItem>
+                        <SelectItem value="cnh">CNH</SelectItem>
+                        <SelectItem value="contrato">Contrato</SelectItem>
+                        <SelectItem value="recibo">Recibo</SelectItem>
+                        <SelectItem value="outro">Outro</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
