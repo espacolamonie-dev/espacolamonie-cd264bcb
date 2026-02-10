@@ -2,11 +2,24 @@ import { useEffect, useState } from "react";
 import {
   FileText, CheckCircle, Clock, CalendarDays, TrendingUp, TrendingDown, Wallet,
 } from "lucide-react";
-import { getContracts, getClients, getTotalEntries, getTotalExpenses, getBalance } from "@/data/store";
+import { getContracts, getClients, getTotalEntries, getTotalExpenses, getBalance, getActivePayments, getManualEntries, getExpenses } from "@/data/store";
 import type { Contract } from "@/types";
 import { PAYMENT_STATUS_LABELS, PAYMENT_STATUS_COLORS } from "@/types";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, AreaChart, Area,
+} from "recharts";
+import { format, parseISO, startOfMonth, subMonths, isBefore } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+interface MonthlyData {
+  month: string;
+  label: string;
+  entradas: number;
+  saidas: number;
+  saldo: number;
+}
 
 export default function Dashboard() {
   const [contracts, setContracts] = useState<Contract[]>([]);
@@ -16,12 +29,14 @@ export default function Dashboard() {
   const [confirmed, setConfirmed] = useState(0);
   const [awaiting, setAwaiting] = useState(0);
   const [futureCount, setFutureCount] = useState(0);
+  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [allContracts, clients, totalIn, totalOut, balance] = await Promise.all([
+        const [allContracts, clients, totalIn, totalOut, balance, activePayments, manualEntries, expenses] = await Promise.all([
           getContracts(), getClients(), getTotalEntries(), getTotalExpenses(), getBalance(),
+          getActivePayments(), getManualEntries(), getExpenses(),
         ]);
 
         const active = allContracts.filter((c) => c.status !== "cancelled");
@@ -55,10 +70,46 @@ export default function Dashboard() {
             .slice(0, 5)
             .map((c) => ({ ...c, clientName: clientMap[c.clientId] || "—" }))
         );
+
+        // Build monthly data (last 6 months)
+        const now = new Date();
+        const months: MonthlyData[] = [];
+        for (let i = 5; i >= 0; i--) {
+          const monthStart = startOfMonth(subMonths(now, i));
+          const monthEnd = startOfMonth(subMonths(now, i - 1));
+          const label = format(monthStart, "MMM yy", { locale: ptBR });
+
+          const monthEntries = activePayments.filter((p) => {
+            const d = parseISO(p.date);
+            return !isBefore(d, monthStart) && isBefore(d, monthEnd);
+          }).reduce((s, p) => s + p.amount, 0);
+
+          const monthManual = manualEntries.filter((e) => {
+            const d = parseISO(e.date);
+            return !isBefore(d, monthStart) && isBefore(d, monthEnd);
+          }).reduce((s, e) => s + e.amount, 0);
+
+          const monthExp = expenses.filter((e) => {
+            const d = parseISO(e.date);
+            return !isBefore(d, monthStart) && isBefore(d, monthEnd);
+          }).reduce((s, e) => s + e.amount, 0);
+
+          const entradas = monthEntries + monthManual;
+          months.push({
+            month: format(monthStart, "yyyy-MM"),
+            label,
+            entradas,
+            saidas: monthExp,
+            saldo: entradas - monthExp,
+          });
+        }
+        setMonthlyData(months);
       } catch {}
     };
     loadData();
   }, []);
+
+  const tooltipFormatter = (value: number) => fmt(value);
 
   return (
     <div className="animate-fade-in space-y-8">
@@ -133,6 +184,55 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Charts */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="rounded-lg border border-border/60 bg-card p-5">
+          <h2 className="font-display text-lg font-semibold mb-4">Entradas vs Saídas</h2>
+          <div className="h-[260px]">
+            {monthlyData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlyData} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={{ stroke: "hsl(var(--border))" }} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)} />
+                  <Tooltip formatter={tooltipFormatter} contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }} labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600 }} />
+                  <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }} />
+                  <Bar dataKey="entradas" name="Entradas" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="saidas" name="Saídas" fill="hsl(var(--danger))" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Sem dados para exibir</div>
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-border/60 bg-card p-5">
+          <h2 className="font-display text-lg font-semibold mb-4">Evolução do Saldo</h2>
+          <div className="h-[260px]">
+            {monthlyData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={monthlyData} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="saldoGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={{ stroke: "hsl(var(--border))" }} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)} />
+                  <Tooltip formatter={tooltipFormatter} contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }} labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600 }} />
+                  <Area type="monotone" dataKey="saldo" name="Saldo" stroke="hsl(var(--primary))" fill="url(#saldoGradient)" strokeWidth={2} />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Sem dados para exibir</div>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Bottom grid */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Upcoming events */}
@@ -143,9 +243,7 @@ export default function Dashboard() {
           </div>
           <div className="border-t border-border/40">
             {upcoming.length === 0 ? (
-              <p className="px-5 py-10 text-center text-sm text-muted-foreground">
-                Nenhum evento futuro cadastrado
-              </p>
+              <p className="px-5 py-10 text-center text-sm text-muted-foreground">Nenhum evento futuro cadastrado</p>
             ) : (
               <div className="divide-y divide-border/40">
                 {upcoming.map((ev) => (
@@ -158,9 +256,7 @@ export default function Dashboard() {
                       <p className="text-xs text-muted-foreground">{ev.eventType}</p>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-sm font-medium tabular-nums">
-                        {new Date(ev.eventDate).toLocaleDateString("pt-BR")}
-                      </p>
+                      <p className="text-sm font-medium tabular-nums">{new Date(ev.eventDate).toLocaleDateString("pt-BR")}</p>
                       <p className="text-xs text-muted-foreground">{ev.eventTime}</p>
                     </div>
                   </div>
@@ -178,9 +274,7 @@ export default function Dashboard() {
           </div>
           <div className="border-t border-border/40">
             {pendingPayments.length === 0 ? (
-              <p className="px-5 py-10 text-center text-sm text-muted-foreground">
-                Todos os pagamentos estão em dia
-              </p>
+              <p className="px-5 py-10 text-center text-sm text-muted-foreground">Todos os pagamentos estão em dia</p>
             ) : (
               <div className="divide-y divide-border/40">
                 {pendingPayments.map((c) => (
