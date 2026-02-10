@@ -4,7 +4,6 @@ import {
   Users,
   FileText,
   CreditCard,
-  Wallet,
   Menu,
   X,
 } from "lucide-react";
@@ -27,36 +26,42 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Mobile overlay */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-foreground/40 md:hidden"
+          className="fixed inset-0 z-40 bg-foreground/30 backdrop-blur-sm md:hidden"
           onClick={() => setMobileOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <aside
-        className={`sidebar-gradient fixed inset-y-0 left-0 z-50 flex w-64 flex-col transition-transform duration-300 md:relative md:translate-x-0 ${
+        className={`sidebar-gradient fixed inset-y-0 left-0 z-50 flex w-60 flex-col transition-transform duration-300 md:relative md:translate-x-0 ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {/* Logo */}
-        <div className="flex items-center gap-3 border-b border-sidebar-border px-5 py-5">
-          <img src={logo} alt="Lamoniê" className="h-12 w-12 rounded-full object-cover bg-card/10" />
-          <div>
-            <h1 className="font-display text-lg font-semibold text-sidebar-foreground">
+        <div className="flex items-center gap-3 px-5 py-6">
+          <img
+            src={logo}
+            alt="Lamoniê"
+            className="h-10 w-10 rounded-full object-cover ring-1 ring-sidebar-border"
+          />
+          <div className="min-w-0">
+            <h1 className="font-display text-xl font-semibold tracking-tight text-sidebar-foreground leading-tight">
               Espaço Lamoniê
             </h1>
-            <p className="text-xs text-sidebar-foreground/60">CRM</p>
           </div>
           <button
-            className="ml-auto text-sidebar-foreground/60 md:hidden"
+            className="ml-auto text-sidebar-foreground/50 hover:text-sidebar-foreground md:hidden"
             onClick={() => setMobileOpen(false)}
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
+        {/* Divider */}
+        <div className="mx-5 border-t border-sidebar-border/50" />
+
         {/* Nav */}
-        <nav className="flex-1 space-y-1 px-3 py-4">
+        <nav className="flex-1 space-y-0.5 px-3 py-5">
           {navItems.map((item) => {
             const active = location.pathname === item.to;
             return (
@@ -64,13 +69,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 key={item.to}
                 to={item.to}
                 onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-[13px] font-medium transition-all duration-150 ${
                   active
                     ? "bg-sidebar-accent text-sidebar-primary"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                    : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/40"
                 }`}
               >
-                <item.icon size={18} />
+                <item.icon size={17} strokeWidth={active ? 2 : 1.5} />
                 {item.label}
               </Link>
             );
@@ -78,28 +83,27 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </nav>
 
         {/* Footer */}
-        <div className="border-t border-sidebar-border px-5 py-4">
-          <div className="flex items-center gap-2">
-            <Wallet size={16} className="text-sidebar-primary" />
-            <span className="text-xs text-sidebar-foreground/60">Saldo do Espaço</span>
-          </div>
+        <div className="px-5 py-4">
+          <p className="text-[11px] text-sidebar-foreground/30 tracking-wide uppercase">
+            Espaço Lamoniê © 2025
+          </p>
         </div>
       </aside>
 
       {/* Main */}
       <main className="flex-1 min-w-0">
         {/* Top bar */}
-        <header className="flex items-center gap-4 border-b px-4 py-3 md:px-6">
+        <header className="flex items-center gap-4 border-b border-border/60 px-5 py-3 md:px-8">
           <button
-            className="text-muted-foreground md:hidden"
+            className="text-muted-foreground hover:text-foreground md:hidden"
             onClick={() => setMobileOpen(true)}
           >
-            <Menu size={22} />
+            <Menu size={20} />
           </button>
           <div className="flex-1" />
         </header>
 
-        <div className="p-4 md:p-6">{children}</div>
+        <div className="p-5 md:p-8 max-w-[1400px]">{children}</div>
       </main>
     </div>
   );
