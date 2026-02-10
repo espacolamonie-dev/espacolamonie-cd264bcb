@@ -19,13 +19,11 @@ export type ContractStatus =
 export type PaymentStatus = "pending" | "deposit_paid" | "paid_full";
 
 export type EventType =
+  | "Aniversário Adulto"
   | "Aniversário Infantil"
   | "Casamento"
-  | "Debutante"
-  | "Formatura"
   | "Confraternização"
-  | "Chá de Bebê"
-  | "Outro";
+  | "Evento Corporativo";
 
 export interface Contract {
   id: string;

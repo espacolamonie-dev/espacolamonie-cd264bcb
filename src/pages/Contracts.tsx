@@ -12,7 +12,7 @@ import type { Contract, ContractStatus, EventType, Client } from "@/types";
 import ContractDetailModal from "@/components/ContractDetailModal";
 
 const EVENT_TYPES: EventType[] = [
-  "Aniversário Infantil", "Casamento", "Debutante", "Formatura", "Confraternização", "Chá de Bebê", "Outro",
+  "Aniversário Adulto", "Aniversário Infantil", "Casamento", "Confraternização", "Evento Corporativo",
 ];
 
 const emptyForm = {
