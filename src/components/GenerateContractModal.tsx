@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { FileText, Send, CheckCircle, Phone } from "lucide-react";
+import { FileText, Send, CheckCircle, Phone, Download } from "lucide-react";
 import { jsPDF } from "jspdf";
 import { addDocumentFromBlob, updateContract } from "@/data/store";
 import type { Contract, Client } from "@/types";
@@ -130,12 +130,37 @@ __________________________________
 LOCADOR`;
 }
 
-function generatePDF(contract: Contract, client: Client): Blob {
+async function loadLogoBase64(): Promise<string> {
+  const res = await fetch("/images/logo-lamonie.png");
+  const blob = await res.blob();
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function generatePDF(contract: Contract, client: Client): Promise<Blob> {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 20;
   const usableWidth = pageWidth - margin * 2;
   let y = 25;
+
+  // Add watermark logo on every page
+  const logoBase64 = await loadLogoBase64();
+  const addWatermark = () => {
+    const logoSize = 100;
+    const cx = (pageWidth - logoSize) / 2;
+    const cy = (pageHeight - logoSize) / 2;
+    doc.saveGraphicsState();
+    // @ts-ignore - jsPDF supports GState
+    doc.setGState(new doc.GState({ opacity: 0.06 }));
+    doc.addImage(logoBase64, "PNG", cx, cy, logoSize, logoSize);
+    doc.restoreGraphicsState();
+  };
+  addWatermark();
 
   const addText = (text: string, opts?: { bold?: boolean; size?: number; center?: boolean; indent?: number }) => {
     const size = opts?.size || 11;
@@ -165,7 +190,7 @@ function generatePDF(contract: Contract, client: Client): Blob {
   };
 
   const addSpace = (h = 4) => { y += h; };
-  const checkPage = () => { if (y > 270) { doc.addPage(); y = 20; } };
+  const checkPage = () => { if (y > 270) { doc.addPage(); addWatermark(); y = 20; } };
 
   const depositValue = (contract.totalValue * contract.depositPercent) / 100;
   const remainingPercent = 100 - contract.depositPercent;
@@ -330,7 +355,7 @@ export default function GenerateContractModal({ contract, client, open, onOpenCh
   const handleGenerate = async () => {
     setGenerating(true);
     try {
-      const blob = generatePDF(contract, client);
+      const blob = await generatePDF(contract, client);
       const file = new File([blob], fileName, { type: "application/pdf" });
 
       await addDocumentFromBlob({
@@ -365,6 +390,21 @@ export default function GenerateContractModal({ contract, client, open, onOpenCh
     );
     window.open(`https://wa.me/${phoneWithCountry}?text=${message}`, "_blank");
     toast.success("WhatsApp aberto para envio do contrato");
+  };
+
+  const handleDownload = async () => {
+    try {
+      const blob = await generatePDF(contract, client);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Download iniciado!");
+    } catch {
+      toast.error("Erro ao baixar o contrato");
+    }
   };
 
   const handleClose = () => {
@@ -439,7 +479,11 @@ export default function GenerateContractModal({ contract, client, open, onOpenCh
               </div>
             </div>
 
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
+              <Button onClick={handleDownload} variant="outline" className="gap-2">
+                <Download size={14} />
+                Baixar PDF
+              </Button>
               <Button onClick={handleClose}>Fechar</Button>
             </div>
           </div>
