@@ -161,6 +161,10 @@ export const getDocuments = async () => {
   return (data || []).map(mapDocument);
 };
 
+export const addDocumentFromBlob = async (d: { contractId: string; name: string; type: string; file: File }) => {
+  return addDocument(d);
+};
+
 export const addDocument = async (d: { contractId: string; name: string; type: string; file: File }) => {
   const userId = await getUserId();
   const fileExt = d.file.name.split(".").pop();

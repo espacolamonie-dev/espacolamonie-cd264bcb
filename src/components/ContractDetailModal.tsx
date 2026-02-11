@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, lazy, Suspense } from "react";
 import { NumericInput } from "@/components/NumericInput";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { CalendarDays, Users, DollarSign, FileText, Plus, AlertTriangle, Upload, Trash2, Download } from "lucide-react";
+import { CalendarDays, Users, DollarSign, FileText, Plus, AlertTriangle, Upload, Trash2, Download, FileOutput } from "lucide-react";
+import GenerateContractModal from "@/components/GenerateContractModal";
 import {
   getContracts, getClients, getPayments, getDocuments, addPayment, updateContract,
   addDocument, deleteDocument, getDocumentSignedUrl,
@@ -28,6 +29,7 @@ export default function ContractDetailModal({ contractId, onClose }: Props) {
   const [uploading, setUploading] = useState(false);
   const [docType, setDocType] = useState<string>("outro");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [generateOpen, setGenerateOpen] = useState(false);
 
   const load = async () => {
     try {
@@ -148,9 +150,14 @@ export default function ContractDetailModal({ contractId, onClose }: Props) {
               <InfoRow icon={DollarSign} label="Restante" value={fmt(contract.remainingValue)} />
             </div>
             {contract.status !== "cancelled" && (
-              <Button variant="destructive" size="sm" onClick={handleCancel} className="mt-4 h-8 text-xs">
-                Cancelar Contrato
-              </Button>
+              <div className="flex gap-2 mt-4">
+                <Button size="sm" onClick={() => setGenerateOpen(true)} className="gap-1.5 h-8 text-xs">
+                  <FileOutput size={13} /> Gerar Contrato
+                </Button>
+                <Button variant="destructive" size="sm" onClick={handleCancel} className="h-8 text-xs">
+                  Cancelar Contrato
+                </Button>
+              </div>
             )}
           </TabsContent>
 
@@ -272,6 +279,16 @@ export default function ContractDetailModal({ contractId, onClose }: Props) {
           </TabsContent>
         </Tabs>
       </DialogContent>
+
+      {client && (
+        <GenerateContractModal
+          contract={contract}
+          client={client}
+          open={generateOpen}
+          onOpenChange={setGenerateOpen}
+          onGenerated={load}
+        />
+      )}
     </Dialog>
   );
 }
