@@ -5,6 +5,7 @@ import {
   FileText,
   CreditCard,
   CalendarDays,
+  BarChart3,
   Menu,
   X,
   LogOut,
@@ -19,6 +20,7 @@ const navItems = [
   { to: "/contracts", label: "Contratos", icon: FileText },
   { to: "/financial", label: "Financeiro", icon: CreditCard },
   { to: "/agenda", label: "Agenda", icon: CalendarDays },
+  { to: "/reports", label: "Relatórios", icon: BarChart3 },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {

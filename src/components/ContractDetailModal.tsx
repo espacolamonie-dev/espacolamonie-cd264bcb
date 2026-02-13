@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { CalendarDays, Users, DollarSign, FileText, Plus, AlertTriangle, Upload, Trash2, Download, FileOutput } from "lucide-react";
 import GenerateContractModal from "@/components/GenerateContractModal";
+import ContractTimeline from "@/components/ContractTimeline";
 import {
   getContracts, getClients, getPayments, getDocuments, addPayment, updateContract,
   addDocument, deleteDocument, getDocumentSignedUrl,
@@ -129,6 +130,11 @@ export default function ContractDetailModal({ contractId, onClose }: Props) {
             </div>
           </div>
         )}
+
+        {/* Timeline */}
+        <div className="rounded-md border border-border/60 bg-muted/10 px-4 py-2 overflow-x-auto">
+          <ContractTimeline contract={contract} docs={docs} payments={payments} />
+        </div>
 
         <Tabs defaultValue="details" className="mt-2">
           <TabsList className="w-full grid grid-cols-4">

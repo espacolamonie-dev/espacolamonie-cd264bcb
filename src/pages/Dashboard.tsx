@@ -1,15 +1,19 @@
 import { useEffect, useState } from "react";
 import {
   FileText, CheckCircle, Clock, CalendarDays, TrendingUp, TrendingDown, Wallet,
+  Plus, FileOutput, DollarSign, AlertTriangle,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getContracts, getClients, getTotalEntries, getTotalExpenses, getBalance, getActivePayments, getManualEntries, getExpenses } from "@/data/store";
 import type { Contract } from "@/types";
 import { PAYMENT_STATUS_LABELS, PAYMENT_STATUS_COLORS } from "@/types";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, AreaChart, Area,
 } from "recharts";
-import { format, parseISO, startOfMonth, subMonths, isBefore } from "date-fns";
+import { format, parseISO, startOfMonth, subMonths, isBefore, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useNavigate } from "react-router-dom";
 
 const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -22,6 +26,8 @@ interface MonthlyData {
 }
 
 export default function Dashboard() {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [upcoming, setUpcoming] = useState<(Contract & { clientName: string })[]>([]);
   const [pendingPayments, setPendingPayments] = useState<(Contract & { clientName: string })[]>([]);
@@ -30,6 +36,7 @@ export default function Dashboard() {
   const [awaiting, setAwaiting] = useState(0);
   const [futureCount, setFutureCount] = useState(0);
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
+  const [alerts, setAlerts] = useState<{ unsignedCount: number; urgentPayments: number }>({ unsignedCount: 0, urgentPayments: 0 });
 
   useEffect(() => {
     const loadData = async () => {
@@ -47,6 +54,16 @@ export default function Dashboard() {
         const future = active.filter(
           (c) => new Date(c.eventDate) >= new Date()
         );
+
+        // Alerts
+        const unsignedCount = active.filter(
+          (c) => c.status === "awaiting_signature" || c.status === "awaiting_documents"
+        ).length;
+        const sevenDaysFromNow = addDays(new Date(), 7);
+        const urgentPayments = active.filter(
+          (c) => c.paymentStatus !== "paid_full" && new Date(c.eventDate) <= sevenDaysFromNow && new Date(c.eventDate) >= new Date()
+        ).length;
+        setAlerts({ unsignedCount, urgentPayments });
 
         setContracts(active);
         setConfirmed(conf);
@@ -104,19 +121,71 @@ export default function Dashboard() {
           });
         }
         setMonthlyData(months);
-      } catch {}
+      } catch {} finally {
+        setLoading(false);
+      }
     };
     loadData();
   }, []);
 
   const tooltipFormatter = (value: number) => fmt(value);
 
+  if (loading) {
+    return (
+      <div className="animate-fade-in space-y-8">
+        <div>
+          <Skeleton className="h-9 w-48" />
+          <Skeleton className="h-4 w-64 mt-2" />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 rounded-lg" />)}
+        </div>
+        <div className="grid gap-4 sm:grid-cols-3">
+          {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-28 rounded-lg" />)}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="animate-fade-in space-y-8">
-      <div>
-        <h1 className="text-3xl font-display font-semibold tracking-tight">Dashboard</h1>
-        <p className="text-sm text-muted-foreground mt-1">Visão geral do Espaço Lamoniê</p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-display font-semibold tracking-tight">Dashboard</h1>
+          <p className="text-sm text-muted-foreground mt-1">Visão geral do Espaço Lamoniê</p>
+        </div>
+
+        {/* Quick actions */}
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" onClick={() => navigate("/contracts")} className="gap-1.5 h-8 text-xs">
+            <Plus size={13} /> Novo contrato
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => navigate("/financial")} className="gap-1.5 h-8 text-xs">
+            <DollarSign size={13} /> Registrar pagamento
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => navigate("/agenda")} className="gap-1.5 h-8 text-xs">
+            <CalendarDays size={13} /> Abrir agenda
+          </Button>
+        </div>
       </div>
+
+      {/* Alerts */}
+      {(alerts.unsignedCount > 0 || alerts.urgentPayments > 0) && (
+        <div className="flex flex-wrap gap-3">
+          {alerts.unsignedCount > 0 && (
+            <div className="flex items-center gap-2.5 rounded-lg border border-warning/30 bg-warning/8 px-4 py-2.5 text-sm">
+              <AlertTriangle size={15} className="text-warning shrink-0" />
+              <span className="text-warning font-medium">{alerts.unsignedCount} contrato{alerts.unsignedCount > 1 ? "s" : ""} sem assinatura</span>
+            </div>
+          )}
+          {alerts.urgentPayments > 0 && (
+            <div className="flex items-center gap-2.5 rounded-lg border border-danger/30 bg-danger/8 px-4 py-2.5 text-sm">
+              <AlertTriangle size={15} className="text-danger shrink-0" />
+              <span className="text-danger font-medium">{alerts.urgentPayments} pagamento{alerts.urgentPayments > 1 ? "s" : ""} pendente{alerts.urgentPayments > 1 ? "s" : ""} nos próximos 7 dias</span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Stat cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -154,14 +223,16 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Financial summary */}
+      {/* Financial summary – highlighted */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <div className="stat-card">
+        <div className="stat-card !border-success/25 !bg-success/5">
           <div className="flex items-center gap-2 mb-2">
-            <TrendingUp size={14} className="text-success" />
+            <div className="rounded-full bg-success/15 p-1.5">
+              <TrendingUp size={14} className="text-success" />
+            </div>
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Entradas</p>
           </div>
-          <p className="text-xl font-semibold text-success tracking-tight">{fmt(financialSummary.totalIn)}</p>
+          <p className="text-2xl font-semibold text-success tracking-tight">{fmt(financialSummary.totalIn)}</p>
           <p className="text-[11px] text-muted-foreground mt-0.5">Valores recebidos</p>
         </div>
         <div className="stat-card">
@@ -172,12 +243,14 @@ export default function Dashboard() {
           <p className="text-xl font-semibold text-danger tracking-tight">{fmt(financialSummary.totalOut)}</p>
           <p className="text-[11px] text-muted-foreground mt-0.5">Despesas registradas</p>
         </div>
-        <div className="stat-card !border-primary/20">
+        <div className="stat-card !border-primary/30 !bg-primary/5 ring-1 ring-primary/10">
           <div className="flex items-center gap-2 mb-2">
-            <Wallet size={14} className="text-primary" />
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Saldo atual</p>
+            <div className="rounded-full bg-primary/15 p-1.5">
+              <Wallet size={14} className="text-primary" />
+            </div>
+            <p className="text-xs font-semibold text-primary uppercase tracking-wide">Saldo atual</p>
           </div>
-          <p className={`text-xl font-semibold tracking-tight ${financialSummary.balance >= 0 ? "text-primary" : "text-danger"}`}>
+          <p className={`text-2xl font-bold tracking-tight ${financialSummary.balance >= 0 ? "text-primary" : "text-danger"}`}>
             {fmt(financialSummary.balance)}
           </p>
           <p className="text-[11px] text-muted-foreground mt-0.5">Saldo disponível do espaço</p>

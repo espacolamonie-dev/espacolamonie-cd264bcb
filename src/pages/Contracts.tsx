@@ -140,9 +140,8 @@ export default function Contracts() {
           <thead>
             <tr>
               <th>Cliente</th>
-              <th className="hidden sm:table-cell">Evento</th>
-              <th className="hidden md:table-cell">Data</th>
-              <th className="hidden lg:table-cell">Valor</th>
+              <th className="hidden sm:table-cell">Data</th>
+              <th className="hidden lg:table-cell text-right">Valor</th>
               <th>Contrato</th>
               <th className="hidden md:table-cell">Pagamento</th>
               <th className="text-right">Ações</th>
@@ -150,16 +149,20 @@ export default function Contracts() {
           </thead>
           <tbody>
             {filtered.length === 0 ? (
-              <tr><td colSpan={7} className="!py-10 text-center text-muted-foreground">Nenhum registro encontrado</td></tr>
+              <tr><td colSpan={6} className="!py-10 text-center text-muted-foreground">Nenhum registro encontrado</td></tr>
             ) : (
               filtered.map((c) => {
                 const isCancelled = c.status === "cancelled";
                 return (
                 <tr key={c.id} className={isCancelled ? "opacity-60" : ""}>
-                  <td className="font-medium">{clientMap[c.clientId]?.name || "—"}</td>
-                  <td className="hidden sm:table-cell text-muted-foreground">{c.eventType}</td>
-                  <td className="hidden md:table-cell text-muted-foreground tabular-nums">{new Date(c.eventDate).toLocaleDateString("pt-BR")}</td>
-                  <td className="hidden lg:table-cell font-medium tabular-nums">
+                  <td>
+                    <div>
+                      <p className="font-semibold text-sm">{clientMap[c.clientId]?.name || "—"}</p>
+                      <p className="text-xs text-muted-foreground">{c.eventType}</p>
+                    </div>
+                  </td>
+                  <td className="hidden sm:table-cell text-muted-foreground tabular-nums text-sm">{new Date(c.eventDate).toLocaleDateString("pt-BR")}</td>
+                  <td className="hidden lg:table-cell text-right font-semibold tabular-nums text-sm">
                     {isCancelled ? <span className="text-muted-foreground line-through">{fmt(c.totalValue)}</span> : fmt(c.totalValue)}
                   </td>
                   <td>
