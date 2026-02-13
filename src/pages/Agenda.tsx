@@ -1,13 +1,13 @@
 import { useEffect, useState, useMemo } from "react";
-import { ChevronLeft, ChevronRight, CalendarDays, Lock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Lock, Cake, Heart, PartyPopper, Building2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getContracts, getClients } from "@/data/store";
 import type { Contract, Client } from "@/types";
 import {
   addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek,
   eachDayOfInterval, format, isSameMonth, isSameDay, isToday,
-  addWeeks, subWeeks, startOfDay,
+  addWeeks, subWeeks,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -29,26 +29,36 @@ const STATUS_DOT: Record<string, string> = {
   cancelled: "bg-danger",
 };
 
+const EVENT_ICONS: Record<string, React.ElementType> = {
+  "Aniversário Adulto": Cake,
+  "Aniversário Infantil": Cake,
+  "Casamento": Heart,
+  "Confraternização": PartyPopper,
+  "Evento Corporativo": Building2,
+};
+
 export default function Agenda() {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<ViewMode>("month");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
-      const [c, cl] = await Promise.all([getContracts(), getClients()]);
-      setContracts(c);
-      setClients(cl);
+      try {
+        const [c, cl] = await Promise.all([getContracts(), getClients()]);
+        setContracts(c);
+        setClients(cl);
+      } finally {
+        setLoading(false);
+      }
     })();
   }, []);
 
   const clientMap = useMemo(() => Object.fromEntries(clients.map((c) => [c.id, c])), [clients]);
-
-  // Active contracts (not cancelled) for blocking
   const activeContracts = useMemo(() => contracts.filter((c) => c.status !== "cancelled"), [contracts]);
 
-  // Map date string -> contracts
   const eventsByDate = useMemo(() => {
     const map: Record<string, Contract[]> = {};
     contracts.forEach((c) => {
@@ -59,7 +69,6 @@ export default function Agenda() {
     return map;
   }, [contracts]);
 
-  // Blocked dates (have active contract)
   const blockedDates = useMemo(() => {
     const set = new Set<string>();
     activeContracts.forEach((c) => set.add(c.eventDate));
@@ -91,6 +100,16 @@ export default function Agenda() {
     : `Semana de ${format(startOfWeek(currentDate, { locale: ptBR }), "dd/MM", { locale: ptBR })} a ${format(endOfWeek(currentDate, { locale: ptBR }), "dd/MM", { locale: ptBR })}`;
 
   const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
+  if (loading) {
+    return (
+      <div className="animate-fade-in space-y-6">
+        <Skeleton className="h-9 w-40" />
+        <Skeleton className="h-8 w-full max-w-xs mx-auto" />
+        <Skeleton className="h-[400px] w-full rounded-lg" />
+      </div>
+    );
+  }
 
   return (
     <div className="animate-fade-in space-y-6">
@@ -132,7 +151,6 @@ export default function Agenda() {
 
       {/* Calendar grid */}
       <div className="rounded-lg border border-border/60 bg-card overflow-hidden">
-        {/* Header */}
         <div className="grid grid-cols-7 border-b border-border/60">
           {weekDays.map((d) => (
             <div key={d} className="px-2 py-2 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -141,7 +159,6 @@ export default function Agenda() {
           ))}
         </div>
 
-        {/* Days */}
         <div className="grid grid-cols-7">
           {days.map((day) => {
             const dateKey = format(day, "yyyy-MM-dd");
@@ -149,19 +166,22 @@ export default function Agenda() {
             const isBlocked = blockedDates.has(dateKey);
             const isCurrentMonth = isSameMonth(day, currentDate);
             const isWeekView = view === "week";
+            const isTodayDate = isToday(day);
 
             return (
               <div
                 key={dateKey}
                 className={`relative border-b border-r border-border/30 ${isWeekView ? "min-h-[180px]" : "min-h-[100px]"} p-1.5 transition-colors ${
                   !isCurrentMonth && !isWeekView ? "bg-muted/20" : ""
-                } ${isToday(day) ? "bg-primary/5" : ""}`}
+                } ${isTodayDate ? "bg-primary/5 ring-1 ring-inset ring-primary/20" : ""} ${
+                  isBlocked && !isTodayDate ? "bg-muted/30" : ""
+                }`}
               >
                 <div className="flex items-center justify-between mb-1">
                   <span
                     className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium ${
-                      isToday(day)
-                        ? "bg-primary text-primary-foreground"
+                      isTodayDate
+                        ? "bg-primary text-primary-foreground shadow-sm"
                         : !isCurrentMonth && !isWeekView
                         ? "text-muted-foreground/40"
                         : "text-foreground"
@@ -170,7 +190,7 @@ export default function Agenda() {
                     {format(day, "d")}
                   </span>
                   {isBlocked && (
-                    <Lock size={10} className="text-danger/60" />
+                    <Lock size={10} className="text-muted-foreground/40" />
                   )}
                 </div>
 
@@ -178,15 +198,16 @@ export default function Agenda() {
                   {dayEvents.slice(0, isWeekView ? 10 : 2).map((evt) => {
                     const client = clientMap[evt.clientId];
                     const isCancelled = evt.status === "cancelled";
+                    const EventIcon = EVENT_ICONS[evt.eventType] || Users;
                     return (
                       <div
                         key={evt.id}
-                        className={`rounded px-1.5 py-0.5 text-[10px] leading-tight truncate border ${
+                        className={`rounded px-1.5 py-0.5 text-[10px] leading-tight truncate border flex items-center gap-1 ${
                           STATUS_COLORS[evt.status] || "bg-muted text-muted-foreground"
                         } ${isCancelled ? "opacity-50 line-through" : ""}`}
                       >
-                        <span className={`inline-block h-1.5 w-1.5 rounded-full mr-1 ${STATUS_DOT[evt.status] || "bg-muted-foreground"}`} />
-                        {evt.eventType} – {client?.name || "—"}
+                        <EventIcon size={9} className="shrink-0" />
+                        <span className="truncate">{client?.name || "—"}</span>
                       </div>
                     );
                   })}
@@ -218,6 +239,12 @@ export default function Agenda() {
         </div>
         <div className="flex items-center gap-1.5">
           <Lock size={10} /> Data bloqueada
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Cake size={10} /> Aniversário
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Heart size={10} /> Casamento
         </div>
       </div>
     </div>
