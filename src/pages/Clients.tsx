@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Search, Pencil, Trash2 } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { getClients, addClient, updateClient, deleteClient } from "@/data/store";
 import type { Client } from "@/types";
 
-const emptyForm = { name: "", cpf: "", phone: "", address: "", notes: "" };
+const emptyForm = { name: "", cpf: "", phone: "", cep: "", address: "", notes: "" };
 
 function formatCPF(value: string): string {
   const digits = value.replace(/\D/g, "").slice(0, 11);
@@ -26,12 +26,19 @@ function formatPhone(value: string): string {
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
 }
 
+function formatCEP(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 8);
+  if (digits.length <= 5) return digits;
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+}
+
 export default function Clients() {
   const [clients, setClients] = useState<Client[]>([]);
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Client | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const [loadingCep, setLoadingCep] = useState(false);
 
   const load = async () => {
     try { setClients(await getClients()); } catch {}
@@ -48,8 +55,36 @@ export default function Clients() {
   const openNew = () => { setEditing(null); setForm(emptyForm); setOpen(true); };
   const openEdit = (c: Client) => {
     setEditing(c);
-    setForm({ name: c.name, cpf: c.cpf, phone: c.phone, address: c.address, notes: c.notes });
+    // Extract CEP from address if present
+    const cepMatch = c.address.match(/\d{5}-?\d{3}/);
+    setForm({ name: c.name, cpf: c.cpf, phone: c.phone, cep: cepMatch ? cepMatch[0] : "", address: c.address, notes: c.notes });
     setOpen(true);
+  };
+
+  const handleCepLookup = async (cepValue: string) => {
+    const digits = cepValue.replace(/\D/g, "");
+    if (digits.length !== 8) return;
+    setLoadingCep(true);
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${digits}/json/`);
+      const data = await res.json();
+      if (data.erro) {
+        toast.error("CEP não encontrado");
+        return;
+      }
+      const fullAddress = [
+        data.logradouro,
+        data.bairro,
+        `${data.localidade} - ${data.uf}`,
+        `CEP: ${data.cep}`,
+      ].filter(Boolean).join(", ");
+      setForm((p) => ({ ...p, address: fullAddress }));
+      toast.success("Endereço preenchido automaticamente!");
+    } catch {
+      toast.error("Erro ao buscar CEP");
+    } finally {
+      setLoadingCep(false);
+    }
   };
 
   const handleSave = async () => {
@@ -59,7 +94,7 @@ export default function Clients() {
     const phoneDigits = form.phone.replace(/\D/g, "");
     if (phoneDigits.length > 0 && phoneDigits.length < 10) { toast.error("Telefone deve ter pelo menos 10 dígitos"); return; }
     try {
-      const payload = { ...form, email: "" };
+      const payload = { name: form.name, cpf: form.cpf, phone: form.phone, email: "", address: form.address, notes: form.notes };
       if (editing) { await updateClient(editing.id, payload); toast.success("Informações salvas com sucesso"); }
       else { await addClient({ ...payload }); toast.success("Cliente cadastrado com sucesso"); }
       setOpen(false); await load();
@@ -149,8 +184,27 @@ export default function Clients() {
               </div>
             </div>
             <div className="grid gap-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">CEP</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={form.cep}
+                  onChange={(e) => {
+                    const formatted = formatCEP(e.target.value);
+                    set("cep", formatted);
+                    if (formatted.replace(/\D/g, "").length === 8) {
+                      handleCepLookup(formatted);
+                    }
+                  }}
+                  placeholder="00000-000"
+                  maxLength={9}
+                  className="w-[140px]"
+                />
+                {loadingCep && <Loader2 size={16} className="animate-spin text-muted-foreground mt-2.5" />}
+              </div>
+            </div>
+            <div className="grid gap-1.5">
               <Label className="text-xs font-medium text-muted-foreground">Endereço</Label>
-              <Input value={form.address} onChange={(e) => set("address", e.target.value)} />
+              <Input value={form.address} onChange={(e) => set("address", e.target.value)} placeholder="Preenchido automaticamente pelo CEP" />
             </div>
             <div className="grid gap-1.5">
               <Label className="text-xs font-medium text-muted-foreground">Observações</Label>

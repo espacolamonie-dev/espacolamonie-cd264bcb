@@ -11,6 +11,7 @@ import { CONTRACT_STATUS_LABELS, CONTRACT_STATUS_COLORS, PAYMENT_STATUS_LABELS, 
 import type { Contract, ContractStatus, EventType, Client } from "@/types";
 import ContractDetailModal from "@/components/ContractDetailModal";
 import { ContractStatusSelect, PaymentStatusSelect } from "@/components/ContractStatusSelect";
+import { CurrencyInput, PercentInput } from "@/components/CurrencyInput";
 import { NumericInput } from "@/components/NumericInput";
 import ImportContractModal from "@/components/ImportContractModal";
 
@@ -67,7 +68,6 @@ export default function Contracts() {
 
   const handleSave = async () => {
     if (!form.clientId || !form.eventDate) { toast.error("Cliente e data são obrigatórios"); return; }
-    // Date blocking: check if date is already taken by active contract
     if (!editing || form.eventDate !== editing.eventDate) {
       const conflict = contracts.find(
         (c) => c.eventDate === form.eventDate && c.status !== "cancelled" && c.id !== editing?.id
@@ -80,7 +80,6 @@ export default function Contracts() {
     }
     try {
       if (editing) {
-        // Check if payment status changed — handle auto-payment
         const paymentStatusChanged = form.paymentStatus !== editing.paymentStatus;
         const updates: Record<string, any> = { ...form };
         if (paymentStatusChanged) {
@@ -98,6 +97,8 @@ export default function Contracts() {
 
   const set = (field: string, value: any) => setForm((p) => ({ ...p, [field]: value }));
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+  const depositValue = (form.totalValue * form.depositPercent) / 100;
 
   return (
     <div className="animate-fade-in space-y-6">
@@ -165,19 +166,10 @@ export default function Contracts() {
                     {isCancelled ? <span className="text-muted-foreground line-through">{fmt(c.totalValue)}</span> : fmt(c.totalValue)}
                   </td>
                   <td>
-                    <ContractStatusSelect
-                      contractId={c.id}
-                      value={c.status}
-                      onChanged={load}
-                    />
+                    <ContractStatusSelect contractId={c.id} value={c.status} onChanged={load} />
                   </td>
                   <td className="hidden md:table-cell">
-                    <PaymentStatusSelect
-                      contractId={c.id}
-                      value={c.paymentStatus}
-                      isCancelled={isCancelled}
-                      onChanged={load}
-                    />
+                    <PaymentStatusSelect contractId={c.id} value={c.paymentStatus} isCancelled={isCancelled} onChanged={load} />
                   </td>
                   <td className="text-right">
                     <div className="flex items-center justify-end gap-0.5">
@@ -235,14 +227,20 @@ export default function Contracts() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">Valor total (R$)</Label>
-                <NumericInput value={form.totalValue} onChange={(v) => set("totalValue", v)} placeholder="Digite o valor" />
+                <Label className="text-xs font-medium text-muted-foreground">Valor total</Label>
+                <CurrencyInput value={form.totalValue} onChange={(v) => set("totalValue", v)} placeholder="R$ 0,00" />
               </div>
               <div className="grid gap-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">Sinal (%)</Label>
-                <NumericInput value={form.depositPercent} onChange={(v) => set("depositPercent", v)} placeholder="30" selectOnFocus />
+                <Label className="text-xs font-medium text-muted-foreground">Sinal</Label>
+                <PercentInput value={form.depositPercent} onChange={(v) => set("depositPercent", v)} placeholder="30%" />
               </div>
             </div>
+            {form.totalValue > 0 && (
+              <div className="text-xs text-muted-foreground bg-muted/30 rounded-md p-2 space-y-0.5">
+                <p>Sinal: <span className="font-medium text-foreground">{fmt(depositValue)}</span></p>
+                <p>Restante: <span className="font-medium text-foreground">{fmt(form.totalValue - depositValue)}</span></p>
+              </div>
+            )}
             <div className="grid gap-1.5">
               <Label className="text-xs font-medium text-muted-foreground">Status do contrato</Label>
               <Select value={form.status} onValueChange={(v) => set("status", v)}>

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { decode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -48,7 +49,8 @@ serve(async (req) => {
 
   // POST /sign-contract — client signs the contract
   if (req.method === "POST") {
-    const { token } = await req.json();
+    const body = await req.json();
+    const { token, pdf_base64 } = body;
     if (!token) {
       return new Response(JSON.stringify({ error: "Token obrigatório" }), {
         status: 400,
@@ -110,20 +112,59 @@ serve(async (req) => {
       console.error("Error updating contract status:", updateContractErr);
     }
 
-    // Save final signed PDF document record
+    // Upload signed PDF to storage if provided
     const signedFileName = `Contrato Lamoniê – ${sig.client_name} – Assinado.pdf`;
-    const { error: docErr } = await supabase
-      .from("documents")
-      .insert({
-        user_id: sig.user_id,
-        contract_id: sig.contract_id,
-        name: signedFileName,
-        type: "contrato",
-        file_name: `signed/${sig.contract_id}/${Date.now()}.pdf`,
-      });
+    const storagePath = `${sig.user_id}/${sig.contract_id}/${Date.now()}.pdf`;
 
-    if (docErr) {
-      console.error("Error saving signed document record:", docErr);
+    if (pdf_base64) {
+      try {
+        // Extract raw base64 from data URI
+        const base64Data = pdf_base64.replace(/^data:application\/pdf;base64,/, "");
+        const pdfBytes = decode(base64Data);
+
+        const { error: uploadErr } = await supabase.storage
+          .from("documents")
+          .upload(storagePath, pdfBytes, {
+            contentType: "application/pdf",
+            upsert: false,
+          });
+
+        if (uploadErr) {
+          console.error("Error uploading signed PDF:", uploadErr);
+        } else {
+          // Save document record with valid storage path
+          const { error: docErr } = await supabase
+            .from("documents")
+            .insert({
+              user_id: sig.user_id,
+              contract_id: sig.contract_id,
+              name: signedFileName,
+              type: "contrato",
+              file_name: storagePath,
+            });
+
+          if (docErr) {
+            console.error("Error saving signed document record:", docErr);
+          }
+        }
+      } catch (e) {
+        console.error("Error processing PDF upload:", e);
+      }
+    } else {
+      // Fallback: save document record without actual file (legacy behavior)
+      const { error: docErr } = await supabase
+        .from("documents")
+        .insert({
+          user_id: sig.user_id,
+          contract_id: sig.contract_id,
+          name: signedFileName,
+          type: "contrato",
+          file_name: storagePath,
+        });
+
+      if (docErr) {
+        console.error("Error saving signed document record:", docErr);
+      }
     }
 
     return new Response(JSON.stringify({ success: true, signed_at: now }), {
