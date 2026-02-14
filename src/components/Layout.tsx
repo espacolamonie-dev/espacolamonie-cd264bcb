@@ -33,31 +33,32 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Mobile overlay */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-foreground/30 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-40 bg-foreground/20 backdrop-blur-sm md:hidden"
           onClick={() => setMobileOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <aside
-        className={`sidebar-gradient fixed inset-y-0 left-0 z-50 flex w-60 flex-col transition-transform duration-300 md:relative md:translate-x-0 ${
+        className={`sidebar-gradient fixed inset-y-0 left-0 z-50 flex w-[240px] flex-col transition-transform duration-300 md:relative md:translate-x-0 ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {/* Logo */}
-        <div className="flex items-center gap-3 px-5 py-6">
+        <div className="flex items-center gap-3 px-5 py-7">
           <img
             src={logo}
             alt="Lamoniê"
-            className="h-10 w-10 rounded-full object-cover ring-1 ring-sidebar-border"
+            className="h-11 w-11 rounded-full object-cover ring-2 ring-sidebar-border/50"
           />
           <div className="min-w-0">
-            <h1 className="font-display text-xl font-semibold tracking-tight text-sidebar-foreground leading-tight">
+            <h1 className="font-display text-lg font-semibold tracking-tight text-sidebar-foreground leading-tight">
               Espaço Lamoniê
             </h1>
+            <p className="text-[10px] text-sidebar-foreground/40 tracking-widest uppercase mt-0.5">Gestão de Eventos</p>
           </div>
           <button
-            className="ml-auto text-sidebar-foreground/50 hover:text-sidebar-foreground md:hidden"
+            className="ml-auto text-sidebar-foreground/40 hover:text-sidebar-foreground md:hidden"
             onClick={() => setMobileOpen(false)}
           >
             <X size={18} />
@@ -65,10 +66,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Divider */}
-        <div className="mx-5 border-t border-sidebar-border/50" />
+        <div className="mx-5 border-t border-sidebar-border/30" />
 
         {/* Nav */}
-        <nav className="flex-1 space-y-0.5 px-3 py-5">
+        <nav className="flex-1 space-y-1 px-3 py-6">
           {navItems.map((item) => {
             const active = location.pathname === item.to;
             return (
@@ -76,10 +77,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 key={item.to}
                 to={item.to}
                 onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-[13px] font-medium transition-all duration-150 ${
+                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all duration-200 ${
                   active
-                    ? "bg-sidebar-accent text-sidebar-primary"
-                    : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/40"
+                    ? "bg-sidebar-accent text-sidebar-foreground shadow-sm"
+                    : "text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/40"
                 }`}
               >
                 <item.icon size={17} strokeWidth={active ? 2 : 1.5} />
@@ -90,15 +91,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </nav>
 
         {/* Footer */}
-        <div className="px-5 py-4 space-y-3">
+        <div className="px-5 py-5 space-y-3">
+          <div className="border-t border-sidebar-border/30 mb-3" />
           <button
             onClick={signOut}
-            className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-[13px] font-medium text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/40 transition-all duration-150"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent/40 transition-all duration-200"
           >
             <LogOut size={17} strokeWidth={1.5} />
             Sair
           </button>
-          <p className="text-[11px] text-sidebar-foreground/30 tracking-wide uppercase">
+          <p className="text-[10px] text-sidebar-foreground/20 tracking-widest uppercase">
             Espaço Lamoniê © 2025
           </p>
         </div>
@@ -107,7 +109,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Main */}
       <main className="flex-1 min-w-0">
         {/* Top bar */}
-        <header className="flex items-center gap-4 border-b border-border/60 px-5 py-3 md:px-8">
+        <header className="flex items-center gap-4 border-b border-border px-5 py-3.5 md:px-8">
           <button
             className="text-muted-foreground hover:text-foreground md:hidden"
             onClick={() => setMobileOpen(true)}

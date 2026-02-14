@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   FileText, CheckCircle, Clock, CalendarDays, TrendingUp, TrendingDown, Wallet,
-  Plus, FileOutput, DollarSign, AlertTriangle,
+  Plus, DollarSign, AlertTriangle, ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -55,7 +55,6 @@ export default function Dashboard() {
           (c) => new Date(c.eventDate) >= new Date()
         );
 
-        // Alerts
         const unsignedCount = active.filter(
           (c) => c.status === "awaiting_signature" || c.status === "awaiting_documents"
         ).length;
@@ -88,7 +87,6 @@ export default function Dashboard() {
             .map((c) => ({ ...c, clientName: clientMap[c.clientId] || "—" }))
         );
 
-        // Build monthly data (last 6 months)
         const now = new Date();
         const months: MonthlyData[] = [];
         for (let i = 5; i >= 0; i--) {
@@ -138,10 +136,10 @@ export default function Dashboard() {
           <Skeleton className="h-4 w-64 mt-2" />
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 rounded-lg" />)}
+          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}
         </div>
         <div className="grid gap-4 sm:grid-cols-3">
-          {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-28 rounded-lg" />)}
+          {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-32 rounded-xl" />)}
         </div>
       </div>
     );
@@ -149,22 +147,21 @@ export default function Dashboard() {
 
   return (
     <div className="animate-fade-in space-y-8">
+      {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-3xl font-display font-semibold tracking-tight">Dashboard</h1>
           <p className="text-sm text-muted-foreground mt-1">Visão geral do Espaço Lamoniê</p>
         </div>
-
-        {/* Quick actions */}
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" onClick={() => navigate("/contracts")} className="gap-1.5 h-8 text-xs">
-            <Plus size={13} /> Novo contrato
+          <Button size="sm" onClick={() => navigate("/contracts")} className="gap-1.5 h-9 text-xs rounded-lg">
+            <Plus size={14} /> Novo contrato
           </Button>
-          <Button size="sm" variant="outline" onClick={() => navigate("/financial")} className="gap-1.5 h-8 text-xs">
-            <DollarSign size={13} /> Registrar pagamento
+          <Button size="sm" variant="outline" onClick={() => navigate("/financial")} className="gap-1.5 h-9 text-xs rounded-lg">
+            <DollarSign size={14} /> Registrar pagamento
           </Button>
-          <Button size="sm" variant="outline" onClick={() => navigate("/agenda")} className="gap-1.5 h-8 text-xs">
-            <CalendarDays size={13} /> Abrir agenda
+          <Button size="sm" variant="outline" onClick={() => navigate("/agenda")} className="gap-1.5 h-9 text-xs rounded-lg">
+            <CalendarDays size={14} /> Abrir agenda
           </Button>
         </div>
       </div>
@@ -173,94 +170,104 @@ export default function Dashboard() {
       {(alerts.unsignedCount > 0 || alerts.urgentPayments > 0) && (
         <div className="flex flex-wrap gap-3">
           {alerts.unsignedCount > 0 && (
-            <div className="flex items-center gap-2.5 rounded-lg border border-warning/30 bg-warning/8 px-4 py-2.5 text-sm">
+            <button
+              onClick={() => navigate("/contracts")}
+              className="flex items-center gap-2.5 rounded-xl border border-warning/30 bg-warning/8 px-4 py-3 text-sm hover:bg-warning/12 transition-colors group"
+            >
               <AlertTriangle size={15} className="text-warning shrink-0" />
-              <span className="text-warning font-medium">{alerts.unsignedCount} contrato{alerts.unsignedCount > 1 ? "s" : ""} sem assinatura</span>
-            </div>
+              <span className="text-warning font-medium">{alerts.unsignedCount} contrato{alerts.unsignedCount > 1 ? "s" : ""} aguardando assinatura</span>
+              <ArrowRight size={14} className="text-warning/60 group-hover:translate-x-0.5 transition-transform" />
+            </button>
           )}
           {alerts.urgentPayments > 0 && (
-            <div className="flex items-center gap-2.5 rounded-lg border border-danger/30 bg-danger/8 px-4 py-2.5 text-sm">
+            <button
+              onClick={() => navigate("/financial")}
+              className="flex items-center gap-2.5 rounded-xl border border-danger/30 bg-danger/8 px-4 py-3 text-sm hover:bg-danger/12 transition-colors group"
+            >
               <AlertTriangle size={15} className="text-danger shrink-0" />
-              <span className="text-danger font-medium">{alerts.urgentPayments} pagamento{alerts.urgentPayments > 1 ? "s" : ""} pendente{alerts.urgentPayments > 1 ? "s" : ""} nos próximos 7 dias</span>
-            </div>
+              <span className="text-danger font-medium">{alerts.urgentPayments} pagamento{alerts.urgentPayments > 1 ? "s" : ""} aguardando confirmação nos próximos 7 dias</span>
+              <ArrowRight size={14} className="text-danger/60 group-hover:translate-x-0.5 transition-transform" />
+            </button>
           )}
         </div>
       )}
 
       {/* Stat cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="stat-card">
+        <button onClick={() => navigate("/contracts")} className="stat-card text-left">
           <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Total de contratos</p>
-            <FileText size={16} className="text-muted-foreground/50" />
+            <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider">Total de contratos</p>
+            <FileText size={16} className="text-muted-foreground/40" />
           </div>
-          <p className="text-2xl font-semibold mt-2 tracking-tight">{contracts.length}</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">Contratos ativos</p>
-        </div>
-        <div className="stat-card">
+          <p className="text-3xl font-display font-bold mt-2 tracking-tight">{contracts.length}</p>
+          <p className="text-[11px] text-muted-foreground mt-1">Contratos ativos</p>
+        </button>
+        <button onClick={() => navigate("/contracts")} className="stat-card text-left">
           <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Confirmados</p>
-            <CheckCircle size={16} className="text-muted-foreground/50" />
+            <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider">Confirmados</p>
+            <CheckCircle size={16} className="text-success/50" />
           </div>
-          <p className="text-2xl font-semibold mt-2 tracking-tight">{confirmed}</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">Eventos confirmados</p>
-        </div>
-        <div className="stat-card">
+          <p className="text-3xl font-display font-bold mt-2 tracking-tight">{confirmed}</p>
+          <p className="text-[11px] text-muted-foreground mt-1">Eventos confirmados</p>
+        </button>
+        <button onClick={() => navigate("/financial")} className="stat-card text-left">
           <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Aguardando pagamento</p>
-            <Clock size={16} className="text-muted-foreground/50" />
+            <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider">Aguardando pagamento</p>
+            <Clock size={16} className="text-warning/50" />
           </div>
-          <p className="text-2xl font-semibold mt-2 tracking-tight">{awaiting}</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">Contratos com valores pendentes</p>
-        </div>
-        <div className="stat-card">
+          <p className="text-3xl font-display font-bold mt-2 tracking-tight">{awaiting}</p>
+          <p className="text-[11px] text-muted-foreground mt-1">Pagamentos aguardando confirmação</p>
+        </button>
+        <button onClick={() => navigate("/agenda")} className="stat-card text-left">
           <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Eventos futuros</p>
-            <CalendarDays size={16} className="text-muted-foreground/50" />
+            <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider">Eventos futuros</p>
+            <CalendarDays size={16} className="text-primary/50" />
           </div>
-          <p className="text-2xl font-semibold mt-2 tracking-tight">{futureCount}</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">Próximos eventos agendados</p>
-        </div>
+          <p className="text-3xl font-display font-bold mt-2 tracking-tight">{futureCount}</p>
+          <p className="text-[11px] text-muted-foreground mt-1">Próximos eventos agendados</p>
+        </button>
       </div>
 
-      {/* Financial summary – highlighted */}
+      {/* Financial summary */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <div className="stat-card !border-success/25 !bg-success/5">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="rounded-full bg-success/15 p-1.5">
+        <div className="stat-card !border-success/20">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="rounded-full bg-success/10 p-2">
               <TrendingUp size={14} className="text-success" />
             </div>
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Entradas</p>
+            <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider">Entradas</p>
           </div>
-          <p className="text-2xl font-semibold text-success tracking-tight">{fmt(financialSummary.totalIn)}</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">Valores recebidos</p>
+          <p className="text-2xl font-display font-bold text-success tracking-tight">{fmt(financialSummary.totalIn)}</p>
+          <p className="text-[11px] text-muted-foreground mt-1">Valores recebidos</p>
         </div>
         <div className="stat-card">
-          <div className="flex items-center gap-2 mb-2">
-            <TrendingDown size={14} className="text-danger" />
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Saídas</p>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="rounded-full bg-danger/10 p-2">
+              <TrendingDown size={14} className="text-danger" />
+            </div>
+            <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider">Saídas</p>
           </div>
-          <p className="text-xl font-semibold text-danger tracking-tight">{fmt(financialSummary.totalOut)}</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">Despesas registradas</p>
+          <p className="text-2xl font-display font-bold text-danger tracking-tight">{fmt(financialSummary.totalOut)}</p>
+          <p className="text-[11px] text-muted-foreground mt-1">Despesas registradas</p>
         </div>
-        <div className="stat-card !border-primary/30 !bg-primary/5 ring-1 ring-primary/10">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="rounded-full bg-primary/15 p-1.5">
+        <div className="stat-card !border-primary/25 !bg-primary/3 ring-1 ring-primary/10">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="rounded-full bg-primary/10 p-2">
               <Wallet size={14} className="text-primary" />
             </div>
-            <p className="text-xs font-semibold text-primary uppercase tracking-wide">Saldo atual</p>
+            <p className="text-[11px] font-semibold text-primary uppercase tracking-wider">Saldo atual</p>
           </div>
-          <p className={`text-2xl font-bold tracking-tight ${financialSummary.balance >= 0 ? "text-primary" : "text-danger"}`}>
+          <p className={`text-3xl font-display font-bold tracking-tight ${financialSummary.balance >= 0 ? "text-primary" : "text-danger"}`}>
             {fmt(financialSummary.balance)}
           </p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">Saldo disponível do espaço</p>
+          <p className="text-[11px] text-muted-foreground mt-1">Saldo disponível do espaço</p>
         </div>
       </div>
 
       {/* Charts */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-lg border border-border/60 bg-card p-5">
-          <h2 className="font-display text-lg font-semibold mb-4">Entradas vs Saídas</h2>
+        <div className="rounded-xl border border-border bg-card p-6">
+          <h2 className="font-display text-lg font-semibold mb-5">Entradas vs Saídas</h2>
           <div className="h-[260px]">
             {monthlyData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
@@ -268,10 +275,10 @@ export default function Dashboard() {
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="label" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={{ stroke: "hsl(var(--border))" }} tickLine={false} />
                   <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)} />
-                  <Tooltip formatter={tooltipFormatter} contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }} labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600 }} />
+                  <Tooltip formatter={tooltipFormatter} contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "12px", fontSize: "12px" }} labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600 }} />
                   <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }} />
-                  <Bar dataKey="entradas" name="Entradas" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="saidas" name="Saídas" fill="hsl(var(--danger))" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="entradas" name="Entradas" fill="hsl(var(--success))" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="saidas" name="Saídas" fill="hsl(var(--danger))" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -280,22 +287,22 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="rounded-lg border border-border/60 bg-card p-5">
-          <h2 className="font-display text-lg font-semibold mb-4">Evolução do Saldo</h2>
+        <div className="rounded-xl border border-border bg-card p-6">
+          <h2 className="font-display text-lg font-semibold mb-5">Evolução do Saldo</h2>
           <div className="h-[260px]">
             {monthlyData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={monthlyData} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
                   <defs>
                     <linearGradient id="saldoGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.25} />
                       <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="label" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={{ stroke: "hsl(var(--border))" }} tickLine={false} />
                   <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)} />
-                  <Tooltip formatter={tooltipFormatter} contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }} labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600 }} />
+                  <Tooltip formatter={tooltipFormatter} contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "12px", fontSize: "12px" }} labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600 }} />
                   <Area type="monotone" dataKey="saldo" name="Saldo" stroke="hsl(var(--primary))" fill="url(#saldoGradient)" strokeWidth={2} />
                 </AreaChart>
               </ResponsiveContainer>
@@ -309,20 +316,22 @@ export default function Dashboard() {
       {/* Bottom grid */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Upcoming events */}
-        <div className="rounded-lg border border-border/60 bg-card">
-          <div className="flex items-center justify-between px-5 py-4">
+        <div className="rounded-xl border border-border bg-card">
+          <div className="flex items-center justify-between px-6 py-4">
             <h2 className="font-display text-lg font-semibold">Próximos eventos</h2>
-            <CalendarDays size={15} className="text-muted-foreground/40" />
+            <button onClick={() => navigate("/agenda")} className="text-xs text-primary hover:text-primary/80 font-medium transition-colors flex items-center gap-1">
+              Ver agenda <ArrowRight size={12} />
+            </button>
           </div>
-          <div className="border-t border-border/40">
+          <div className="border-t border-border">
             {upcoming.length === 0 ? (
-              <p className="px-5 py-10 text-center text-sm text-muted-foreground">Nenhum evento futuro cadastrado</p>
+              <p className="px-6 py-12 text-center text-sm text-muted-foreground">Nenhum evento agendado no momento</p>
             ) : (
-              <div className="divide-y divide-border/40">
+              <div className="divide-y divide-border/60">
                 {upcoming.map((ev) => (
-                  <div key={ev.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-muted/20 transition-colors">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/8">
-                      <CalendarDays size={15} className="text-primary" />
+                  <div key={ev.id} className="flex items-center gap-4 px-6 py-4 hover:bg-secondary/30 transition-colors cursor-pointer" onClick={() => navigate("/agenda")}>
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/8">
+                      <CalendarDays size={16} className="text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{ev.clientName}</p>
@@ -340,25 +349,27 @@ export default function Dashboard() {
         </div>
 
         {/* Pending payments */}
-        <div className="rounded-lg border border-border/60 bg-card">
-          <div className="flex items-center justify-between px-5 py-4">
+        <div className="rounded-xl border border-border bg-card">
+          <div className="flex items-center justify-between px-6 py-4">
             <h2 className="font-display text-lg font-semibold">Pagamentos pendentes</h2>
-            <Clock size={15} className="text-muted-foreground/40" />
+            <button onClick={() => navigate("/financial")} className="text-xs text-primary hover:text-primary/80 font-medium transition-colors flex items-center gap-1">
+              Ver financeiro <ArrowRight size={12} />
+            </button>
           </div>
-          <div className="border-t border-border/40">
+          <div className="border-t border-border">
             {pendingPayments.length === 0 ? (
-              <p className="px-5 py-10 text-center text-sm text-muted-foreground">Todos os pagamentos estão em dia</p>
+              <p className="px-6 py-12 text-center text-sm text-muted-foreground">Todos os pagamentos estão em dia</p>
             ) : (
-              <div className="divide-y divide-border/40">
+              <div className="divide-y divide-border/60">
                 {pendingPayments.map((c) => (
-                  <div key={c.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-muted/20 transition-colors">
+                  <div key={c.id} className="flex items-center gap-4 px-6 py-4 hover:bg-secondary/30 transition-colors cursor-pointer" onClick={() => navigate("/financial")}>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{c.clientName}</p>
                       <p className="text-xs text-muted-foreground">{c.eventType}</p>
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-sm font-medium tabular-nums">{fmt(c.remainingValue)}</p>
-                      <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${PAYMENT_STATUS_COLORS[c.paymentStatus]}`}>
+                      <span className={`inline-block rounded-full px-2.5 py-0.5 text-[10px] font-medium ${PAYMENT_STATUS_COLORS[c.paymentStatus]}`}>
                         {PAYMENT_STATUS_LABELS[c.paymentStatus]}
                       </span>
                     </div>

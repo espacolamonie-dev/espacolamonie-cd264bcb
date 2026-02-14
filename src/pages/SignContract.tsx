@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, FileText, Loader2, AlertTriangle, ShieldCheck, ChevronDown } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { jsPDF } from "jspdf";
 
 const fmt = (v: number) => Number(v).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -271,16 +272,12 @@ async function generateSignedPDF(d: SignatureData, signatureDataUrl: string): Pr
   addText(`Ribeirão das Neves – MG, ${sigDate}.`);
   addSpace(15);
 
-  // Client signature with drawn rubric
   checkPage();
   if (y + 40 > 275) { doc.addPage(); addWatermark(); y = 20; }
 
-  // Add the drawn signature image
   try {
     doc.addImage(signatureDataUrl, "PNG", margin, y, 60, 25);
-  } catch {
-    // fallback if image fails
-  }
+  } catch {}
   y += 28;
   doc.setDrawColor(0);
   doc.line(margin, y, margin + 70, y);
@@ -293,7 +290,6 @@ async function generateSignedPDF(d: SignatureData, signatureDataUrl: string): Pr
   doc.setTextColor(0, 0, 0);
   addSpace(12);
 
-  // Locador signature
   checkPage();
   doc.line(margin, y, margin + 70, y);
   y += 5;
@@ -305,7 +301,6 @@ async function generateSignedPDF(d: SignatureData, signatureDataUrl: string): Pr
   doc.text(`Assinado digitalmente em ${sigDate}`, margin, y);
   doc.setTextColor(0, 0, 0);
 
-  // Return as base64
   return doc.output("datauristring");
 }
 
@@ -318,6 +313,7 @@ export default function SignContract() {
   const [signed, setSigned] = useState(false);
   const [error, setError] = useState("");
   const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
   const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const contractScrollRef = useRef<HTMLDivElement>(null);
@@ -343,15 +339,15 @@ export default function SignContract() {
       .finally(() => setLoading(false));
   }, [token]);
 
-  // Scroll tracking
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const el = e.currentTarget;
+    const progress = Math.min(100, (el.scrollTop / (el.scrollHeight - el.clientHeight)) * 100);
+    setScrollProgress(progress);
     if (el.scrollTop + el.clientHeight >= el.scrollHeight - 30) {
       setHasScrolledToBottom(true);
     }
   }, []);
 
-  // Canvas drawing
   const getCanvasPos = (e: React.MouseEvent | React.TouchEvent) => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
@@ -383,7 +379,7 @@ export default function SignContract() {
     const ctx = canvasRef.current?.getContext("2d");
     if (!ctx) return;
     const pos = getCanvasPos(e);
-    ctx.strokeStyle = "#1a1a2e";
+    ctx.strokeStyle = "#1F3D2B";
     ctx.lineWidth = 2.5;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
@@ -431,10 +427,8 @@ export default function SignContract() {
     setSigning(true);
     setError("");
     try {
-      // Generate signed PDF with client signature
       const sigDataUrl = canvasRef.current!.toDataURL("image/png");
       const pdfDataUri = await generateSignedPDF(data, sigDataUrl);
-      // Extract raw base64 from data URI (jsPDF includes filename= in the URI)
       const rawBase64 = pdfDataUri.split(",")[1];
 
       const res = await fetch(FUNC_URL, {
@@ -455,43 +449,46 @@ export default function SignContract() {
   const depositValue = data ? (Number(data.total_value) * Number(data.deposit_percent)) / 100 : 0;
   const canSign = hasScrolledToBottom && signatureDataUrl && !isCanvasEmpty();
 
+  // Steps indicator
+  const currentStep = signed ? 3 : hasScrolledToBottom ? (signatureDataUrl ? 3 : 2) : 1;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-2xl">
         {/* Header */}
-        <div className="text-center mb-6">
-          <img src="/images/logo-lamonie.png" alt="Espaço Lamoniê" className="h-16 mx-auto mb-3" />
-          <h1 className="text-xl font-bold text-gray-800">Assinatura de Contrato</h1>
-          <p className="text-sm text-gray-500">Espaço Lamoniê</p>
+        <div className="text-center mb-8">
+          <img src="/images/logo-lamonie.png" alt="Espaço Lamoniê" className="h-14 mx-auto mb-4 drop-shadow-sm" />
+          <h1 className="text-2xl font-display font-semibold text-foreground tracking-tight">Assinatura de Contrato</h1>
+          <p className="text-sm text-muted-foreground mt-1">Espaço Lamoniê — Contrato de Locação</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div className="bg-card rounded-2xl shadow-lg border border-border overflow-hidden">
           {loading && (
-            <div className="flex items-center justify-center py-16">
-              <Loader2 className="h-8 w-8 animate-spin text-amber-600" />
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           )}
 
           {error && !data && !loading && (
-            <div className="p-8 text-center">
-              <AlertTriangle className="h-12 w-12 text-red-400 mx-auto mb-3" />
-              <p className="text-red-600 font-medium">{error}</p>
+            <div className="p-10 text-center">
+              <AlertTriangle className="h-12 w-12 text-danger mx-auto mb-3" />
+              <p className="text-danger font-medium">{error}</p>
             </div>
           )}
 
           {signed && (
-            <div className="p-8 text-center">
-              <div className="bg-green-50 rounded-full h-20 w-20 flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="h-10 w-10 text-green-500" />
+            <div className="p-10 text-center">
+              <div className="bg-success/10 rounded-full h-20 w-20 flex items-center justify-center mx-auto mb-5">
+                <CheckCircle className="h-10 w-10 text-success" />
               </div>
-              <h2 className="text-xl font-bold text-gray-800 mb-2">Contrato Assinado!</h2>
-              <p className="text-sm text-gray-500 mb-4">
-                Sua assinatura foi registrada com sucesso. O Espaço Lamoniê entrará em contato para confirmar os detalhes do seu evento.
+              <h2 className="text-2xl font-display font-semibold text-foreground mb-2">Contrato assinado com sucesso</h2>
+              <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
+                Sua assinatura foi registrada. O Espaço Lamoniê entrará em contato para confirmar os detalhes do seu evento.
               </p>
               {data && (
-                <div className="bg-gray-50 rounded-xl p-4 text-left space-y-1 text-sm">
-                  <p><span className="text-gray-500">Evento:</span> <span className="font-medium">{data.event_type}</span></p>
-                  <p><span className="text-gray-500">Data:</span> <span className="font-medium">{formatDate(data.event_date)}</span></p>
+                <div className="bg-secondary rounded-xl p-5 text-left space-y-2 text-sm max-w-sm mx-auto">
+                  <Row label="Evento" value={data.event_type} />
+                  <Row label="Data" value={formatDate(data.event_date)} />
                 </div>
               )}
             </div>
@@ -499,57 +496,70 @@ export default function SignContract() {
 
           {data && !signed && !loading && (
             <div>
-              {/* Contract summary header */}
-              <div className="p-4 border-b border-gray-100">
-                <div className="flex items-center gap-2 text-amber-700 bg-amber-50 rounded-lg px-3 py-2 text-sm">
-                  <FileText size={16} />
-                  <span className="font-medium">Contrato de Locação – Espaço Lamoniê</span>
+              {/* Steps indicator */}
+              <div className="px-6 pt-5 pb-3">
+                <div className="flex items-center gap-3 text-xs">
+                  <StepDot step={1} current={currentStep} label="Leitura" />
+                  <div className="flex-1 h-px bg-border" />
+                  <StepDot step={2} current={currentStep} label="Assinatura" />
+                  <div className="flex-1 h-px bg-border" />
+                  <StepDot step={3} current={currentStep} label="Conclusão" />
                 </div>
-                <div className="mt-3 bg-gray-50 rounded-xl p-3 space-y-1.5 text-sm">
+              </div>
+
+              {/* Contract summary */}
+              <div className="px-6 pb-4">
+                <div className="flex items-center gap-2 text-primary bg-secondary rounded-xl px-4 py-2.5 text-sm">
+                  <FileText size={16} />
+                  <span className="font-medium">Contrato de Locação — Espaço Lamoniê</span>
+                </div>
+                <div className="mt-3 bg-secondary rounded-xl p-4 space-y-2 text-sm">
                   <Row label="Cliente" value={data.client_name} />
                   {data.client_cpf && <Row label="CPF" value={data.client_cpf} />}
                   <Row label="Evento" value={data.event_type} />
                   <Row label="Data" value={formatDate(data.event_date)} />
-                  <hr className="border-gray-200" />
+                  <div className="border-t border-border my-2" />
                   <Row label="Valor Total" value={fmt(data.total_value)} bold />
                   <Row label={`Sinal (${data.deposit_percent}%)`} value={fmt(depositValue)} />
                   <Row label="Restante" value={fmt(Number(data.total_value) - depositValue)} />
                 </div>
               </div>
 
-              {/* Full contract text - must scroll to bottom */}
-              <div className="p-4 border-b border-gray-100">
-                <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
-                  📄 Leia o contrato completo abaixo
+              {/* Full contract text */}
+              <div className="px-6 pb-4">
+                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">
+                  Leia o contrato completo
                 </p>
+                {/* Reading progress bar */}
+                <Progress value={scrollProgress} className="h-1 mb-3" />
                 <div
                   ref={contractScrollRef}
                   onScroll={handleScroll}
-                  className="bg-gray-50 rounded-xl p-4 max-h-[40vh] overflow-y-auto border border-gray-200 text-sm leading-relaxed whitespace-pre-wrap font-sans text-gray-700"
+                  className="bg-secondary rounded-xl p-5 max-h-[40vh] overflow-y-auto border border-border text-sm leading-relaxed whitespace-pre-wrap text-foreground"
                 >
                   {buildContractText(data)}
                 </div>
                 {!hasScrolledToBottom && (
-                  <div className="flex items-center justify-center gap-1.5 mt-2 text-amber-600 text-xs animate-bounce">
+                  <div className="flex items-center justify-center gap-1.5 mt-3 text-primary text-xs animate-bounce">
                     <ChevronDown size={14} />
                     <span>Role até o final para liberar a assinatura</span>
                     <ChevronDown size={14} />
                   </div>
                 )}
                 {hasScrolledToBottom && (
-                  <div className="flex items-center gap-1.5 mt-2 text-green-600 text-xs">
+                  <div className="flex items-center gap-1.5 mt-3 text-success text-xs font-medium">
                     <CheckCircle size={14} />
-                    <span>Contrato lido ✓</span>
+                    <span>Contrato lido com sucesso</span>
                   </div>
                 )}
               </div>
 
               {/* Signature canvas */}
-              <div className="p-4 border-b border-gray-100">
-                <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
-                  ✍️ Assine abaixo (desenhe sua rubrica)
+              <div className="px-6 pb-4">
+                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">
+                  Assine abaixo
                 </p>
-                <div className={`relative rounded-xl border-2 border-dashed ${hasScrolledToBottom ? "border-amber-300 bg-white" : "border-gray-200 bg-gray-50 opacity-50 pointer-events-none"}`}>
+                <div className={`relative rounded-xl border-2 border-dashed transition-all ${hasScrolledToBottom ? "border-primary/40 bg-card" : "border-border bg-muted/30 opacity-50 pointer-events-none"}`}>
                   <canvas
                     ref={canvasRef}
                     width={600}
@@ -564,15 +574,15 @@ export default function SignContract() {
                     onTouchEnd={stopDrawing}
                   />
                   {!signatureDataUrl && hasScrolledToBottom && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-gray-300 text-sm">
-                      Desenhe sua assinatura aqui
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-muted-foreground/40 text-sm">
+                      Desenhe sua rubrica aqui
                     </div>
                   )}
                 </div>
                 {signatureDataUrl && (
                   <button
                     onClick={clearCanvas}
-                    className="mt-1.5 text-xs text-amber-600 hover:text-amber-700 underline"
+                    className="mt-2 text-xs text-primary hover:text-primary/80 underline underline-offset-2 transition-colors"
                   >
                     Limpar assinatura
                   </button>
@@ -580,32 +590,32 @@ export default function SignContract() {
               </div>
 
               {/* Legal notice + sign button */}
-              <div className="p-4">
-                <div className="bg-blue-50 rounded-lg p-3 text-xs text-blue-700 flex items-start gap-2 mb-4">
-                  <ShieldCheck size={16} className="shrink-0 mt-0.5" />
+              <div className="px-6 pb-6">
+                <div className="bg-primary/5 rounded-xl p-4 text-xs text-foreground/70 flex items-start gap-2.5 mb-4 border border-primary/10">
+                  <ShieldCheck size={16} className="shrink-0 mt-0.5 text-primary" />
                   <span>
                     Ao assinar, você declara que leu, compreendeu e aceita todas as 10 cláusulas do contrato de locação do Espaço Lamoniê conforme apresentado.
                   </span>
                 </div>
 
                 {error && (
-                  <p className="text-sm text-red-600 mb-3">{error}</p>
+                  <p className="text-sm text-danger mb-3 font-medium">{error}</p>
                 )}
 
                 <Button
                   onClick={handleSign}
                   disabled={signing || !canSign}
-                  className="w-full h-12 text-base font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded-xl gap-2 disabled:opacity-50"
+                  className="w-full h-12 text-base font-semibold rounded-xl gap-2 disabled:opacity-40"
                 >
                   {signing ? (
                     <><Loader2 className="h-5 w-5 animate-spin" /> Assinando...</>
                   ) : (
-                    <><CheckCircle size={18} /> Assinar Contrato</>
+                    <><CheckCircle size={18} /> Assinar contrato</>
                   )}
                 </Button>
                 {!canSign && !signing && (
-                  <p className="text-xs text-gray-400 text-center mt-2">
-                    {!hasScrolledToBottom ? "Leia o contrato completo para liberar a assinatura" : "Desenhe sua assinatura/rubrica acima"}
+                  <p className="text-xs text-muted-foreground text-center mt-3">
+                    {!hasScrolledToBottom ? "Leia o contrato completo para liberar a assinatura" : "Desenhe sua rubrica acima para continuar"}
                   </p>
                 )}
               </div>
@@ -613,7 +623,7 @@ export default function SignContract() {
           )}
         </div>
 
-        <p className="text-center text-xs text-gray-400 mt-4">
+        <p className="text-center text-[11px] text-muted-foreground mt-6 tracking-wide">
           Espaço Lamoniê • Rua Cascadura, 380 • Ribeirão das Neves – MG
         </p>
       </div>
@@ -621,11 +631,25 @@ export default function SignContract() {
   );
 }
 
+function StepDot({ step, current, label }: { step: number; current: number; label: string }) {
+  const done = current >= step;
+  return (
+    <div className="flex items-center gap-1.5">
+      <div className={`h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-semibold transition-colors ${
+        done ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+      }`}>
+        {done && current > step ? "✓" : step}
+      </div>
+      <span className={`hidden sm:inline ${done ? "text-foreground font-medium" : "text-muted-foreground"}`}>{label}</span>
+    </div>
+  );
+}
+
 function Row({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
   return (
     <div className="flex justify-between">
-      <span className="text-gray-500">{label}</span>
-      <span className={bold ? "font-bold text-gray-800" : "font-medium text-gray-700"}>{value}</span>
+      <span className="text-muted-foreground">{label}</span>
+      <span className={bold ? "font-bold text-foreground" : "font-medium text-foreground"}>{value}</span>
     </div>
   );
 }

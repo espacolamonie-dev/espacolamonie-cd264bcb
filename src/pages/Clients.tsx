@@ -87,7 +87,7 @@ export default function Clients() {
         addressState: data.uf || "",
         addressZip: data.cep || p.addressZip,
       }));
-      toast.success("Endereço preenchido automaticamente!");
+      toast.success("Endereço preenchido automaticamente");
     } catch { toast.error("Erro ao buscar CEP"); }
     finally { setLoadingCep(false); }
   };
@@ -113,7 +113,7 @@ export default function Clients() {
         address_complement: form.addressComplement, address_neighborhood: form.addressNeighborhood,
         address_city: form.addressCity, address_state: form.addressState, address_zip: form.addressZip,
       };
-      if (editing) { await updateClient(editing.id, payload); toast.success("Informações salvas com sucesso"); }
+      if (editing) { await updateClient(editing.id, payload); toast.success("Cliente salvo com sucesso"); }
       else { await addClient(payload as any); toast.success("Cliente cadastrado com sucesso"); }
       setOpen(false); await load();
     } catch (e: any) { toast.error(e.message); }
@@ -138,19 +138,19 @@ export default function Clients() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-3xl font-display font-semibold tracking-tight">Clientes</h1>
-          <p className="text-sm text-muted-foreground mt-1">{clients.length} clientes cadastrados</p>
+          <p className="text-sm text-muted-foreground mt-1">{clients.length} cliente{clients.length !== 1 ? "s" : ""} cadastrado{clients.length !== 1 ? "s" : ""}</p>
         </div>
-        <Button onClick={openNew} size="sm" className="gap-2 h-9">
+        <Button onClick={openNew} size="sm" className="gap-2 h-9 rounded-lg">
           <Plus size={15} /> Novo cliente
         </Button>
       </div>
 
       <div className="relative max-w-sm">
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-        <Input placeholder="Buscar por nome, CPF ou telefone" className="pl-9 h-9 text-sm" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <Input placeholder="Buscar por nome, CPF ou telefone" className="pl-9 h-9 text-sm rounded-lg" value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
 
-      <div className="rounded-lg border border-border/60 bg-card overflow-x-auto">
+      <div className="rounded-xl border border-border bg-card overflow-x-auto">
         <table className="table-premium">
           <thead>
             <tr>
@@ -163,20 +163,20 @@ export default function Clients() {
           </thead>
           <tbody>
             {filtered.length === 0 ? (
-              <tr><td colSpan={5} className="!py-10 text-center text-muted-foreground">Nenhum registro encontrado</td></tr>
+              <tr><td colSpan={5} className="!py-12 text-center text-muted-foreground">Nenhum cliente encontrado</td></tr>
             ) : (
               filtered.map((c) => (
                 <tr key={c.id}>
                   <td className="font-medium">{c.name}</td>
-                  <td className="hidden sm:table-cell text-muted-foreground">{c.cpf || "—"}</td>
+                  <td className="hidden sm:table-cell text-muted-foreground tabular-nums">{c.cpf || "—"}</td>
                   <td className="hidden md:table-cell text-muted-foreground">{c.phone || "—"}</td>
                   <td className="hidden lg:table-cell text-muted-foreground max-w-[250px] truncate">{getDisplayAddress(c)}</td>
                   <td className="text-right">
-                    <div className="flex items-center justify-end gap-0.5">
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(c)}>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => openEdit(c)}>
                         <Pencil size={14} />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(c.id)}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-destructive hover:text-destructive" onClick={() => handleDelete(c.id)}>
                         <Trash2 size={14} />
                       </Button>
                     </div>
@@ -192,26 +192,31 @@ export default function Clients() {
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-display text-xl">{editing ? "Editar cliente" : "Novo cliente"}</DialogTitle>
+            <p className="text-xs text-muted-foreground mt-1">{editing ? "Atualize as informações do cliente" : "Preencha os dados para cadastrar um novo cliente"}</p>
           </DialogHeader>
-          <div className="grid gap-4 py-2">
-            <div className="grid gap-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">Nome completo *</Label>
-              <Input value={form.name} onChange={(e) => set("name", e.target.value)} />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-5 py-3">
+            {/* Personal info */}
+            <div className="space-y-4">
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Dados pessoais</p>
               <div className="grid gap-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">CPF</Label>
-                <Input value={form.cpf} onChange={(e) => set("cpf", formatCPF(e.target.value))} placeholder="000.000.000-00" maxLength={14} />
+                <Label className="text-xs font-medium text-muted-foreground">Nome completo *</Label>
+                <Input value={form.name} onChange={(e) => set("name", e.target.value)} className="rounded-lg" />
               </div>
-              <div className="grid gap-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">Telefone</Label>
-                <Input value={form.phone} onChange={(e) => set("phone", formatPhone(e.target.value))} placeholder="(00) 00000-0000" maxLength={15} />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground">CPF</Label>
+                  <Input value={form.cpf} onChange={(e) => set("cpf", formatCPF(e.target.value))} placeholder="000.000.000-00" maxLength={14} className="rounded-lg tabular-nums" />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground">Telefone</Label>
+                  <Input value={form.phone} onChange={(e) => set("phone", formatPhone(e.target.value))} placeholder="(00) 00000-0000" maxLength={15} className="rounded-lg tabular-nums" />
+                </div>
               </div>
             </div>
 
             {/* Address section */}
-            <div className="space-y-3 rounded-md border border-border/60 bg-muted/10 p-3">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Endereço</p>
+            <div className="space-y-4 rounded-xl border border-border bg-secondary/30 p-4">
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Endereço</p>
 
               <div className="grid grid-cols-[140px_1fr] gap-3">
                 <div className="grid gap-1.5">
@@ -226,48 +231,49 @@ export default function Clients() {
                       }}
                       placeholder="00000-000"
                       maxLength={9}
+                      className="rounded-lg tabular-nums"
                     />
                     {loadingCep && <Loader2 size={14} className="animate-spin text-muted-foreground shrink-0" />}
                   </div>
                 </div>
                 <div className="grid gap-1.5">
                   <Label className="text-xs font-medium text-muted-foreground">Logradouro</Label>
-                  <Input value={form.addressStreet} onChange={(e) => set("addressStreet", e.target.value)} placeholder="Rua, Avenida..." />
+                  <Input value={form.addressStreet} onChange={(e) => set("addressStreet", e.target.value)} placeholder="Rua, Avenida..." className="rounded-lg" />
                 </div>
               </div>
 
               <div className="grid grid-cols-[100px_1fr] gap-3">
                 <div className="grid gap-1.5">
                   <Label className="text-xs font-medium text-muted-foreground">Número</Label>
-                  <Input value={form.addressNumber} onChange={(e) => set("addressNumber", e.target.value)} placeholder="Nº" />
+                  <Input value={form.addressNumber} onChange={(e) => set("addressNumber", e.target.value)} placeholder="Nº" className="rounded-lg" />
                 </div>
                 <div className="grid gap-1.5">
                   <Label className="text-xs font-medium text-muted-foreground">Complemento</Label>
-                  <Input value={form.addressComplement} onChange={(e) => set("addressComplement", e.target.value)} placeholder="Apto, bloco... (opcional)" />
+                  <Input value={form.addressComplement} onChange={(e) => set("addressComplement", e.target.value)} placeholder="Apto, bloco... (opcional)" className="rounded-lg" />
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-3">
                 <div className="grid gap-1.5">
                   <Label className="text-xs font-medium text-muted-foreground">Bairro</Label>
-                  <Input value={form.addressNeighborhood} onChange={(e) => set("addressNeighborhood", e.target.value)} />
+                  <Input value={form.addressNeighborhood} onChange={(e) => set("addressNeighborhood", e.target.value)} className="rounded-lg" />
                 </div>
                 <div className="grid gap-1.5">
                   <Label className="text-xs font-medium text-muted-foreground">Cidade</Label>
-                  <Input value={form.addressCity} onChange={(e) => set("addressCity", e.target.value)} />
+                  <Input value={form.addressCity} onChange={(e) => set("addressCity", e.target.value)} className="rounded-lg" />
                 </div>
                 <div className="grid gap-1.5">
                   <Label className="text-xs font-medium text-muted-foreground">Estado</Label>
-                  <Input value={form.addressState} onChange={(e) => set("addressState", e.target.value)} placeholder="UF" maxLength={2} />
+                  <Input value={form.addressState} onChange={(e) => set("addressState", e.target.value)} placeholder="UF" maxLength={2} className="rounded-lg" />
                 </div>
               </div>
             </div>
 
             <div className="grid gap-1.5">
               <Label className="text-xs font-medium text-muted-foreground">Observações</Label>
-              <Textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={3} />
+              <Textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={3} className="rounded-lg" placeholder="Informações adicionais sobre o cliente (opcional)" />
             </div>
-            <Button onClick={handleSave} className="mt-2">{editing ? "Salvar alterações" : "Cadastrar cliente"}</Button>
+            <Button onClick={handleSave} className="mt-1 rounded-lg h-10">{editing ? "Salvar cliente" : "Cadastrar cliente"}</Button>
           </div>
         </DialogContent>
       </Dialog>
