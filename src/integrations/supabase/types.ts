@@ -52,6 +52,7 @@ export type Database = {
       }
       contract_signatures: {
         Row: {
+          client_address: string | null
           client_cpf: string | null
           client_name: string
           client_phone: string | null
@@ -71,6 +72,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          client_address?: string | null
           client_cpf?: string | null
           client_name: string
           client_phone?: string | null
@@ -90,6 +92,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          client_address?: string | null
           client_cpf?: string | null
           client_name?: string
           client_phone?: string | null

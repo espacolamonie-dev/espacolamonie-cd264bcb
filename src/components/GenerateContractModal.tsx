@@ -363,6 +363,7 @@ export default function GenerateContractModal({ contract, client, open, onOpenCh
           client_name: client.name,
           client_cpf: client.cpf || null,
           client_phone: client.phone || null,
+          client_address: client.address || "",
           event_date: contract.eventDate,
           event_type: contract.eventType,
           total_value: contract.totalValue,
