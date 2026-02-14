@@ -7,9 +7,15 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { getClients, addClient, updateClient, deleteClient } from "@/data/store";
+import { formatFullAddress } from "@/types";
 import type { Client } from "@/types";
 
-const emptyForm = { name: "", cpf: "", phone: "", cep: "", address: "", notes: "" };
+const emptyForm = {
+  name: "", cpf: "", phone: "",
+  addressStreet: "", addressNumber: "", addressComplement: "",
+  addressNeighborhood: "", addressCity: "", addressState: "", addressZip: "",
+  notes: "",
+};
 
 function formatCPF(value: string): string {
   const digits = value.replace(/\D/g, "").slice(0, 11);
@@ -55,9 +61,13 @@ export default function Clients() {
   const openNew = () => { setEditing(null); setForm(emptyForm); setOpen(true); };
   const openEdit = (c: Client) => {
     setEditing(c);
-    // Extract CEP from address if present
-    const cepMatch = c.address.match(/\d{5}-?\d{3}/);
-    setForm({ name: c.name, cpf: c.cpf, phone: c.phone, cep: cepMatch ? cepMatch[0] : "", address: c.address, notes: c.notes });
+    setForm({
+      name: c.name, cpf: c.cpf, phone: c.phone,
+      addressStreet: c.addressStreet, addressNumber: c.addressNumber,
+      addressComplement: c.addressComplement, addressNeighborhood: c.addressNeighborhood,
+      addressCity: c.addressCity, addressState: c.addressState, addressZip: c.addressZip,
+      notes: c.notes,
+    });
     setOpen(true);
   };
 
@@ -68,23 +78,18 @@ export default function Clients() {
     try {
       const res = await fetch(`https://viacep.com.br/ws/${digits}/json/`);
       const data = await res.json();
-      if (data.erro) {
-        toast.error("CEP não encontrado");
-        return;
-      }
-      const fullAddress = [
-        data.logradouro,
-        data.bairro,
-        `${data.localidade} - ${data.uf}`,
-        `CEP: ${data.cep}`,
-      ].filter(Boolean).join(", ");
-      setForm((p) => ({ ...p, address: fullAddress }));
+      if (data.erro) { toast.error("CEP não encontrado"); return; }
+      setForm((p) => ({
+        ...p,
+        addressStreet: data.logradouro || "",
+        addressNeighborhood: data.bairro || "",
+        addressCity: data.localidade || "",
+        addressState: data.uf || "",
+        addressZip: data.cep || p.addressZip,
+      }));
       toast.success("Endereço preenchido automaticamente!");
-    } catch {
-      toast.error("Erro ao buscar CEP");
-    } finally {
-      setLoadingCep(false);
-    }
+    } catch { toast.error("Erro ao buscar CEP"); }
+    finally { setLoadingCep(false); }
   };
 
   const handleSave = async () => {
@@ -93,10 +98,23 @@ export default function Clients() {
     if (cpfDigits.length > 0 && cpfDigits.length !== 11) { toast.error("CPF deve ter 11 dígitos"); return; }
     const phoneDigits = form.phone.replace(/\D/g, "");
     if (phoneDigits.length > 0 && phoneDigits.length < 10) { toast.error("Telefone deve ter pelo menos 10 dígitos"); return; }
+
+    const fullAddress = formatFullAddress({
+      addressStreet: form.addressStreet, addressNumber: form.addressNumber,
+      addressComplement: form.addressComplement, addressNeighborhood: form.addressNeighborhood,
+      addressCity: form.addressCity, addressState: form.addressState, addressZip: form.addressZip,
+    }).replace(/\n/g, ", ");
+
     try {
-      const payload = { name: form.name, cpf: form.cpf, phone: form.phone, email: "", address: form.address, notes: form.notes };
+      const payload = {
+        name: form.name, cpf: form.cpf, phone: form.phone, email: "",
+        address: fullAddress, notes: form.notes,
+        address_street: form.addressStreet, address_number: form.addressNumber,
+        address_complement: form.addressComplement, address_neighborhood: form.addressNeighborhood,
+        address_city: form.addressCity, address_state: form.addressState, address_zip: form.addressZip,
+      };
       if (editing) { await updateClient(editing.id, payload); toast.success("Informações salvas com sucesso"); }
-      else { await addClient({ ...payload }); toast.success("Cliente cadastrado com sucesso"); }
+      else { await addClient(payload as any); toast.success("Cliente cadastrado com sucesso"); }
       setOpen(false); await load();
     } catch (e: any) { toast.error(e.message); }
   };
@@ -107,6 +125,13 @@ export default function Clients() {
   };
 
   const set = (field: string, value: string) => setForm((p) => ({ ...p, [field]: value }));
+
+  const getDisplayAddress = (c: Client) => {
+    if (c.addressStreet) {
+      return formatFullAddress(c).replace(/\n/g, ", ");
+    }
+    return c.address || "—";
+  };
 
   return (
     <div className="animate-fade-in space-y-6">
@@ -145,7 +170,7 @@ export default function Clients() {
                   <td className="font-medium">{c.name}</td>
                   <td className="hidden sm:table-cell text-muted-foreground">{c.cpf || "—"}</td>
                   <td className="hidden md:table-cell text-muted-foreground">{c.phone || "—"}</td>
-                  <td className="hidden lg:table-cell text-muted-foreground">{c.address || "—"}</td>
+                  <td className="hidden lg:table-cell text-muted-foreground max-w-[250px] truncate">{getDisplayAddress(c)}</td>
                   <td className="text-right">
                     <div className="flex items-center justify-end gap-0.5">
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(c)}>
@@ -164,7 +189,7 @@ export default function Clients() {
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-display text-xl">{editing ? "Editar cliente" : "Novo cliente"}</DialogTitle>
           </DialogHeader>
@@ -183,29 +208,61 @@ export default function Clients() {
                 <Input value={form.phone} onChange={(e) => set("phone", formatPhone(e.target.value))} placeholder="(00) 00000-0000" maxLength={15} />
               </div>
             </div>
-            <div className="grid gap-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">CEP</Label>
-              <div className="flex gap-2">
-                <Input
-                  value={form.cep}
-                  onChange={(e) => {
-                    const formatted = formatCEP(e.target.value);
-                    set("cep", formatted);
-                    if (formatted.replace(/\D/g, "").length === 8) {
-                      handleCepLookup(formatted);
-                    }
-                  }}
-                  placeholder="00000-000"
-                  maxLength={9}
-                  className="w-[140px]"
-                />
-                {loadingCep && <Loader2 size={16} className="animate-spin text-muted-foreground mt-2.5" />}
+
+            {/* Address section */}
+            <div className="space-y-3 rounded-md border border-border/60 bg-muted/10 p-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Endereço</p>
+
+              <div className="grid grid-cols-[140px_1fr] gap-3">
+                <div className="grid gap-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground">CEP</Label>
+                  <div className="flex gap-1.5 items-center">
+                    <Input
+                      value={form.addressZip}
+                      onChange={(e) => {
+                        const formatted = formatCEP(e.target.value);
+                        set("addressZip", formatted);
+                        if (formatted.replace(/\D/g, "").length === 8) handleCepLookup(formatted);
+                      }}
+                      placeholder="00000-000"
+                      maxLength={9}
+                    />
+                    {loadingCep && <Loader2 size={14} className="animate-spin text-muted-foreground shrink-0" />}
+                  </div>
+                </div>
+                <div className="grid gap-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground">Logradouro</Label>
+                  <Input value={form.addressStreet} onChange={(e) => set("addressStreet", e.target.value)} placeholder="Rua, Avenida..." />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-[100px_1fr] gap-3">
+                <div className="grid gap-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground">Número</Label>
+                  <Input value={form.addressNumber} onChange={(e) => set("addressNumber", e.target.value)} placeholder="Nº" />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground">Complemento</Label>
+                  <Input value={form.addressComplement} onChange={(e) => set("addressComplement", e.target.value)} placeholder="Apto, bloco... (opcional)" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div className="grid gap-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground">Bairro</Label>
+                  <Input value={form.addressNeighborhood} onChange={(e) => set("addressNeighborhood", e.target.value)} />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground">Cidade</Label>
+                  <Input value={form.addressCity} onChange={(e) => set("addressCity", e.target.value)} />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground">Estado</Label>
+                  <Input value={form.addressState} onChange={(e) => set("addressState", e.target.value)} placeholder="UF" maxLength={2} />
+                </div>
               </div>
             </div>
-            <div className="grid gap-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">Endereço</Label>
-              <Input value={form.address} onChange={(e) => set("address", e.target.value)} placeholder="Preenchido automaticamente pelo CEP" />
-            </div>
+
             <div className="grid gap-1.5">
               <Label className="text-xs font-medium text-muted-foreground">Observações</Label>
               <Textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={3} />

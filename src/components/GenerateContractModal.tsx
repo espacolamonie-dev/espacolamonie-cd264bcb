@@ -8,6 +8,7 @@ import { FileText, Send, CheckCircle, Phone, Download, Link } from "lucide-react
 import { jsPDF } from "jspdf";
 import { addDocumentFromBlob, updateContract } from "@/data/store";
 import { supabase } from "@/integrations/supabase/client";
+import { formatFullAddress } from "@/types";
 import type { Contract, Client } from "@/types";
 
 interface Props {
@@ -35,6 +36,7 @@ function formatDateFull(dateStr: string) {
 }
 
 function buildContractText(contract: Contract, client: Client): string {
+  const clientAddress = client.addressStreet ? formatFullAddress(client).replace(/\n/g, ", ") : client.address || "Não informado";
   const depositValue = (contract.totalValue * contract.depositPercent) / 100;
   const remainingPercent = 100 - contract.depositPercent;
   const remainingValue = contract.totalValue - depositValue;
@@ -58,7 +60,7 @@ Telefone: (31) 99711-1502
 LOCATÁRIO:
 Nome: ${client.name}
 CPF: ${client.cpf || "Não informado"}
-Endereço: ${client.address || "Não informado"}
+Endereço: ${clientAddress}
 Telefone: ${client.phone || "Não informado"}
 
 Têm entre si justo e contratado o seguinte:
@@ -213,7 +215,8 @@ async function generatePDF(contract: Contract, client: Client): Promise<Blob> {
   addSpace(2);
   addText(`Nome: ${client.name}`);
   addText(`CPF: ${client.cpf || "Não informado"}`);
-  addText(`Endereço: ${client.address || "Não informado"}`);
+  const clientAddressPdf = client.addressStreet ? formatFullAddress(client).replace(/\n/g, ", ") : client.address || "Não informado";
+  addText(`Endereço: ${clientAddressPdf}`);
   addText(`Telefone: ${client.phone || "Não informado"}`);
   addSpace(5);
 
@@ -363,7 +366,7 @@ export default function GenerateContractModal({ contract, client, open, onOpenCh
           client_name: client.name,
           client_cpf: client.cpf || null,
           client_phone: client.phone || null,
-          client_address: client.address || "",
+          client_address: client.addressStreet ? formatFullAddress(client).replace(/\n/g, ", ") : client.address || "",
           event_date: contract.eventDate,
           event_type: contract.eventType,
           total_value: contract.totalValue,
