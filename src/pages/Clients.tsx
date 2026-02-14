@@ -9,7 +9,22 @@ import { toast } from "sonner";
 import { getClients, addClient, updateClient, deleteClient } from "@/data/store";
 import type { Client } from "@/types";
 
-const emptyForm = { name: "", cpf: "", phone: "", email: "", address: "", notes: "" };
+const emptyForm = { name: "", cpf: "", phone: "", address: "", notes: "" };
+
+function formatCPF(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
+  if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+}
+
+function formatPhone(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 2) return digits.length ? `(${digits}` : "";
+  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+}
 
 export default function Clients() {
   const [clients, setClients] = useState<Client[]>([]);
@@ -27,21 +42,26 @@ export default function Clients() {
     (c) =>
       c.name.toLowerCase().includes(search.toLowerCase()) ||
       c.cpf.includes(search) ||
-      c.email.toLowerCase().includes(search.toLowerCase())
+      c.phone.includes(search)
   );
 
   const openNew = () => { setEditing(null); setForm(emptyForm); setOpen(true); };
   const openEdit = (c: Client) => {
     setEditing(c);
-    setForm({ name: c.name, cpf: c.cpf, phone: c.phone, email: c.email, address: c.address, notes: c.notes });
+    setForm({ name: c.name, cpf: c.cpf, phone: c.phone, address: c.address, notes: c.notes });
     setOpen(true);
   };
 
   const handleSave = async () => {
     if (!form.name.trim()) { toast.error("Preencha o nome do cliente"); return; }
+    const cpfDigits = form.cpf.replace(/\D/g, "");
+    if (cpfDigits.length > 0 && cpfDigits.length !== 11) { toast.error("CPF deve ter 11 dígitos"); return; }
+    const phoneDigits = form.phone.replace(/\D/g, "");
+    if (phoneDigits.length > 0 && phoneDigits.length < 10) { toast.error("Telefone deve ter pelo menos 10 dígitos"); return; }
     try {
-      if (editing) { await updateClient(editing.id, form); toast.success("Informações salvas com sucesso"); }
-      else { await addClient(form); toast.success("Cliente cadastrado com sucesso"); }
+      const payload = { ...form, email: "" };
+      if (editing) { await updateClient(editing.id, payload); toast.success("Informações salvas com sucesso"); }
+      else { await addClient({ ...payload }); toast.success("Cliente cadastrado com sucesso"); }
       setOpen(false); await load();
     } catch (e: any) { toast.error(e.message); }
   };
@@ -67,7 +87,7 @@ export default function Clients() {
 
       <div className="relative max-w-sm">
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-        <Input placeholder="Buscar por nome, e-mail ou CPF" className="pl-9 h-9 text-sm" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <Input placeholder="Buscar por nome, CPF ou telefone" className="pl-9 h-9 text-sm" value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
 
       <div className="rounded-lg border border-border/60 bg-card overflow-x-auto">
@@ -77,7 +97,7 @@ export default function Clients() {
               <th>Nome</th>
               <th className="hidden sm:table-cell">CPF</th>
               <th className="hidden md:table-cell">Telefone</th>
-              <th className="hidden lg:table-cell">E-mail</th>
+              <th className="hidden lg:table-cell">Endereço</th>
               <th className="text-right">Ações</th>
             </tr>
           </thead>
@@ -90,7 +110,7 @@ export default function Clients() {
                   <td className="font-medium">{c.name}</td>
                   <td className="hidden sm:table-cell text-muted-foreground">{c.cpf || "—"}</td>
                   <td className="hidden md:table-cell text-muted-foreground">{c.phone || "—"}</td>
-                  <td className="hidden lg:table-cell text-muted-foreground">{c.email || "—"}</td>
+                  <td className="hidden lg:table-cell text-muted-foreground">{c.address || "—"}</td>
                   <td className="text-right">
                     <div className="flex items-center justify-end gap-0.5">
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(c)}>
@@ -121,16 +141,12 @@ export default function Clients() {
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-1.5">
                 <Label className="text-xs font-medium text-muted-foreground">CPF</Label>
-                <Input value={form.cpf} onChange={(e) => set("cpf", e.target.value)} />
+                <Input value={form.cpf} onChange={(e) => set("cpf", formatCPF(e.target.value))} placeholder="000.000.000-00" maxLength={14} />
               </div>
               <div className="grid gap-1.5">
                 <Label className="text-xs font-medium text-muted-foreground">Telefone</Label>
-                <Input value={form.phone} onChange={(e) => set("phone", e.target.value)} />
+                <Input value={form.phone} onChange={(e) => set("phone", formatPhone(e.target.value))} placeholder="(00) 00000-0000" maxLength={15} />
               </div>
-            </div>
-            <div className="grid gap-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">E-mail</Label>
-              <Input value={form.email} onChange={(e) => set("email", e.target.value)} />
             </div>
             <div className="grid gap-1.5">
               <Label className="text-xs font-medium text-muted-foreground">Endereço</Label>

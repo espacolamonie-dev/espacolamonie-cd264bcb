@@ -49,8 +49,7 @@ export default function Contracts() {
     const client = clientMap[c.clientId];
     const matchSearch = !search ||
       (client?.name || "").toLowerCase().includes(search.toLowerCase()) ||
-      (client?.cpf || "").includes(search) ||
-      (client?.email || "").toLowerCase().includes(search.toLowerCase());
+      (client?.cpf || "").includes(search);
     const matchStatus = statusFilter === "all" || c.status === statusFilter;
     return matchSearch && matchStatus;
   });
@@ -120,7 +119,7 @@ export default function Contracts() {
       <div className="flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Buscar por nome, e-mail ou CPF" className="pl-9 h-9 text-sm" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input placeholder="Buscar por nome ou CPF" className="pl-9 h-9 text-sm" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[180px] h-9 text-sm">
