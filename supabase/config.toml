@@ -1,1 +1,7 @@
 project_id = "xznmawsbuifpgppybevs"
+
+[functions.parse-contract-pdf]
+verify_jwt = false
+
+[functions.sign-contract]
+verify_jwt = false
