@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { FileText, Send, CheckCircle, Phone, Download } from "lucide-react";
+import { FileText, Send, CheckCircle, Phone, Download, Link } from "lucide-react";
 import { jsPDF } from "jspdf";
 import { addDocumentFromBlob, updateContract } from "@/data/store";
+import { supabase } from "@/integrations/supabase/client";
 import type { Contract, Client } from "@/types";
 
 interface Props {
@@ -18,10 +19,6 @@ interface Props {
 }
 
 const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-const fmtExtenso = (v: number) => {
-  const formatted = fmt(v);
-  return formatted;
-};
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr + "T12:00:00");
@@ -127,7 +124,7 @@ LOCATÁRIO
 
 
 __________________________________
-LOCADOR`;
+LOCADOR – Espaço Lamoniê (Assinado digitalmente)`;
 }
 
 async function loadLogoBase64(): Promise<string> {
@@ -148,14 +145,13 @@ async function generatePDF(contract: Contract, client: Client): Promise<Blob> {
   const usableWidth = pageWidth - margin * 2;
   let y = 25;
 
-  // Add watermark logo on every page
   const logoBase64 = await loadLogoBase64();
   const addWatermark = () => {
     const logoSize = 100;
     const cx = (pageWidth - logoSize) / 2;
     const cy = (pageHeight - logoSize) / 2;
     doc.saveGraphicsState();
-    // @ts-ignore - jsPDF supports GState
+    // @ts-ignore
     doc.setGState(new doc.GState({ opacity: 0.06 }));
     doc.addImage(logoBase64, "PNG", cx, cy, logoSize, logoSize);
     doc.restoreGraphicsState();
@@ -167,14 +163,12 @@ async function generatePDF(contract: Contract, client: Client): Promise<Blob> {
     const style = opts?.bold ? "bold" : "normal";
     doc.setFontSize(size);
     doc.setFont("helvetica", style);
-
     const x = margin + (opts?.indent || 0);
     const maxWidth = usableWidth - (opts?.indent || 0);
-
     if (opts?.center) {
       const lines = doc.splitTextToSize(text, maxWidth);
       for (const line of lines) {
-        if (y > 275) { doc.addPage(); y = 20; }
+        if (y > 275) { doc.addPage(); addWatermark(); y = 20; }
         const lineWidth = doc.getTextWidth(line);
         doc.text(line, (pageWidth - lineWidth) / 2, y);
         y += size * 0.45;
@@ -182,7 +176,7 @@ async function generatePDF(contract: Contract, client: Client): Promise<Blob> {
     } else {
       const lines = doc.splitTextToSize(text, maxWidth);
       for (const line of lines) {
-        if (y > 275) { doc.addPage(); y = 20; }
+        if (y > 275) { doc.addPage(); addWatermark(); y = 20; }
         doc.text(line, x, y);
         y += size * 0.45;
       }
@@ -202,14 +196,11 @@ async function generatePDF(contract: Contract, client: Client): Promise<Blob> {
   ];
   const sigDate = `${today.getDate()} de ${months[today.getMonth()]} de ${today.getFullYear()}`;
 
-  // Title
   addText("CONTRATO DE LOCAÇÃO DE ESPAÇO PARA EVENTO", { bold: true, size: 14, center: true });
   addSpace(6);
-
   addText("Pelo presente instrumento particular, as partes abaixo identificadas:");
   addSpace(5);
 
-  // LOCADOR
   addText("LOCADOR:", { bold: true, size: 12 });
   addSpace(2);
   addText("Nome: Espaço Lamoniê");
@@ -218,7 +209,6 @@ async function generatePDF(contract: Contract, client: Client): Promise<Blob> {
   addText("Telefone: (31) 99711-1502");
   addSpace(5);
 
-  // LOCATÁRIO
   addText("LOCATÁRIO:", { bold: true, size: 12 });
   addSpace(2);
   addText(`Nome: ${client.name}`);
@@ -230,14 +220,12 @@ async function generatePDF(contract: Contract, client: Client): Promise<Blob> {
   addText("Têm entre si justo e contratado o seguinte:");
   addSpace(5);
 
-  // Cláusula 1
   checkPage();
   addText("CLÁUSULA 1 – DO OBJETO", { bold: true, size: 12 });
   addSpace(2);
   addText(`1.1. O presente contrato tem por objeto a locação do espaço físico do Espaço Lamoniê, exclusivamente para realização de evento privado, sem fins lucrativos, na data ${formatDate(contract.eventDate)}, no horário de dia inteiro, com devolução das chaves dentro do horário acordado.`);
   addSpace(5);
 
-  // Cláusula 2
   checkPage();
   addText("CLÁUSULA 2 – DO VALOR E FORMA DE PAGAMENTO", { bold: true, size: 12 });
   addSpace(2);
@@ -249,7 +237,6 @@ async function generatePDF(contract: Contract, client: Client): Promise<Blob> {
   addText("2.4. O sinal pago não será devolvido, exceto nas hipóteses previstas neste contrato.");
   addSpace(5);
 
-  // Cláusula 3
   checkPage();
   addText("CLÁUSULA 3 – DO CANCELAMENTO", { bold: true, size: 12 });
   addSpace(2);
@@ -259,7 +246,6 @@ async function generatePDF(contract: Contract, client: Client): Promise<Blob> {
   addText("3.2. Em caso de cancelamento pelo LOCADOR por motivo de força maior, todos os valores pagos serão integralmente devolvidos.");
   addSpace(5);
 
-  // Cláusula 4
   checkPage();
   addText("CLÁUSULA 4 – DO USO DO ESPAÇO", { bold: true, size: 12 });
   addSpace(2);
@@ -268,7 +254,6 @@ async function generatePDF(contract: Contract, client: Client): Promise<Blob> {
   addText("4.3. O uso de som será restrito a som ambiente já instalado no espaço para utilização, sendo proibidos DJs, bandas ou equipamentos profissionais.");
   addSpace(5);
 
-  // Cláusula 5
   checkPage();
   addText("CLÁUSULA 5 – DA RESPONSABILIDADE", { bold: true, size: 12 });
   addSpace(2);
@@ -283,7 +268,6 @@ async function generatePDF(contract: Contract, client: Client): Promise<Blob> {
   addText("• Fogos, narguilé, cigarro comum ou eletrônico em área interna.", { indent: 5 });
   addSpace(5);
 
-  // Cláusula 6
   checkPage();
   addText("CLÁUSULA 6 – DA LIMPEZA", { bold: true, size: 12 });
   addSpace(2);
@@ -291,7 +275,6 @@ async function generatePDF(contract: Contract, client: Client): Promise<Blob> {
   addText("6.2. A não realização da limpeza implicará cobrança de R$ 250,00.");
   addSpace(5);
 
-  // Cláusula 7
   checkPage();
   addText("CLÁUSULA 7 – DAS PENALIDADES", { bold: true, size: 12 });
   addSpace(2);
@@ -301,21 +284,18 @@ async function generatePDF(contract: Contract, client: Client): Promise<Blob> {
   addText("• Cobrança integral de danos apurados.", { indent: 5 });
   addSpace(5);
 
-  // Cláusula 8
   checkPage();
   addText("CLÁUSULA 8 – CASO FORTUITO E FORÇA MAIOR", { bold: true, size: 12 });
   addSpace(2);
   addText("8.1. Nenhuma das partes será responsabilizada por eventos imprevisíveis ou inevitáveis, como queda de energia, fenômenos naturais ou atos de autoridade pública.");
   addSpace(5);
 
-  // Cláusula 9
   checkPage();
   addText("CLÁUSULA 9 – DO FORO", { bold: true, size: 12 });
   addSpace(2);
   addText("9.1. Fica eleito o foro da Comarca de Ribeirão das Neves – MG, renunciando a qualquer outro, por mais privilegiado que seja.");
   addSpace(5);
 
-  // Cláusula 10
   checkPage();
   addText("CLÁUSULA 10 – DISPOSIÇÕES FINAIS", { bold: true, size: 12 });
   addSpace(2);
@@ -326,7 +306,7 @@ async function generatePDF(contract: Contract, client: Client): Promise<Blob> {
   addText(`Ribeirão das Neves – MG, ${sigDate}.`);
   addSpace(15);
 
-  // Signatures
+  // Signature lines
   checkPage();
   doc.setDrawColor(0);
   doc.line(margin, y, margin + 70, y);
@@ -337,7 +317,15 @@ async function generatePDF(contract: Contract, client: Client): Promise<Blob> {
   checkPage();
   doc.line(margin, y, margin + 70, y);
   y += 5;
-  addText("LOCADOR");
+  addText("LOCADOR – Espaço Lamoniê", { bold: true });
+  addSpace(1);
+
+  // Auto-signature for Locador
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "italic");
+  doc.setTextColor(100, 100, 100);
+  doc.text(`Assinado digitalmente em ${sigDate} às ${today.getHours().toString().padStart(2, "0")}:${today.getMinutes().toString().padStart(2, "0")}`, margin, y);
+  doc.setTextColor(0, 0, 0);
 
   return doc.output("blob");
 }
@@ -346,11 +334,11 @@ export default function GenerateContractModal({ contract, client, open, onOpenCh
   const [step, setStep] = useState<"preview" | "generated">("preview");
   const [generating, setGenerating] = useState(false);
   const [phone, setPhone] = useState(client.phone || "");
-  const [sending, setSending] = useState(false);
+  const [signingLink, setSigningLink] = useState("");
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const contractText = buildContractText(contract, client);
-  const eventDateFormatted = formatDate(contract.eventDate);
-  const fileName = `Contrato – ${client.name} – ${eventDateFormatted}.pdf`;
+  const fileName = `Contrato Lamoniê – ${client.name}.pdf`;
 
   const handleGenerate = async () => {
     setGenerating(true);
@@ -367,7 +355,28 @@ export default function GenerateContractModal({ contract, client, open, onOpenCh
 
       await updateContract(contract.id, { status: "awaiting_signature" });
 
-      toast.success("Contrato gerado e anexado com sucesso!");
+      // Create signing token
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: sigData } = await supabase.from("contract_signatures").insert({
+          contract_id: contract.id,
+          client_name: client.name,
+          client_cpf: client.cpf || null,
+          client_phone: client.phone || null,
+          event_date: contract.eventDate,
+          event_type: contract.eventType,
+          total_value: contract.totalValue,
+          deposit_percent: contract.depositPercent,
+          user_id: user.id,
+        } as any).select().single();
+
+        if (sigData) {
+          const baseUrl = window.location.origin;
+          setSigningLink(`${baseUrl}/sign?token=${(sigData as any).token}`);
+        }
+      }
+
+      toast.success("Contrato gerado e assinado pelo locador!");
       setStep("generated");
       onGenerated();
     } catch (err: any) {
@@ -377,7 +386,7 @@ export default function GenerateContractModal({ contract, client, open, onOpenCh
     }
   };
 
-  const handleSendWhatsApp = () => {
+  const handleSendWhatsApp = async () => {
     const cleanPhone = phone.replace(/\D/g, "");
     if (cleanPhone.length < 10) {
       toast.error("Informe um número de telefone válido com DDD");
@@ -385,11 +394,22 @@ export default function GenerateContractModal({ contract, client, open, onOpenCh
     }
 
     const phoneWithCountry = cleanPhone.startsWith("55") ? cleanPhone : `55${cleanPhone}`;
+
+    // Update sent_at and sent_to_phone
+    if (signingLink) {
+      const token = new URL(signingLink).searchParams.get("token");
+      if (token) {
+        await supabase.from("contract_signatures")
+          .update({ sent_at: new Date().toISOString(), sent_to_phone: phoneWithCountry } as any)
+          .eq("token", token);
+      }
+    }
+
     const message = encodeURIComponent(
-      `Olá ${client.name}! Segue o contrato do seu evento no Espaço Lamoniê para a data ${eventDateFormatted}. Por favor, confira e assine. Qualquer dúvida, estamos à disposição!`
+      `Olá ${client.name}! 😊\n\nSegue o contrato do seu evento no *Espaço Lamoniê* para a data *${formatDate(contract.eventDate)}*.\n\n📄 Assine o contrato em 1 clique:\n${signingLink}\n\nQualquer dúvida, estamos à disposição!`
     );
     window.open(`https://wa.me/${phoneWithCountry}?text=${message}`, "_blank");
-    toast.success("WhatsApp aberto para envio do contrato");
+    toast.success("WhatsApp aberto com link de assinatura!");
   };
 
   const handleDownload = async () => {
@@ -407,8 +427,17 @@ export default function GenerateContractModal({ contract, client, open, onOpenCh
     }
   };
 
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(signingLink);
+    setLinkCopied(true);
+    toast.success("Link copiado!");
+    setTimeout(() => setLinkCopied(false), 2000);
+  };
+
   const handleClose = () => {
     setStep("preview");
+    setSigningLink("");
+    setLinkCopied(false);
     onOpenChange(false);
   };
 
@@ -418,7 +447,7 @@ export default function GenerateContractModal({ contract, client, open, onOpenCh
         <DialogHeader>
           <DialogTitle className="font-display text-xl flex items-center gap-2">
             <FileText size={18} />
-            {step === "preview" ? "Pré-visualização do Contrato" : "Contrato Gerado"}
+            {step === "preview" ? "Pré-visualização do Contrato" : "Contrato Gerado e Assinado"}
           </DialogTitle>
         </DialogHeader>
 
@@ -446,16 +475,35 @@ export default function GenerateContractModal({ contract, client, open, onOpenCh
             <div className="rounded-md border border-success/30 bg-success/5 p-4 text-sm">
               <div className="flex items-center gap-2 text-success font-medium mb-1">
                 <CheckCircle size={15} />
-                Contrato gerado com sucesso!
+                Contrato gerado e assinado pelo Espaço Lamoniê!
               </div>
               <p className="text-muted-foreground text-xs">
-                O contrato foi anexado automaticamente e o status foi alterado para <strong>Aguardando Assinatura</strong>.
+                O PDF já está assinado pelo locador. O status foi alterado para <strong>Aguardando Assinatura</strong> do cliente.
               </p>
             </div>
 
+            {/* Signing Link */}
+            {signingLink && (
+              <div className="rounded-md border border-primary/30 bg-primary/5 p-4 space-y-3">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                  <Link size={12} /> Link de assinatura do cliente
+                </p>
+                <div className="flex gap-2">
+                  <Input value={signingLink} readOnly className="text-xs font-mono" />
+                  <Button variant="outline" size="sm" onClick={handleCopyLink} className="shrink-0">
+                    {linkCopied ? "Copiado!" : "Copiar"}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  O cliente pode assinar em 1 clique, sem cadastro ou app.
+                </p>
+              </div>
+            )}
+
+            {/* WhatsApp Send */}
             <div className="rounded-md border border-border/60 bg-muted/20 p-4 space-y-3">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-                <Send size={12} /> Enviar contrato
+                <Send size={12} /> Enviar link de assinatura via WhatsApp
               </p>
               <div className="grid gap-2">
                 <div>
@@ -470,7 +518,7 @@ export default function GenerateContractModal({ contract, client, open, onOpenCh
                         className="pl-9"
                       />
                     </div>
-                    <Button onClick={handleSendWhatsApp} disabled={sending} className="gap-2" variant="outline">
+                    <Button onClick={handleSendWhatsApp} className="gap-2" variant="outline">
                       <Send size={14} />
                       Enviar via WhatsApp
                     </Button>

@@ -50,6 +50,74 @@ export type Database = {
         }
         Relationships: []
       }
+      contract_signatures: {
+        Row: {
+          client_cpf: string | null
+          client_name: string
+          client_phone: string | null
+          contract_id: string
+          created_at: string
+          deposit_percent: number
+          event_date: string
+          event_type: string
+          id: string
+          sent_at: string | null
+          sent_to_phone: string | null
+          signed_at: string | null
+          signed_ip: string | null
+          status: string
+          token: string
+          total_value: number
+          user_id: string
+        }
+        Insert: {
+          client_cpf?: string | null
+          client_name: string
+          client_phone?: string | null
+          contract_id: string
+          created_at?: string
+          deposit_percent?: number
+          event_date: string
+          event_type: string
+          id?: string
+          sent_at?: string | null
+          sent_to_phone?: string | null
+          signed_at?: string | null
+          signed_ip?: string | null
+          status?: string
+          token?: string
+          total_value?: number
+          user_id: string
+        }
+        Update: {
+          client_cpf?: string | null
+          client_name?: string
+          client_phone?: string | null
+          contract_id?: string
+          created_at?: string
+          deposit_percent?: number
+          event_date?: string
+          event_type?: string
+          id?: string
+          sent_at?: string | null
+          sent_to_phone?: string | null
+          signed_at?: string | null
+          signed_ip?: string | null
+          status?: string
+          token?: string
+          total_value?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_signatures_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contracts: {
         Row: {
           cancelled_at: string | null

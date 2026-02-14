@@ -10,6 +10,7 @@ import Contracts from "@/pages/Contracts";
 import Financial from "@/pages/Financial";
 import Agenda from "@/pages/Agenda";
 import Reports from "@/pages/Reports";
+import SignContract from "@/pages/SignContract";
 import Auth from "@/pages/Auth";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "@/hooks/useAuth";
@@ -60,6 +61,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/auth" element={<AuthRoute />} />
+          <Route path="/sign" element={<SignContract />} />
           <Route
             path="/*"
             element={
