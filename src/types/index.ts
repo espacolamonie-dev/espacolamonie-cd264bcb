@@ -5,8 +5,27 @@ export interface Client {
   phone: string;
   email: string;
   address: string;
+  addressStreet: string;
+  addressNumber: string;
+  addressComplement: string;
+  addressNeighborhood: string;
+  addressCity: string;
+  addressState: string;
+  addressZip: string;
   notes: string;
   createdAt: string;
+}
+
+export function formatFullAddress(c: Pick<Client, 'addressStreet' | 'addressNumber' | 'addressComplement' | 'addressNeighborhood' | 'addressCity' | 'addressState' | 'addressZip'>): string {
+  const parts: string[] = [];
+  const line1 = [c.addressStreet, c.addressNumber].filter(Boolean).join(", ");
+  const line1Full = c.addressComplement ? `${line1} – ${c.addressComplement}` : line1;
+  if (line1Full) parts.push(line1Full);
+  const line2 = [c.addressNeighborhood, c.addressCity].filter(Boolean).join(" – ");
+  const line2Full = c.addressState ? `${line2} / ${c.addressState}` : line2;
+  if (line2Full) parts.push(line2Full);
+  if (c.addressZip) parts.push(`CEP: ${c.addressZip}`);
+  return parts.join("\n");
 }
 
 export type ContractStatus =

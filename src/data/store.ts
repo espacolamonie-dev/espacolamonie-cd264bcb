@@ -14,7 +14,7 @@ export const getClients = async () => {
   return (data || []).map(mapClient);
 };
 
-export const addClient = async (c: { name: string; cpf: string; phone: string; email?: string; address: string; notes: string }) => {
+export const addClient = async (c: { name: string; cpf: string; phone: string; email?: string; address: string; notes: string; address_street?: string; address_number?: string; address_complement?: string; address_neighborhood?: string; address_city?: string; address_state?: string; address_zip?: string }) => {
   const userId = await getUserId();
   const { data, error } = await supabase.from("clients").insert({ ...c, user_id: userId }).select().single();
   if (error) throw error;
@@ -289,6 +289,13 @@ function mapClient(row: any) {
     phone: row.phone || "",
     email: row.email || "",
     address: row.address || "",
+    addressStreet: row.address_street || "",
+    addressNumber: row.address_number || "",
+    addressComplement: row.address_complement || "",
+    addressNeighborhood: row.address_neighborhood || "",
+    addressCity: row.address_city || "",
+    addressState: row.address_state || "",
+    addressZip: row.address_zip || "",
     notes: row.notes || "",
     createdAt: row.created_at,
   };

@@ -17,6 +17,13 @@ export type Database = {
       clients: {
         Row: {
           address: string
+          address_city: string
+          address_complement: string
+          address_neighborhood: string
+          address_number: string
+          address_state: string
+          address_street: string
+          address_zip: string
           cpf: string
           created_at: string
           email: string
@@ -28,6 +35,13 @@ export type Database = {
         }
         Insert: {
           address?: string
+          address_city?: string
+          address_complement?: string
+          address_neighborhood?: string
+          address_number?: string
+          address_state?: string
+          address_street?: string
+          address_zip?: string
           cpf?: string
           created_at?: string
           email?: string
@@ -39,6 +53,13 @@ export type Database = {
         }
         Update: {
           address?: string
+          address_city?: string
+          address_complement?: string
+          address_neighborhood?: string
+          address_number?: string
+          address_state?: string
+          address_street?: string
+          address_zip?: string
           cpf?: string
           created_at?: string
           email?: string
