@@ -328,6 +328,74 @@ export type Database = {
           },
         ]
       }
+      signature_audit_logs: {
+        Row: {
+          browser: string | null
+          client_cpf: string | null
+          client_name: string
+          contract_id: string
+          contract_version: number
+          created_at: string
+          device_type: string | null
+          id: string
+          operating_system: string | null
+          pdf_hash: string | null
+          read_confirmed: boolean
+          signature_type: string
+          signed_at: string
+          signed_file_name: string
+          signer_ip: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          browser?: string | null
+          client_cpf?: string | null
+          client_name: string
+          contract_id: string
+          contract_version?: number
+          created_at?: string
+          device_type?: string | null
+          id?: string
+          operating_system?: string | null
+          pdf_hash?: string | null
+          read_confirmed?: boolean
+          signature_type?: string
+          signed_at: string
+          signed_file_name: string
+          signer_ip?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          browser?: string | null
+          client_cpf?: string | null
+          client_name?: string
+          contract_id?: string
+          contract_version?: number
+          created_at?: string
+          device_type?: string | null
+          id?: string
+          operating_system?: string | null
+          pdf_hash?: string | null
+          read_confirmed?: boolean
+          signature_type?: string
+          signed_at?: string
+          signed_file_name?: string
+          signer_ip?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signature_audit_logs_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
