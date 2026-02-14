@@ -118,8 +118,8 @@ serve(async (req) => {
 
     if (pdf_base64) {
       try {
-        // Extract raw base64 from data URI
-        const base64Data = pdf_base64.replace(/^data:application\/pdf;base64,/, "");
+        // Handle both raw base64 and data URI formats
+        const base64Data = pdf_base64.includes(",") ? pdf_base64.split(",")[1] : pdf_base64;
         const pdfBytes = decode(base64Data);
 
         const { error: uploadErr } = await supabase.storage

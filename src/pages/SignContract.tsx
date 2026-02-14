@@ -434,6 +434,8 @@ export default function SignContract() {
       // Generate signed PDF with client signature
       const sigDataUrl = canvasRef.current!.toDataURL("image/png");
       const pdfDataUri = await generateSignedPDF(data, sigDataUrl);
+      // Extract raw base64 from data URI (jsPDF includes filename= in the URI)
+      const rawBase64 = pdfDataUri.split(",")[1];
 
       const res = await fetch(FUNC_URL, {
         method: "POST",
@@ -441,7 +443,7 @@ export default function SignContract() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ token, pdf_base64: pdfDataUri }),
+        body: JSON.stringify({ token, pdf_base64: rawBase64 }),
       });
       const result = await res.json();
       if (result.error) { setError(result.error); }
