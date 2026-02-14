@@ -70,7 +70,6 @@ export default function Financial() {
   };
   useEffect(() => { load(); }, []);
 
-  // Handlers
   const handleAddExpense = async () => {
     if (!expForm.description.trim() || expForm.amount <= 0) { toast.error("Preencha descrição e valor"); return; }
     try {
@@ -100,7 +99,6 @@ export default function Financial() {
   const setExp = (field: string, value: any) => setExpForm((p) => ({ ...p, [field]: value }));
   const setEntry = (field: string, value: any) => setEntryForm((p) => ({ ...p, [field]: value }));
 
-  // Build combined entries — exclude payments from cancelled contracts
   const cancelledContractIds = new Set(
     contracts.filter((c) => c.status === "cancelled").map((c) => c.id)
   );
@@ -122,7 +120,6 @@ export default function Financial() {
     })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()), [activePayments, manualEntries, contractClientMap]);
 
-  // Apply entry filters
   const filteredEntries = useMemo(() => {
     const f = entryFilters;
     return allEntries.filter((e) => {
@@ -140,7 +137,6 @@ export default function Financial() {
     });
   }, [allEntries, entryFilters]);
 
-  // Apply expense filters
   const filteredExpenses = useMemo(() => {
     const f = expenseFilters;
     return expenses.filter((e) => {
@@ -154,7 +150,6 @@ export default function Financial() {
     });
   }, [expenses, expenseFilters]);
 
-  // Filtered totals
   const entryFiltersActive = hasActiveEntryFilters(entryFilters);
   const expenseFiltersActive = hasActiveExpenseFilters(expenseFilters);
   const filteredTotalIn = entryFiltersActive ? filteredEntries.reduce((s, e) => s + e.amount, 0) : globalTotalIn;
@@ -170,41 +165,47 @@ export default function Financial() {
 
       {/* Summary */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <div className="stat-card">
-          <div className="flex items-center gap-2 mb-2">
-            <TrendingUp size={14} className="text-success" />
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Entradas</p>
+        <div className="stat-card !border-success/20">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="rounded-full bg-success/10 p-2">
+              <TrendingUp size={14} className="text-success" />
+            </div>
+            <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider">Entradas</p>
           </div>
-          <p className="text-xl font-semibold text-success tracking-tight">{fmt(filteredTotalIn)}</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">
+          <p className="text-2xl font-display font-bold text-success tracking-tight">{fmt(filteredTotalIn)}</p>
+          <p className="text-[11px] text-muted-foreground mt-1">
             {entryFiltersActive ? `${filteredEntries.length} registros filtrados` : "Valores recebidos"}
           </p>
         </div>
         <div className="stat-card">
-          <div className="flex items-center gap-2 mb-2">
-            <TrendingDown size={14} className="text-danger" />
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Saídas</p>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="rounded-full bg-danger/10 p-2">
+              <TrendingDown size={14} className="text-danger" />
+            </div>
+            <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider">Saídas</p>
           </div>
-          <p className="text-xl font-semibold text-danger tracking-tight">{fmt(filteredTotalOut)}</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">
+          <p className="text-2xl font-display font-bold text-danger tracking-tight">{fmt(filteredTotalOut)}</p>
+          <p className="text-[11px] text-muted-foreground mt-1">
             {expenseFiltersActive ? `${filteredExpenses.length} registros filtrados` : "Despesas registradas"}
           </p>
         </div>
-        <div className="stat-card !border-primary/20">
-          <div className="flex items-center gap-2 mb-2">
-            <Wallet size={14} className="text-primary" />
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Saldo atual</p>
+        <div className="stat-card !border-primary/25">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="rounded-full bg-primary/10 p-2">
+              <Wallet size={14} className="text-primary" />
+            </div>
+            <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider">Saldo atual</p>
           </div>
-          <p className={`text-xl font-semibold tracking-tight ${displayBalance >= 0 ? "text-primary" : "text-danger"}`}>{fmt(displayBalance)}</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">Saldo disponível do espaço</p>
+          <p className={`text-2xl font-display font-bold tracking-tight ${displayBalance >= 0 ? "text-primary" : "text-danger"}`}>{fmt(displayBalance)}</p>
+          <p className="text-[11px] text-muted-foreground mt-1">Saldo disponível do espaço</p>
         </div>
       </div>
 
       {/* Tabs */}
       <Tabs defaultValue="entries" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="entries">Entradas</TabsTrigger>
-          <TabsTrigger value="expenses">Saídas</TabsTrigger>
+        <TabsList className="rounded-lg">
+          <TabsTrigger value="entries" className="rounded-md">Entradas</TabsTrigger>
+          <TabsTrigger value="expenses" className="rounded-md">Saídas</TabsTrigger>
         </TabsList>
 
         <TabsContent value="entries" className="space-y-4">
@@ -213,14 +214,14 @@ export default function Financial() {
               <h2 className="text-lg font-display font-semibold">Entradas financeiras</h2>
               <p className="text-xs text-muted-foreground">Valores recebidos pelo espaço</p>
             </div>
-            <Button onClick={() => setEntryOpen(true)} size="sm" className="gap-2 h-9">
+            <Button onClick={() => setEntryOpen(true)} size="sm" className="gap-2 h-9 rounded-lg">
               <Plus size={15} /> Adicionar entrada
             </Button>
           </div>
 
           <EntryFiltersBar filters={entryFilters} onChange={setEntryFilters} />
 
-          <div className="rounded-lg border border-border/60 bg-card overflow-x-auto">
+          <div className="rounded-xl border border-border bg-card overflow-x-auto">
             <table className="table-premium">
               <thead>
                 <tr>
@@ -233,7 +234,7 @@ export default function Financial() {
               </thead>
               <tbody>
                 {filteredEntries.length === 0 ? (
-                  <tr><td colSpan={5} className="!py-10 text-center text-muted-foreground">Nenhum registro encontrado</td></tr>
+                  <tr><td colSpan={5} className="!py-12 text-center text-muted-foreground">Nenhum registro encontrado</td></tr>
                 ) : (
                   filteredEntries.map((entry) => (
                     <tr key={entry.id}>
@@ -241,16 +242,16 @@ export default function Financial() {
                       <td className="font-medium">{entry.description}</td>
                       <td className="hidden sm:table-cell">
                         <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-medium ${
-                          entry.origin === "contract" ? "bg-primary/10 text-primary" : "bg-accent/15 text-accent-foreground"
+                          entry.origin === "contract" ? "bg-primary/10 text-primary" : "bg-accent text-accent-foreground"
                         }`}>
                           {entry.origin === "contract" ? <FileText size={10} /> : <HandCoins size={10} />}
                           {entry.origin === "contract" ? "Contrato" : "Manual"}
                         </span>
                       </td>
-                      <td className="text-right font-medium text-success tabular-nums">{fmt(entry.amount)}</td>
+                      <td className="text-right font-semibold text-success tabular-nums">{fmt(entry.amount)}</td>
                       <td className="text-right">
                         {entry.origin === "manual" && (
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteManualEntry(entry.id)}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-destructive hover:text-destructive" onClick={() => handleDeleteManualEntry(entry.id)}>
                             <Trash2 size={14} />
                           </Button>
                         )}
@@ -263,7 +264,7 @@ export default function Financial() {
           </div>
           {entryFiltersActive && (
             <p className="text-xs text-muted-foreground text-right">
-              Exibindo {filteredEntries.length} de {allEntries.length} entradas • Total filtrado: <span className="font-medium text-success">{fmt(filteredTotalIn)}</span>
+              Exibindo {filteredEntries.length} de {allEntries.length} entradas • Total filtrado: <span className="font-semibold text-success">{fmt(filteredTotalIn)}</span>
             </p>
           )}
         </TabsContent>
@@ -275,10 +276,10 @@ export default function Financial() {
               <p className="text-xs text-muted-foreground">Gastos operacionais do espaço</p>
             </div>
             <div className="flex gap-2">
-              <Button onClick={() => setExpOpen(true)} size="sm" className="gap-2 h-9">
+              <Button onClick={() => setExpOpen(true)} size="sm" className="gap-2 h-9 rounded-lg">
                 <Plus size={15} /> Adicionar despesa
               </Button>
-              <Button variant="outline" size="sm" className="gap-2 h-9" onClick={() => setImportOpen(true)}>
+              <Button variant="outline" size="sm" className="gap-2 h-9 rounded-lg" onClick={() => setImportOpen(true)}>
                 <CreditCard size={15} /> Importar extrato
               </Button>
             </div>
@@ -286,7 +287,7 @@ export default function Financial() {
 
           <ExpenseFiltersBar filters={expenseFilters} onChange={setExpenseFilters} />
 
-          <div className="rounded-lg border border-border/60 bg-card overflow-x-auto">
+          <div className="rounded-xl border border-border bg-card overflow-x-auto">
             <table className="table-premium">
               <thead>
                 <tr>
@@ -299,7 +300,7 @@ export default function Financial() {
               </thead>
               <tbody>
                 {filteredExpenses.length === 0 ? (
-                  <tr><td colSpan={5} className="!py-10 text-center text-muted-foreground">Nenhum registro encontrado</td></tr>
+                  <tr><td colSpan={5} className="!py-12 text-center text-muted-foreground">Nenhum registro encontrado</td></tr>
                 ) : (
                   filteredExpenses.map((e) => (
                     <tr key={e.id}>
@@ -308,9 +309,9 @@ export default function Financial() {
                       <td className="hidden sm:table-cell">
                         <span className="rounded-full bg-muted px-2.5 py-0.5 text-[10px] font-medium text-muted-foreground">{e.category}</span>
                       </td>
-                      <td className="text-right font-medium text-danger tabular-nums">{fmt(e.amount)}</td>
+                      <td className="text-right font-semibold text-danger tabular-nums">{fmt(e.amount)}</td>
                       <td className="text-right">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteExpense(e.id)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-destructive hover:text-destructive" onClick={() => handleDeleteExpense(e.id)}>
                           <Trash2 size={14} />
                         </Button>
                       </td>
@@ -322,7 +323,7 @@ export default function Financial() {
           </div>
           {expenseFiltersActive && (
             <p className="text-xs text-muted-foreground text-right">
-              Exibindo {filteredExpenses.length} de {expenses.length} despesas • Total filtrado: <span className="font-medium text-danger">{fmt(filteredTotalOut)}</span>
+              Exibindo {filteredExpenses.length} de {expenses.length} despesas • Total filtrado: <span className="font-semibold text-danger">{fmt(filteredTotalOut)}</span>
             </p>
           )}
         </TabsContent>
@@ -333,17 +334,18 @@ export default function Financial() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="font-display text-xl">Adicionar despesa</DialogTitle>
+            <p className="text-xs text-muted-foreground mt-1">Registre uma nova despesa do espaço</p>
           </DialogHeader>
           <div className="grid gap-4 py-2">
             <div className="grid gap-1.5">
               <Label className="text-xs font-medium text-muted-foreground">Descrição *</Label>
-              <Input value={expForm.description} onChange={(e) => setExp("description", e.target.value)} />
+              <Input value={expForm.description} onChange={(e) => setExp("description", e.target.value)} className="rounded-lg" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-1.5">
                 <Label className="text-xs font-medium text-muted-foreground">Categoria</Label>
                 <Select value={expForm.category} onValueChange={(v) => setExp("category", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="rounded-lg"><SelectValue /></SelectTrigger>
                   <SelectContent>{EXPENSE_CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
@@ -354,9 +356,9 @@ export default function Financial() {
             </div>
             <div className="grid gap-1.5">
               <Label className="text-xs font-medium text-muted-foreground">Data</Label>
-              <Input type="date" value={expForm.date} onChange={(e) => setExp("date", e.target.value)} />
+              <Input type="date" value={expForm.date} onChange={(e) => setExp("date", e.target.value)} className="rounded-lg" />
             </div>
-            <Button onClick={handleAddExpense} className="mt-2">Registrar despesa</Button>
+            <Button onClick={handleAddExpense} className="mt-2 rounded-lg h-10">Registrar despesa</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -366,17 +368,18 @@ export default function Financial() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="font-display text-xl">Adicionar entrada</DialogTitle>
+            <p className="text-xs text-muted-foreground mt-1">Registre um novo recebimento avulso</p>
           </DialogHeader>
           <div className="grid gap-4 py-2">
             <div className="grid gap-1.5">
               <Label className="text-xs font-medium text-muted-foreground">Descrição *</Label>
-              <Input value={entryForm.description} onChange={(e) => setEntry("description", e.target.value)} placeholder="Ex: Aluguel de cadeiras extra" />
+              <Input value={entryForm.description} onChange={(e) => setEntry("description", e.target.value)} placeholder="Ex: Aluguel de cadeiras extra" className="rounded-lg" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-1.5">
                 <Label className="text-xs font-medium text-muted-foreground">Categoria</Label>
                 <Select value={entryForm.category} onValueChange={(v) => setEntry("category", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="rounded-lg"><SelectValue /></SelectTrigger>
                   <SelectContent>{ENTRY_CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
@@ -388,21 +391,21 @@ export default function Financial() {
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-1.5">
                 <Label className="text-xs font-medium text-muted-foreground">Data</Label>
-                <Input type="date" value={entryForm.date} onChange={(e) => setEntry("date", e.target.value)} />
+                <Input type="date" value={entryForm.date} onChange={(e) => setEntry("date", e.target.value)} className="rounded-lg" />
               </div>
               <div className="grid gap-1.5">
                 <Label className="text-xs font-medium text-muted-foreground">Forma de recebimento</Label>
                 <Select value={entryForm.paymentMethod} onValueChange={(v) => setEntry("paymentMethod", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="rounded-lg"><SelectValue /></SelectTrigger>
                   <SelectContent>{PAYMENT_METHODS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             </div>
             <div className="grid gap-1.5">
               <Label className="text-xs font-medium text-muted-foreground">Observações</Label>
-              <Textarea value={entryForm.notes} onChange={(e) => setEntry("notes", e.target.value)} rows={2} placeholder="Informações adicionais (opcional)" />
+              <Textarea value={entryForm.notes} onChange={(e) => setEntry("notes", e.target.value)} rows={2} placeholder="Informações adicionais (opcional)" className="rounded-lg" />
             </div>
-            <Button onClick={handleAddEntry} className="mt-2">Registrar entrada</Button>
+            <Button onClick={handleAddEntry} className="mt-2 rounded-lg h-10">Registrar entrada</Button>
           </div>
         </DialogContent>
       </Dialog>

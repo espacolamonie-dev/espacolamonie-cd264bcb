@@ -21,14 +21,6 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled: "bg-danger/15 text-danger border-danger/30",
 };
 
-const STATUS_DOT: Record<string, string> = {
-  confirmed: "bg-success",
-  signed: "bg-primary",
-  awaiting_documents: "bg-warning",
-  awaiting_signature: "bg-warning",
-  cancelled: "bg-danger",
-};
-
 const EVENT_ICONS: Record<string, React.ElementType> = {
   "Aniversário Adulto": Cake,
   "Aniversário Infantil": Cake,
@@ -106,7 +98,7 @@ export default function Agenda() {
       <div className="animate-fade-in space-y-6">
         <Skeleton className="h-9 w-40" />
         <Skeleton className="h-8 w-full max-w-xs mx-auto" />
-        <Skeleton className="h-[400px] w-full rounded-lg" />
+        <Skeleton className="h-[400px] w-full rounded-xl" />
       </div>
     );
   }
@@ -123,7 +115,7 @@ export default function Agenda() {
             variant={view === "month" ? "default" : "outline"}
             size="sm"
             onClick={() => setView("month")}
-            className="h-8 text-xs"
+            className="h-8 text-xs rounded-lg"
           >
             Mensal
           </Button>
@@ -131,7 +123,7 @@ export default function Agenda() {
             variant={view === "week" ? "default" : "outline"}
             size="sm"
             onClick={() => setView("week")}
-            className="h-8 text-xs"
+            className="h-8 text-xs rounded-lg"
           >
             Semanal
           </Button>
@@ -140,20 +132,20 @@ export default function Agenda() {
 
       {/* Navigation */}
       <div className="flex items-center justify-between">
-        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => navigate(-1)}>
+        <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg" onClick={() => navigate(-1)}>
           <ChevronLeft size={16} />
         </Button>
         <h2 className="text-lg font-display font-semibold capitalize">{title}</h2>
-        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => navigate(1)}>
+        <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg" onClick={() => navigate(1)}>
           <ChevronRight size={16} />
         </Button>
       </div>
 
       {/* Calendar grid */}
-      <div className="rounded-lg border border-border/60 bg-card overflow-hidden">
-        <div className="grid grid-cols-7 border-b border-border/60">
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="grid grid-cols-7 border-b border-border">
           {weekDays.map((d) => (
-            <div key={d} className="px-2 py-2 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <div key={d} className="px-2 py-2.5 text-center text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
               {d}
             </div>
           ))}
@@ -171,10 +163,10 @@ export default function Agenda() {
             return (
               <div
                 key={dateKey}
-                className={`relative border-b border-r border-border/30 ${isWeekView ? "min-h-[180px]" : "min-h-[100px]"} p-1.5 transition-colors ${
+                className={`relative border-b border-r border-border/40 ${isWeekView ? "min-h-[180px]" : "min-h-[100px]"} p-1.5 transition-colors ${
                   !isCurrentMonth && !isWeekView ? "bg-muted/20" : ""
-                } ${isTodayDate ? "bg-primary/5 ring-1 ring-inset ring-primary/20" : ""} ${
-                  isBlocked && !isTodayDate ? "bg-muted/30" : ""
+                } ${isTodayDate ? "bg-primary/5 ring-1 ring-inset ring-primary/15" : ""} ${
+                  isBlocked && !isTodayDate ? "bg-secondary/50" : ""
                 }`}
               >
                 <div className="flex items-center justify-between mb-1">
@@ -183,14 +175,14 @@ export default function Agenda() {
                       isTodayDate
                         ? "bg-primary text-primary-foreground shadow-sm"
                         : !isCurrentMonth && !isWeekView
-                        ? "text-muted-foreground/40"
+                        ? "text-muted-foreground/30"
                         : "text-foreground"
                     }`}
                   >
                     {format(day, "d")}
                   </span>
                   {isBlocked && (
-                    <Lock size={10} className="text-muted-foreground/40" />
+                    <Lock size={10} className="text-muted-foreground/30" />
                   )}
                 </div>
 
@@ -202,9 +194,9 @@ export default function Agenda() {
                     return (
                       <div
                         key={evt.id}
-                        className={`rounded px-1.5 py-0.5 text-[10px] leading-tight truncate border flex items-center gap-1 ${
+                        className={`rounded-md px-1.5 py-0.5 text-[10px] leading-tight truncate border flex items-center gap-1 ${
                           STATUS_COLORS[evt.status] || "bg-muted text-muted-foreground"
-                        } ${isCancelled ? "opacity-50 line-through" : ""}`}
+                        } ${isCancelled ? "opacity-40 line-through" : ""}`}
                       >
                         <EventIcon size={9} className="shrink-0" />
                         <span className="truncate">{client?.name || "—"}</span>
@@ -224,7 +216,7 @@ export default function Agenda() {
       </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+      <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
         <div className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full bg-success" /> Confirmado
         </div>
@@ -238,13 +230,7 @@ export default function Agenda() {
           <span className="h-2.5 w-2.5 rounded-full bg-danger" /> Cancelado
         </div>
         <div className="flex items-center gap-1.5">
-          <Lock size={10} /> Data bloqueada
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Cake size={10} /> Aniversário
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Heart size={10} /> Casamento
+          <Lock size={10} /> Data ocupada
         </div>
       </div>
     </div>
