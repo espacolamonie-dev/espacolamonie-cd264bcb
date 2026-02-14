@@ -443,7 +443,7 @@ export default function SignContract() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ token, pdf_base64: rawBase64 }),
+        body: JSON.stringify({ token, pdf_base64: rawBase64, user_agent: navigator.userAgent }),
       });
       const result = await res.json();
       if (result.error) { setError(result.error); }

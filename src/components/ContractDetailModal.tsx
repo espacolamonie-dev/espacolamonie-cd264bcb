@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { CalendarDays, Users, DollarSign, FileText, Plus, AlertTriangle, Upload, Trash2, Download, FileOutput } from "lucide-react";
+import { CalendarDays, Users, DollarSign, FileText, Plus, AlertTriangle, Upload, Trash2, Download, FileOutput, ShieldCheck, Monitor, Smartphone, Globe, Hash, Clock } from "lucide-react";
 import GenerateContractModal from "@/components/GenerateContractModal";
 import ContractTimeline from "@/components/ContractTimeline";
+import { supabase } from "@/integrations/supabase/client";
 import {
   getContracts, getClients, getPayments, getDocuments, addPayment, updateContract,
   addDocument, deleteDocument, getDocumentSignedUrl,
@@ -18,6 +19,25 @@ import { CONTRACT_STATUS_LABELS, CONTRACT_STATUS_COLORS, PAYMENT_STATUS_LABELS, 
 import type { Contract, Client, Payment, Document } from "@/types";
 
 interface Props { contractId: string; onClose: () => void; }
+
+interface AuditLog {
+  id: string;
+  contract_id: string;
+  client_name: string;
+  client_cpf: string | null;
+  signed_file_name: string;
+  signature_type: string;
+  signed_at: string;
+  read_confirmed: boolean;
+  signer_ip: string | null;
+  device_type: string | null;
+  operating_system: string | null;
+  browser: string | null;
+  user_agent: string | null;
+  pdf_hash: string | null;
+  contract_version: number;
+  created_at: string;
+}
 
 const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -31,6 +51,7 @@ export default function ContractDetailModal({ contractId, onClose }: Props) {
   const [docType, setDocType] = useState<string>("outro");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [generateOpen, setGenerateOpen] = useState(false);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
 
   const load = async () => {
     try {
@@ -44,6 +65,14 @@ export default function ContractDetailModal({ contractId, onClose }: Props) {
         setPayments(allPayments.filter((p) => p.contractId === contractId));
         setDocs(allDocs.filter((d) => d.contractId === contractId));
       }
+
+      // Load audit logs
+      const { data: logs } = await supabase
+        .from("signature_audit_logs")
+        .select("*")
+        .eq("contract_id", contractId)
+        .order("created_at", { ascending: false });
+      setAuditLogs((logs as AuditLog[]) || []);
     } catch {}
   };
   useEffect(() => { load(); }, [contractId]);
@@ -137,11 +166,14 @@ export default function ContractDetailModal({ contractId, onClose }: Props) {
         </div>
 
         <Tabs defaultValue="details" className="mt-2">
-          <TabsList className="w-full grid grid-cols-4">
+          <TabsList className="w-full grid grid-cols-5">
             <TabsTrigger value="details">Evento</TabsTrigger>
             <TabsTrigger value="payments">Pagamentos</TabsTrigger>
             <TabsTrigger value="documents">Documentos</TabsTrigger>
             <TabsTrigger value="history">Histórico</TabsTrigger>
+            <TabsTrigger value="audit" className="gap-1">
+              <ShieldCheck size={12} /> Log Jurídico
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="details" className="space-y-4 pt-4">
@@ -283,6 +315,58 @@ export default function ContractDetailModal({ contractId, onClose }: Props) {
               )}
             </div>
           </TabsContent>
+
+          <TabsContent value="audit" className="space-y-4 pt-4">
+            {auditLogs.length === 0 ? (
+              <div className="text-center py-8">
+                <ShieldCheck size={32} className="mx-auto text-muted-foreground/40 mb-2" />
+                <p className="text-sm text-muted-foreground">Nenhum log de assinatura registrado</p>
+                <p className="text-xs text-muted-foreground/60 mt-1">O log será criado automaticamente quando o cliente assinar o contrato</p>
+              </div>
+            ) : (
+              auditLogs.map((log) => (
+                <div key={log.id} className="rounded-md border border-border/60 bg-muted/10 p-4 space-y-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <ShieldCheck size={16} className="text-primary" />
+                    <span className="text-sm font-semibold">Registro de Assinatura Digital</span>
+                  </div>
+
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <AuditRow icon={FileText} label="Cliente" value={log.client_name} />
+                    {log.client_cpf && <AuditRow icon={FileText} label="CPF" value={log.client_cpf} />}
+                    <AuditRow icon={FileText} label="Arquivo" value={log.signed_file_name} />
+                    <AuditRow icon={FileText} label="Tipo" value="Rubrica manual" />
+                  </div>
+
+                  <hr className="border-border/40" />
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Dados da Assinatura</p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <AuditRow icon={Clock} label="Data/Hora" value={new Date(log.signed_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })} />
+                    <AuditRow icon={ShieldCheck} label="Leitura confirmada" value={log.read_confirmed ? "Sim ✓" : "Não"} />
+                  </div>
+
+                  <hr className="border-border/40" />
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Dados Técnicos</p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <AuditRow icon={Globe} label="IP" value={log.signer_ip || "—"} />
+                    <AuditRow icon={log.device_type === "mobile" ? Smartphone : Monitor} label="Dispositivo" value={log.device_type || "—"} />
+                    <AuditRow icon={Monitor} label="Sistema" value={log.operating_system || "—"} />
+                    <AuditRow icon={Globe} label="Navegador" value={log.browser || "—"} />
+                  </div>
+
+                  <hr className="border-border/40" />
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Integridade</p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <AuditRow icon={Hash} label="Hash SHA-256" value={log.pdf_hash ? log.pdf_hash.substring(0, 16) + "..." : "—"} />
+                    <AuditRow icon={FileText} label="Versão" value={`v${log.contract_version}`} />
+                  </div>
+                  {log.pdf_hash && (
+                    <p className="text-[9px] text-muted-foreground/60 break-all font-mono mt-1">Hash completo: {log.pdf_hash}</p>
+                  )}
+                </div>
+              ))
+            )}
+          </TabsContent>
         </Tabs>
       </DialogContent>
 
@@ -321,6 +405,16 @@ function HistoryItem({ date, text, danger }: { date: string; text: string; dange
         <p className={`text-sm ${danger ? "text-danger" : ""}`}>{text}</p>
         <p className="text-xs text-muted-foreground">{new Date(date).toLocaleString("pt-BR")}</p>
       </div>
+    </div>
+  );
+}
+
+function AuditRow({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <Icon size={12} className="text-muted-foreground shrink-0" />
+      <span className="text-[11px] text-muted-foreground">{label}:</span>
+      <span className="text-xs font-medium truncate">{value}</span>
     </div>
   );
 }
