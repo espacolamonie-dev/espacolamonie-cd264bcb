@@ -110,6 +110,22 @@ serve(async (req) => {
       console.error("Error updating contract status:", updateContractErr);
     }
 
+    // Save final signed PDF document record
+    const signedFileName = `Contrato Lamoniê – ${sig.client_name} – Assinado.pdf`;
+    const { error: docErr } = await supabase
+      .from("documents")
+      .insert({
+        user_id: sig.user_id,
+        contract_id: sig.contract_id,
+        name: signedFileName,
+        type: "contrato",
+        file_name: `signed/${sig.contract_id}/${Date.now()}.pdf`,
+      });
+
+    if (docErr) {
+      console.error("Error saving signed document record:", docErr);
+    }
+
     return new Response(JSON.stringify({ success: true, signed_at: now }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

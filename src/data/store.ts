@@ -14,7 +14,7 @@ export const getClients = async () => {
   return (data || []).map(mapClient);
 };
 
-export const addClient = async (c: { name: string; cpf: string; phone: string; email: string; address: string; notes: string }) => {
+export const addClient = async (c: { name: string; cpf: string; phone: string; email?: string; address: string; notes: string }) => {
   const userId = await getUserId();
   const { data, error } = await supabase.from("clients").insert({ ...c, user_id: userId }).select().single();
   if (error) throw error;

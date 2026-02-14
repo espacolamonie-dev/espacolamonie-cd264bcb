@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { NumericInput } from "@/components/NumericInput";
-import { Plus, TrendingUp, TrendingDown, Wallet, Trash2, FileText, HandCoins } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, Wallet, Trash2, FileText, HandCoins, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -17,6 +17,7 @@ import {
 import type { Payment, Expense, ExpenseCategory, ManualEntry, ManualEntryCategory, PaymentMethod, Contract, Client } from "@/types";
 import EntryFiltersBar, { type EntryFilters, defaultEntryFilters, hasActiveEntryFilters } from "@/components/EntryFiltersBar";
 import ExpenseFiltersBar, { type ExpenseFilters, defaultExpenseFilters, hasActiveExpenseFilters } from "@/components/ExpenseFiltersBar";
+import ImportStatementModal from "@/components/ImportStatementModal";
 
 const EXPENSE_CATEGORIES: ExpenseCategory[] = [
   "Luz", "Água", "Funcionários", "Manutenção", "Compras", "Marketing", "Outros",
@@ -45,6 +46,7 @@ export default function Financial() {
   const [entryOpen, setEntryOpen] = useState(false);
   const [entryFilters, setEntryFilters] = useState<EntryFilters>(defaultEntryFilters);
   const [expenseFilters, setExpenseFilters] = useState<ExpenseFilters>(defaultExpenseFilters);
+  const [importOpen, setImportOpen] = useState(false);
   const [expForm, setExpForm] = useState({
     description: "", category: "Outros" as ExpenseCategory, amount: 0,
     date: new Date().toISOString().split("T")[0],
@@ -272,9 +274,14 @@ export default function Financial() {
               <h2 className="text-lg font-display font-semibold">Despesas</h2>
               <p className="text-xs text-muted-foreground">Gastos operacionais do espaço</p>
             </div>
-            <Button onClick={() => setExpOpen(true)} size="sm" className="gap-2 h-9">
-              <Plus size={15} /> Adicionar despesa
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={() => setExpOpen(true)} size="sm" className="gap-2 h-9">
+                <Plus size={15} /> Adicionar despesa
+              </Button>
+              <Button variant="outline" size="sm" className="gap-2 h-9" onClick={() => setImportOpen(true)}>
+                <CreditCard size={15} /> Importar extrato
+              </Button>
+            </div>
           </div>
 
           <ExpenseFiltersBar filters={expenseFilters} onChange={setExpenseFilters} />
@@ -399,6 +406,8 @@ export default function Financial() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ImportStatementModal open={importOpen} onOpenChange={setImportOpen} onImported={load} />
     </div>
   );
 }
