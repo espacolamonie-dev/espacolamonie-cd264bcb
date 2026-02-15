@@ -1,0 +1,265 @@
+import { useState, useRef } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { Upload, FileText, Check, Loader2, Landmark } from "lucide-react";
+import { addManualEntry } from "@/data/store";
+
+interface ParsedEntry {
+  date: string;
+  description: string;
+  amount: number;
+  selected: boolean;
+}
+
+interface Props {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onImported: () => void;
+}
+
+const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+function parseCSVCredits(text: string): ParsedEntry[] {
+  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  const entries: ParsedEntry[] = [];
+
+  for (const line of lines) {
+    const sep = line.includes(";") ? ";" : ",";
+    const parts = line.split(sep).map((p) => p.trim().replace(/^"|"$/g, ""));
+    if (parts.length < 3) continue;
+
+    const dateStr = parts[0];
+    const description = parts[1];
+    const amountStr = parts[parts.length - 1] || parts[2];
+
+    // Parse date (DD/MM/YYYY or YYYY-MM-DD)
+    let date = "";
+    const dateParts = dateStr.split("/");
+    if (dateParts.length === 3) {
+      const [d, m, y] = dateParts;
+      const year = y.length === 2 ? `20${y}` : y;
+      date = `${year}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+    } else if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      date = dateStr;
+    }
+    if (!date) continue;
+
+    // Parse amount
+    const cleanAmount = amountStr.replace(/[R$\s]/g, "").replace(/\./g, "").replace(",", ".");
+    const rawAmount = parseFloat(cleanAmount);
+    if (isNaN(rawAmount)) continue;
+
+    // Only include credits (positive values)
+    if (rawAmount <= 0) continue;
+
+    // Skip common fee/adjustment keywords
+    const lowerDesc = description.toLowerCase();
+    if (
+      lowerDesc.includes("tarifa") ||
+      lowerDesc.includes("taxa") ||
+      lowerDesc.includes("ajuste") ||
+      lowerDesc.includes("iof") ||
+      lowerDesc.includes("juros") ||
+      lowerDesc.includes("anuidade")
+    ) continue;
+
+    entries.push({ date, description, amount: rawAmount, selected: true });
+  }
+  return entries;
+}
+
+function parseOFXCredits(text: string): ParsedEntry[] {
+  const entries: ParsedEntry[] = [];
+  const stmtTrnRegex = /<STMTTRN>([\s\S]*?)<\/STMTTRN>/gi;
+  let match;
+
+  while ((match = stmtTrnRegex.exec(text)) !== null) {
+    const block = match[1];
+    const getTag = (tag: string) => {
+      const m = new RegExp(`<${tag}>([^<\\n]+)`, "i").exec(block);
+      return m ? m[1].trim() : "";
+    };
+
+    const dateStr = getTag("DTPOSTED");
+    const amountStr = getTag("TRNAMT");
+    const memo = getTag("MEMO") || getTag("NAME");
+
+    const amount = parseFloat(amountStr);
+    if (isNaN(amount)) continue;
+
+    // Only credits (positive amounts)
+    if (amount <= 0) continue;
+
+    // Parse date YYYYMMDD
+    let date = "";
+    if (dateStr.length >= 8) {
+      date = `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`;
+    }
+    if (!date) continue;
+
+    // Skip fees/adjustments
+    const lowerMemo = memo.toLowerCase();
+    if (
+      lowerMemo.includes("tarifa") ||
+      lowerMemo.includes("taxa") ||
+      lowerMemo.includes("ajuste") ||
+      lowerMemo.includes("iof")
+    ) continue;
+
+    entries.push({ date, description: memo, amount, selected: true });
+  }
+  return entries;
+}
+
+export default function ImportBankEntryModal({ open, onOpenChange, onImported }: Props) {
+  const [step, setStep] = useState<"upload" | "preview" | "importing">("upload");
+  const [entries, setEntries] = useState<ParsedEntry[]>([]);
+  const [fileName, setFileName] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFileName(file.name);
+
+    const text = await file.text();
+    let parsed: ParsedEntry[] = [];
+
+    const ext = file.name.toLowerCase().split(".").pop();
+    if (ext === "csv" || ext === "txt") {
+      parsed = parseCSVCredits(text);
+    } else if (ext === "ofx" || ext === "qfx") {
+      parsed = parseOFXCredits(text);
+    } else if (ext === "pdf") {
+      toast.error("Para PDFs, exporte o extrato em CSV ou OFX pelo seu banco");
+      return;
+    } else {
+      toast.error("Formato não suportado. Use CSV ou OFX.");
+      return;
+    }
+
+    if (parsed.length === 0) {
+      toast.error("Nenhuma entrada (crédito) encontrada no arquivo");
+      return;
+    }
+
+    setEntries(parsed);
+    setStep("preview");
+  };
+
+  const toggleEntry = (idx: number) => {
+    setEntries((prev) => prev.map((e, i) => i === idx ? { ...e, selected: !e.selected } : e));
+  };
+
+  const handleImport = async () => {
+    const selected = entries.filter((e) => e.selected);
+    if (selected.length === 0) { toast.error("Selecione pelo menos uma entrada"); return; }
+
+    setStep("importing");
+    try {
+      for (const entry of selected) {
+        await addManualEntry({
+          description: entry.description,
+          category: "Outro",
+          amount: entry.amount,
+          date: entry.date,
+          paymentMethod: "Transferência",
+          notes: "Importado via extrato bancário",
+        });
+      }
+      toast.success(`${selected.length} entradas importadas com sucesso!`);
+      onImported();
+      handleClose();
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao importar entradas");
+      setStep("preview");
+    }
+  };
+
+  const handleClose = () => {
+    setStep("upload");
+    setEntries([]);
+    setFileName("");
+    onOpenChange(false);
+  };
+
+  const selectedCount = entries.filter((e) => e.selected).length;
+  const selectedTotal = entries.filter((e) => e.selected).reduce((s, e) => s + e.amount, 0);
+
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="font-display text-xl flex items-center gap-2">
+            <Landmark size={18} /> Importar Extrato Bancário
+          </DialogTitle>
+          <p className="text-xs text-muted-foreground mt-1">Importe créditos recebidos do banco como entradas financeiras</p>
+        </DialogHeader>
+
+        {step === "upload" && (
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Selecione o extrato do banco para registrar automaticamente os valores recebidos (créditos).
+              Débitos, tarifas e ajustes serão ignorados.
+            </p>
+            <div className="border-2 border-dashed border-border rounded-lg p-8 text-center space-y-3">
+              <Upload size={32} className="mx-auto text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">Formatos aceitos: CSV, OFX</p>
+              <input ref={fileRef} type="file" className="hidden" accept=".csv,.ofx,.qfx,.txt" onChange={handleFile} />
+              <Button onClick={() => fileRef.current?.click()} variant="outline" className="gap-2">
+                <Upload size={14} /> Selecionar arquivo
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {step === "preview" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                <strong>{fileName}</strong> — {entries.length} créditos encontrados
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {selectedCount} selecionados • {fmt(selectedTotal)}
+              </p>
+            </div>
+
+            <div className="rounded-md border border-border/60 max-h-[45vh] overflow-y-auto divide-y divide-border/40">
+              {entries.map((entry, idx) => (
+                <div
+                  key={idx}
+                  className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors ${!entry.selected ? "opacity-40" : ""}`}
+                  onClick={() => toggleEntry(idx)}
+                >
+                  <div className={`h-5 w-5 rounded border flex items-center justify-center shrink-0 ${entry.selected ? "bg-primary border-primary text-primary-foreground" : "border-border"}`}>
+                    {entry.selected && <Check size={12} />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{entry.description}</p>
+                    <p className="text-xs text-muted-foreground">{new Date(entry.date + "T12:00:00").toLocaleDateString("pt-BR")}</p>
+                  </div>
+                  <span className="font-medium text-sm text-success tabular-nums shrink-0">{fmt(entry.amount)}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={handleClose}>Cancelar</Button>
+              <Button onClick={handleImport} className="gap-2">
+                <Check size={14} /> Importar {selectedCount} entradas
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {step === "importing" && (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <span className="ml-3 text-sm text-muted-foreground">Importando entradas...</span>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
