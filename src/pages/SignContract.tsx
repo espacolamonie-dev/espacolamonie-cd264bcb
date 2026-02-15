@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, FileText, Loader2, AlertTriangle, ShieldCheck, ChevronDown } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
@@ -308,6 +308,7 @@ async function generateSignedPDF(d: SignatureData, signatureDataUrl: string): Pr
 
 export default function SignContract() {
   const [searchParams] = useSearchParams();
+  const { slug } = useParams();
   const token = searchParams.get("token");
   const [data, setData] = useState<SignatureData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -325,8 +326,9 @@ export default function SignContract() {
   const FUNC_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sign-contract`;
 
   useEffect(() => {
-    if (!token) { setError("Link inválido"); setLoading(false); return; }
-    fetch(`${FUNC_URL}?token=${token}`, {
+    const queryParam = slug ? `slug=${encodeURIComponent(slug)}` : token ? `token=${token}` : "";
+    if (!queryParam) { setError("Link inválido"); setLoading(false); return; }
+    fetch(`${FUNC_URL}?${queryParam}`, {
       headers: { Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
     })
       .then((r) => r.json())
@@ -339,7 +341,7 @@ export default function SignContract() {
       })
       .catch(() => setError("Erro ao carregar contrato"))
       .finally(() => setLoading(false));
-  }, [token]);
+  }, [token, slug]);
 
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const el = e.currentTarget;

@@ -376,7 +376,19 @@ export default function GenerateContractModal({ contract, client, open, onOpenCh
 
         if (sigData) {
           const baseUrl = window.location.origin;
-          setSigningLink(`${baseUrl}/sign?token=${(sigData as any).token}`);
+          const clientSlug = client.name
+            .toLowerCase()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-z0-9\s-]/g, "")
+            .trim()
+            .replace(/\s+/g, "-");
+          
+          // Save slug to signature record
+          await supabase.from("contract_signatures")
+            .update({ slug: clientSlug } as any)
+            .eq("id", (sigData as any).id);
+          
+          setSigningLink(`${baseUrl}/assinar/${clientSlug}`);
         }
       }
 

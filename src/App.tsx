@@ -62,6 +62,7 @@ const App = () => (
         <Routes>
           <Route path="/auth" element={<AuthRoute />} />
           <Route path="/sign" element={<SignContract />} />
+          <Route path="/assinar/:slug" element={<SignContract />} />
           <Route
             path="/*"
             element={

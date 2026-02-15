@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { Upload, FileText, Check, Loader2, Landmark } from "lucide-react";
 import { addManualEntry } from "@/data/store";
 
+const PARSE_PDF_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-statement-pdf`;
+
 interface ParsedEntry {
   date: string;
   description: string;
@@ -132,10 +134,28 @@ export default function ImportBankEntryModal({ open, onOpenChange, onImported }:
     } else if (ext === "ofx" || ext === "qfx") {
       parsed = parseOFXCredits(text);
     } else if (ext === "pdf") {
-      toast.error("Para PDFs, exporte o extrato em CSV ou OFX pelo seu banco");
-      return;
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+        const res = await fetch(PARSE_PDF_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ pdf_base64: base64, type: "entries" }),
+        });
+        const result = await res.json();
+        if (result.error) { toast.error(result.error); return; }
+        parsed = (result.transactions || []).map((t: any) => ({
+          date: t.date, description: t.description, amount: Math.abs(t.amount), selected: true,
+        }));
+      } catch {
+        toast.error("Erro ao processar PDF");
+        return;
+      }
     } else {
-      toast.error("Formato não suportado. Use CSV ou OFX.");
+      toast.error("Formato não suportado. Use CSV, OFX ou PDF.");
       return;
     }
 
@@ -205,8 +225,8 @@ export default function ImportBankEntryModal({ open, onOpenChange, onImported }:
             </p>
             <div className="border-2 border-dashed border-border rounded-lg p-8 text-center space-y-3">
               <Upload size={32} className="mx-auto text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">Formatos aceitos: CSV, OFX</p>
-              <input ref={fileRef} type="file" className="hidden" accept=".csv,.ofx,.qfx,.txt" onChange={handleFile} />
+              <p className="text-sm text-muted-foreground">Formatos aceitos: CSV, OFX, PDF</p>
+              <input ref={fileRef} type="file" className="hidden" accept=".csv,.ofx,.qfx,.txt,.pdf" onChange={handleFile} />
               <Button onClick={() => fileRef.current?.click()} variant="outline" className="gap-2">
                 <Upload size={14} /> Selecionar arquivo
               </Button>

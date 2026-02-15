@@ -87,6 +87,7 @@ export type Database = {
           sent_to_phone: string | null
           signed_at: string | null
           signed_ip: string | null
+          slug: string | null
           status: string
           token: string
           total_value: number
@@ -107,6 +108,7 @@ export type Database = {
           sent_to_phone?: string | null
           signed_at?: string | null
           signed_ip?: string | null
+          slug?: string | null
           status?: string
           token?: string
           total_value?: number
@@ -127,6 +129,7 @@ export type Database = {
           sent_to_phone?: string | null
           signed_at?: string | null
           signed_ip?: string | null
+          slug?: string | null
           status?: string
           token?: string
           total_value?: number
