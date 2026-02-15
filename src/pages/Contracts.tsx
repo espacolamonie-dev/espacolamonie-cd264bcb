@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Plus, Search, Eye, Pencil, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,10 +27,12 @@ const emptyForm = {
 };
 
 export default function Contracts() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [paymentFilter, setPaymentFilter] = useState<string>("all");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Contract | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -44,6 +47,16 @@ export default function Contracts() {
   };
   useEffect(() => { load(); }, []);
 
+  // Handle query params from dashboard alerts
+  useEffect(() => {
+    const paymentParam = searchParams.get("payment");
+    if (paymentParam === "pending_urgent") {
+      setPaymentFilter("pending_urgent");
+      // Clear the query param to keep URL clean
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
   const clientMap = Object.fromEntries(clients.map((c) => [c.id, c]));
 
   const filtered = contracts.filter((c) => {
@@ -52,7 +65,16 @@ export default function Contracts() {
       (client?.name || "").toLowerCase().includes(search.toLowerCase()) ||
       (client?.cpf || "").includes(search);
     const matchStatus = statusFilter === "all" || c.status === statusFilter;
-    return matchSearch && matchStatus;
+    let matchPayment = true;
+    if (paymentFilter === "pending_urgent") {
+      const sevenDays = new Date();
+      sevenDays.setDate(sevenDays.getDate() + 7);
+      const eventDate = new Date(c.eventDate);
+      matchPayment = c.paymentStatus !== "paid_full" && c.status !== "cancelled" && eventDate >= new Date() && eventDate <= sevenDays;
+    } else if (paymentFilter !== "all") {
+      matchPayment = c.paymentStatus === paymentFilter;
+    }
+    return matchSearch && matchStatus && matchPayment;
   });
 
   const openNew = () => {
@@ -129,6 +151,18 @@ export default function Contracts() {
           <SelectContent>
             <SelectItem value="all">Todos os status</SelectItem>
             {Object.entries(CONTRACT_STATUS_LABELS).map(([k, v]) => (
+              <SelectItem key={k} value={k}>{v}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+          <SelectTrigger className={`w-[220px] h-9 text-sm rounded-lg ${paymentFilter !== "all" ? "border-danger/50 bg-danger/5" : ""}`}>
+            <SelectValue placeholder="Todos os pagamentos" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os pagamentos</SelectItem>
+            <SelectItem value="pending_urgent">⚠ Pendentes (próx. 7 dias)</SelectItem>
+            {Object.entries(PAYMENT_STATUS_LABELS).map(([k, v]) => (
               <SelectItem key={k} value={k}>{v}</SelectItem>
             ))}
           </SelectContent>

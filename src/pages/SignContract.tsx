@@ -272,8 +272,11 @@ async function generateSignedPDF(d: SignatureData, signatureDataUrl: string): Pr
   addText(`Ribeirão das Neves – MG, ${sigDate}.`);
   addSpace(15);
 
-  checkPage();
-  if (y + 40 > 275) { doc.addPage(); addWatermark(); y = 20; }
+  // Both signatures block — keep together on one page
+  const sigBlockHeight = 70; // estimated height for both signatures
+  if (y + sigBlockHeight > pageHeight - margin) {
+    doc.addPage(); addWatermark(); y = 20;
+  }
 
   try {
     doc.addImage(signatureDataUrl, "PNG", margin, y, 60, 25);
@@ -288,13 +291,12 @@ async function generateSignedPDF(d: SignatureData, signatureDataUrl: string): Pr
   doc.setTextColor(100, 100, 100);
   doc.text(`Assinado digitalmente em ${sigDate} às ${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`, margin, y);
   doc.setTextColor(0, 0, 0);
-  addSpace(12);
+  y += 12;
 
-  checkPage();
   doc.line(margin, y, margin + 70, y);
   y += 5;
   addText("LOCADOR – Espaço Lamoniê", { bold: true });
-  addSpace(1);
+  y += 1;
   doc.setFontSize(9);
   doc.setFont("helvetica", "italic");
   doc.setTextColor(100, 100, 100);
