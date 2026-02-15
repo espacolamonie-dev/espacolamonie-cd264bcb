@@ -46,25 +46,44 @@ serve(async (req) => {
 
   const url = new URL(req.url);
 
-  // GET /sign-contract?token=xxx — fetch signature data for display
+  // GET /sign-contract?token=xxx or ?slug=xxx — fetch signature data for display
   if (req.method === "GET") {
     const token = url.searchParams.get("token");
-    if (!token) {
-      return new Response(JSON.stringify({ error: "Token obrigatório" }), {
+    const slug = url.searchParams.get("slug");
+    
+    if (!token && !slug) {
+      return new Response(JSON.stringify({ error: "Token ou slug obrigatório" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const { data, error } = await supabase
-      .from("contract_signatures")
-      .select("*")
-      .eq("token", token)
-      .maybeSingle();
+    let query = supabase.from("contract_signatures").select("*");
+    if (slug) {
+      query = query.eq("slug", slug);
+    } else {
+      query = query.eq("token", token!);
+    }
+    
+    const { data, error } = await query.maybeSingle();
 
     if (error || !data) {
       return new Response(JSON.stringify({ error: "Contrato não encontrado" }), {
         status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Check if contract is cancelled
+    const { data: contract } = await supabase
+      .from("contracts")
+      .select("status")
+      .eq("id", data.contract_id)
+      .maybeSingle();
+    
+    if (contract && contract.status === "cancelled") {
+      return new Response(JSON.stringify({ error: "Este contrato foi cancelado" }), {
+        status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

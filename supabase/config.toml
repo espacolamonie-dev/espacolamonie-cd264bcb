@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.sign-contract]
 verify_jwt = false
+
+[functions.parse-statement-pdf]
+verify_jwt = false
