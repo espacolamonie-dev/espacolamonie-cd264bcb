@@ -181,7 +181,7 @@ export default function Dashboard() {
           )}
           {alerts.urgentPayments > 0 && (
             <button
-              onClick={() => navigate("/financial")}
+              onClick={() => navigate("/contracts?payment=pending_urgent")}
               className="flex items-center gap-2.5 rounded-xl border border-danger/30 bg-danger/8 px-4 py-3 text-sm hover:bg-danger/12 transition-colors group"
             >
               <AlertTriangle size={15} className="text-danger shrink-0" />
