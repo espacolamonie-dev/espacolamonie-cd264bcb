@@ -63,6 +63,18 @@ export const addContract = async (c: {
   return mapContract(data);
 };
 
+export const deleteContract = async (id: string) => {
+  // With CASCADE DELETE configured, this removes all related records automatically
+  const { error } = await supabase.from("contracts").delete().eq("id", id);
+  if (error) throw error;
+};
+
+export const getContractsByClient = async (clientId: string) => {
+  const { data, error } = await supabase.from("contracts").select("id, status").eq("client_id", clientId);
+  if (error) throw error;
+  return data || [];
+};
+
 export const updateContract = async (id: string, updates: Record<string, any>) => {
   // Map camelCase to snake_case
   const mapped: Record<string, any> = {};

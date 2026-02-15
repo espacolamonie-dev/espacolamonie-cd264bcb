@@ -6,9 +6,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { getClients, addClient, updateClient, deleteClient } from "@/data/store";
+import { getClients, addClient, updateClient, deleteClient, getContractsByClient } from "@/data/store";
 import { formatFullAddress } from "@/types";
 import type { Client } from "@/types";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 const emptyForm = {
   name: "", cpf: "", phone: "",
@@ -45,6 +46,7 @@ export default function Clients() {
   const [editing, setEditing] = useState<Client | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [loadingCep, setLoadingCep] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Client | null>(null);
 
   const load = async () => {
     try { setClients(await getClients()); } catch {}
@@ -119,8 +121,20 @@ export default function Clients() {
     } catch (e: any) { toast.error(e.message); }
   };
 
-  const handleDelete = async (id: string) => {
-    try { await deleteClient(id); toast.success("Cliente removido"); await load(); }
+  const handleDeleteRequest = async (c: Client) => {
+    try {
+      const contracts = await getContractsByClient(c.id);
+      if (contracts.length > 0) {
+        toast.error(`Este cliente possui ${contracts.length} contrato(s). Exclua os contratos primeiro.`);
+        return;
+      }
+      setDeleteTarget(c);
+    } catch (e: any) { toast.error(e.message); }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    try { await deleteClient(deleteTarget.id); toast.success("Cliente removido"); setDeleteTarget(null); await load(); }
     catch (e: any) { toast.error(e.message); }
   };
 
@@ -176,7 +190,7 @@ export default function Clients() {
                       <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => openEdit(c)}>
                         <Pencil size={14} />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-destructive hover:text-destructive" onClick={() => handleDelete(c.id)}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-destructive hover:text-destructive" onClick={() => handleDeleteRequest(c)}>
                         <Trash2 size={14} />
                       </Button>
                     </div>
@@ -277,6 +291,23 @@ export default function Clients() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-display">Excluir cliente</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir <strong>{deleteTarget?.name}</strong>? Esta ação é irreversível.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={handleDeleteConfirm}>
+              Excluir cliente
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

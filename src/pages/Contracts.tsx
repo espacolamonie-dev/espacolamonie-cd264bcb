@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Plus, Search, Eye, Pencil, Upload } from "lucide-react";
+import { Plus, Search, Eye, Pencil, Upload, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { getContracts, getClients, addContract, updateContract } from "@/data/store";
+import { getContracts, getClients, addContract, updateContract, deleteContract } from "@/data/store";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { CONTRACT_STATUS_LABELS, CONTRACT_STATUS_COLORS, PAYMENT_STATUS_LABELS, PAYMENT_STATUS_COLORS } from "@/types";
 import type { Contract, ContractStatus, EventType, Client } from "@/types";
 import ContractDetailModal from "@/components/ContractDetailModal";
@@ -38,6 +39,7 @@ export default function Contracts() {
   const [form, setForm] = useState(emptyForm);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Contract | null>(null);
 
   const load = async () => {
     try {
@@ -206,16 +208,19 @@ export default function Contracts() {
                     <PaymentStatusSelect contractId={c.id} value={c.paymentStatus} isCancelled={isCancelled} onChanged={load} />
                   </td>
                   <td className="text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setDetailId(c.id)}>
-                        <Eye size={14} />
-                      </Button>
-                      {!isCancelled && (
-                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => openEdit(c)}>
-                          <Pencil size={14} />
-                        </Button>
-                      )}
-                    </div>
+                     <div className="flex items-center justify-end gap-1">
+                       <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setDetailId(c.id)}>
+                         <Eye size={14} />
+                       </Button>
+                       {!isCancelled && (
+                         <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => openEdit(c)}>
+                           <Pencil size={14} />
+                         </Button>
+                       )}
+                       <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-destructive hover:text-destructive" onClick={() => setDeleteTarget(c)}>
+                         <Trash2 size={14} />
+                       </Button>
+                     </div>
                   </td>
                 </tr>
                 );
@@ -321,6 +326,43 @@ export default function Contracts() {
       {detailId && <ContractDetailModal contractId={detailId} onClose={() => { setDetailId(null); load(); }} />}
 
       <ImportContractModal open={importOpen} onOpenChange={setImportOpen} onImported={load} />
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-display">Excluir contrato definitivamente</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>Esta ação é <strong>irreversível</strong>. Serão removidos permanentemente:</p>
+              <ul className="list-disc pl-5 text-sm space-y-1">
+                <li>O contrato e todos os dados associados</li>
+                <li>Pagamentos vinculados</li>
+                <li>Documentos anexados</li>
+                <li>Registros de assinatura e auditoria</li>
+              </ul>
+              <p className="text-destructive font-medium">Tem certeza que deseja excluir este contrato?</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (!deleteTarget) return;
+                try {
+                  await deleteContract(deleteTarget.id);
+                  toast.success("Contrato excluído definitivamente");
+                  setDeleteTarget(null);
+                  await load();
+                } catch (e: any) {
+                  toast.error(e.message);
+                }
+              }}
+            >
+              Excluir definitivamente
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
