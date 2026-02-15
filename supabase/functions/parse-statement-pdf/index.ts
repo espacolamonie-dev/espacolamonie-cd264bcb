@@ -43,18 +43,24 @@ Para cada lançamento, retorne um JSON array com objetos contendo:
 - "description": descrição do lançamento
 - "amount": valor positivo (número)
 
-Ignore tarifas, taxas, IOF, juros e anuidades.
-Retorne APENAS o JSON array, sem explicações. Se não encontrar créditos, retorne [].`
+Ignore tarifas, taxas, IOF, juros, anuidades, saldo anterior e saldo final.
+Ignore cabeçalhos e rodapés de página.
+Normalize espaços duplicados e caracteres invisíveis nas descrições.
+Retorne APENAS o JSON array, sem explicações. Se não encontrar créditos, retorne [].
+Se o PDF não contiver texto legível (escaneado/imagem), retorne exatamente: {"error": "scanned"}`
       : `Analise este extrato bancário/cartão em PDF e extraia APENAS os lançamentos de DÉBITO (despesas/gastos).
 Para cada lançamento, retorne um JSON array com objetos contendo:
-- "date": data no formato YYYY-MM-DD
-- "description": descrição do lançamento
+- "date": data no formato YYYY-MM-DD (converta de dd/mm/aaaa se necessário)
+- "description": descrição do lançamento (limpa, sem espaços extras)
 - "amount": valor positivo (número, sem sinal negativo)
 
-Ignore estornos, devoluções e créditos.
-Retorne APENAS o JSON array, sem explicações. Se não encontrar débitos, retorne [].`;
+Ignore estornos, devoluções, créditos, saldo anterior e saldo final.
+Ignore cabeçalhos e rodapés de página.
+Normalize espaços duplicados e caracteres invisíveis nas descrições.
+Retorne APENAS o JSON array, sem explicações. Se não encontrar débitos, retorne [].
+Se o PDF não contiver texto legível (escaneado/imagem), retorne exatamente: {"error": "scanned"}`;
 
-    const response = await fetch("https://api.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -82,8 +88,27 @@ Retorne APENAS o JSON array, sem explicações. Se não encontrar débitos, reto
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error("AI API error:", errText);
-      return new Response(JSON.stringify({ error: "Erro ao processar PDF" }), {
+      console.error("AI API error:", response.status, errText);
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: "Muitas requisições. Tente novamente em alguns segundos." }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: "Créditos de IA esgotados." }), {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      // Check for common provider errors
+      if (response.status === 400 && errText.includes("no pages")) {
+        return new Response(JSON.stringify({ error: "PDF inválido ou sem conteúdo legível. Envie CSV ou OFX." }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ error: "Erro ao processar PDF. Tente CSV ou OFX." }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -99,13 +124,23 @@ Retorne APENAS o JSON array, sem explicações. Se não encontrar débitos, reto
       jsonStr = jsonMatch[1].trim();
     }
 
-    let transactions;
+    let parsed;
     try {
-      transactions = JSON.parse(jsonStr);
+      parsed = JSON.parse(jsonStr);
     } catch {
       console.error("Failed to parse AI response:", jsonStr);
-      transactions = [];
+      parsed = [];
     }
+
+    // Handle scanned PDF response
+    if (parsed && parsed.error === "scanned") {
+      return new Response(JSON.stringify({ error: "PDF escaneado (imagem). Envie o extrato em CSV ou OFX." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const transactions = Array.isArray(parsed) ? parsed : [];
 
     return new Response(JSON.stringify({ transactions }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
