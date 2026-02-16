@@ -423,7 +423,9 @@ export default function SignContract() {
   };
 
   const handleSign = async () => {
-    if (!token || !data) return;
+    if (!data) return;
+    const sigToken = data.token;
+    if (!sigToken) { setError("Token de assinatura não encontrado"); return; }
     if (isCanvasEmpty()) {
       setError("Desenhe sua assinatura/rubrica antes de assinar");
       return;
@@ -441,7 +443,7 @@ export default function SignContract() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ token, pdf_base64: rawBase64, user_agent: navigator.userAgent }),
+        body: JSON.stringify({ token: sigToken, pdf_base64: rawBase64, user_agent: navigator.userAgent }),
       });
       const result = await res.json();
       if (result.error) { setError(result.error); }

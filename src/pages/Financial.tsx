@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import {
   getPayments, getExpenses, addExpense, deleteExpense,
@@ -57,6 +59,13 @@ export default function Financial() {
     description: "", category: "Outro" as ManualEntryCategory, amount: 0,
     date: new Date().toISOString().split("T")[0], paymentMethod: "Pix" as PaymentMethod, notes: "",
   });
+
+  // Bulk selection state
+  const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
+  const [selectedExpenses, setSelectedExpenses] = useState<Set<string>>(new Set());
+  const [confirmDeleteEntries, setConfirmDeleteEntries] = useState(false);
+  const [confirmDeleteExpenses, setConfirmDeleteExpenses] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const load = async () => {
     try {
@@ -158,6 +167,65 @@ export default function Financial() {
   const filteredTotalOut = expenseFiltersActive ? filteredExpenses.reduce((s, e) => s + e.amount, 0) : globalTotalOut;
   const displayBalance = entryFiltersActive || expenseFiltersActive ? filteredTotalIn - filteredTotalOut : globalBalance;
 
+  // Bulk selection helpers — Entries (only manual entries can be deleted)
+  const selectableEntryIds = filteredEntries.filter(e => e.origin === "manual").map(e => e.id);
+  const allSelectableEntriesSelected = selectableEntryIds.length > 0 && selectableEntryIds.every(id => selectedEntries.has(id));
+
+  const toggleEntrySelection = (id: string) => {
+    setSelectedEntries(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const toggleAllEntries = () => {
+    if (allSelectableEntriesSelected) {
+      setSelectedEntries(new Set());
+    } else {
+      setSelectedEntries(new Set(selectableEntryIds));
+    }
+  };
+
+  // Bulk selection helpers — Expenses
+  const allExpensesSelected = filteredExpenses.length > 0 && filteredExpenses.every(e => selectedExpenses.has(e.id));
+
+  const toggleExpenseSelection = (id: string) => {
+    setSelectedExpenses(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const toggleAllExpenses = () => {
+    if (allExpensesSelected) {
+      setSelectedExpenses(new Set());
+    } else {
+      setSelectedExpenses(new Set(filteredExpenses.map(e => e.id)));
+    }
+  };
+
+  const handleBulkDeleteEntries = async () => {
+    setBulkDeleting(true);
+    try {
+      await Promise.all(Array.from(selectedEntries).map(id => deleteManualEntry(id)));
+      toast.success(`${selectedEntries.size} entrada(s) removida(s)`);
+      setSelectedEntries(new Set());
+      await load();
+    } catch (e: any) { toast.error(e.message); }
+    finally { setBulkDeleting(false); setConfirmDeleteEntries(false); }
+  };
+
+  const handleBulkDeleteExpenses = async () => {
+    setBulkDeleting(true);
+    try {
+      await Promise.all(Array.from(selectedExpenses).map(id => deleteExpense(id)));
+      toast.success(`${selectedExpenses.size} despesa(s) removida(s)`);
+      setSelectedExpenses(new Set());
+      await load();
+    } catch (e: any) { toast.error(e.message); }
+    finally { setBulkDeleting(false); setConfirmDeleteExpenses(false); }
+  };
+
   return (
     <div className="animate-fade-in space-y-6">
       <div>
@@ -217,6 +285,11 @@ export default function Financial() {
               <p className="text-xs text-muted-foreground">Valores recebidos pelo espaço</p>
             </div>
             <div className="flex gap-2">
+              {selectedEntries.size > 0 && (
+                <Button variant="destructive" size="sm" className="gap-2 h-9 rounded-lg" onClick={() => setConfirmDeleteEntries(true)}>
+                  <Trash2 size={15} /> Excluir {selectedEntries.size} selecionado(s)
+                </Button>
+              )}
               <Button onClick={() => setEntryOpen(true)} size="sm" className="gap-2 h-9 rounded-lg">
                 <Plus size={15} /> Adicionar entrada
               </Button>
@@ -232,6 +305,14 @@ export default function Financial() {
             <table className="table-premium">
               <thead>
                 <tr>
+                  <th className="w-10">
+                    <Checkbox
+                      checked={allSelectableEntriesSelected && selectableEntryIds.length > 0}
+                      onCheckedChange={toggleAllEntries}
+                      aria-label="Selecionar todos"
+                      disabled={selectableEntryIds.length === 0}
+                    />
+                  </th>
                   <th>Data</th>
                   <th>Descrição</th>
                   <th className="hidden sm:table-cell">Origem</th>
@@ -241,10 +322,19 @@ export default function Financial() {
               </thead>
               <tbody>
                 {filteredEntries.length === 0 ? (
-                  <tr><td colSpan={5} className="!py-12 text-center text-muted-foreground">Nenhum registro encontrado</td></tr>
+                  <tr><td colSpan={6} className="!py-12 text-center text-muted-foreground">Nenhum registro encontrado</td></tr>
                 ) : (
                   filteredEntries.map((entry) => (
-                    <tr key={entry.id}>
+                    <tr key={entry.id} className={selectedEntries.has(entry.id) ? "bg-primary/5" : ""}>
+                      <td>
+                        {entry.origin === "manual" ? (
+                          <Checkbox
+                            checked={selectedEntries.has(entry.id)}
+                            onCheckedChange={() => toggleEntrySelection(entry.id)}
+                            aria-label={`Selecionar ${entry.description}`}
+                          />
+                        ) : <span className="block w-4" />}
+                      </td>
                       <td className="text-muted-foreground tabular-nums">{new Date(entry.date).toLocaleDateString("pt-BR")}</td>
                       <td className="font-medium">{entry.description}</td>
                       <td className="hidden sm:table-cell">
@@ -283,6 +373,11 @@ export default function Financial() {
               <p className="text-xs text-muted-foreground">Gastos operacionais do espaço</p>
             </div>
             <div className="flex gap-2">
+              {selectedExpenses.size > 0 && (
+                <Button variant="destructive" size="sm" className="gap-2 h-9 rounded-lg" onClick={() => setConfirmDeleteExpenses(true)}>
+                  <Trash2 size={15} /> Excluir {selectedExpenses.size} selecionado(s)
+                </Button>
+              )}
               <Button onClick={() => setExpOpen(true)} size="sm" className="gap-2 h-9 rounded-lg">
                 <Plus size={15} /> Adicionar despesa
               </Button>
@@ -298,6 +393,14 @@ export default function Financial() {
             <table className="table-premium">
               <thead>
                 <tr>
+                  <th className="w-10">
+                    <Checkbox
+                      checked={allExpensesSelected && filteredExpenses.length > 0}
+                      onCheckedChange={toggleAllExpenses}
+                      aria-label="Selecionar todos"
+                      disabled={filteredExpenses.length === 0}
+                    />
+                  </th>
                   <th>Data</th>
                   <th>Descrição</th>
                   <th className="hidden sm:table-cell">Categoria</th>
@@ -307,10 +410,17 @@ export default function Financial() {
               </thead>
               <tbody>
                 {filteredExpenses.length === 0 ? (
-                  <tr><td colSpan={5} className="!py-12 text-center text-muted-foreground">Nenhum registro encontrado</td></tr>
+                  <tr><td colSpan={6} className="!py-12 text-center text-muted-foreground">Nenhum registro encontrado</td></tr>
                 ) : (
                   filteredExpenses.map((e) => (
-                    <tr key={e.id}>
+                    <tr key={e.id} className={selectedExpenses.has(e.id) ? "bg-primary/5" : ""}>
+                      <td>
+                        <Checkbox
+                          checked={selectedExpenses.has(e.id)}
+                          onCheckedChange={() => toggleExpenseSelection(e.id)}
+                          aria-label={`Selecionar ${e.description}`}
+                        />
+                      </td>
                       <td className="text-muted-foreground tabular-nums">{new Date(e.date).toLocaleDateString("pt-BR")}</td>
                       <td className="font-medium">{e.description}</td>
                       <td className="hidden sm:table-cell">
@@ -419,6 +529,42 @@ export default function Financial() {
 
       <ImportStatementModal open={importOpen} onOpenChange={setImportOpen} onImported={load} />
       <ImportBankEntryModal open={importEntryOpen} onOpenChange={setImportEntryOpen} onImported={load} />
+
+      {/* Bulk delete confirmation — Entries */}
+      <AlertDialog open={confirmDeleteEntries} onOpenChange={setConfirmDeleteEntries}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir {selectedEntries.size} entrada(s)?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação é irreversível. Os registros selecionados serão removidos permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDeleteEntries} disabled={bulkDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {bulkDeleting ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk delete confirmation — Expenses */}
+      <AlertDialog open={confirmDeleteExpenses} onOpenChange={setConfirmDeleteExpenses}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir {selectedExpenses.size} despesa(s)?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação é irreversível. Os registros selecionados serão removidos permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDeleteExpenses} disabled={bulkDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {bulkDeleting ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
