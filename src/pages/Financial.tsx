@@ -307,7 +307,7 @@ export default function Financial() {
                 <tr>
                   <th className="w-10">
                     <Checkbox
-                      checked={allSelectableEntriesSelected && selectableEntryIds.length > 0}
+                      checked={selectableEntryIds.length > 0 && allSelectableEntriesSelected ? true : (selectedEntries.size > 0 ? "indeterminate" : false)}
                       onCheckedChange={toggleAllEntries}
                       aria-label="Selecionar todos"
                       disabled={selectableEntryIds.length === 0}
@@ -327,13 +327,12 @@ export default function Financial() {
                   filteredEntries.map((entry) => (
                     <tr key={entry.id} className={selectedEntries.has(entry.id) ? "bg-primary/5" : ""}>
                       <td>
-                        {entry.origin === "manual" ? (
-                          <Checkbox
-                            checked={selectedEntries.has(entry.id)}
-                            onCheckedChange={() => toggleEntrySelection(entry.id)}
-                            aria-label={`Selecionar ${entry.description}`}
-                          />
-                        ) : <span className="block w-4" />}
+                        <Checkbox
+                          checked={selectedEntries.has(entry.id)}
+                          onCheckedChange={() => toggleEntrySelection(entry.id)}
+                          aria-label={`Selecionar ${entry.description}`}
+                          disabled={entry.origin === "contract"}
+                        />
                       </td>
                       <td className="text-muted-foreground tabular-nums">{new Date(entry.date).toLocaleDateString("pt-BR")}</td>
                       <td className="font-medium">{entry.description}</td>
@@ -395,7 +394,7 @@ export default function Financial() {
                 <tr>
                   <th className="w-10">
                     <Checkbox
-                      checked={allExpensesSelected && filteredExpenses.length > 0}
+                      checked={filteredExpenses.length > 0 && allExpensesSelected ? true : (selectedExpenses.size > 0 ? "indeterminate" : false)}
                       onCheckedChange={toggleAllExpenses}
                       aria-label="Selecionar todos"
                       disabled={filteredExpenses.length === 0}
