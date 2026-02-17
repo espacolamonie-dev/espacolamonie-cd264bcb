@@ -161,7 +161,7 @@ async function generatePDF(contract: Contract, client: Client): Promise<Blob> {
   addWatermark();
 
   const addText = (text: string, opts?: { bold?: boolean; size?: number; center?: boolean; indent?: number }) => {
-    const size = opts?.size || 11;
+    const size = opts?.size || 10;
     const style = opts?.bold ? "bold" : "normal";
     doc.setFontSize(size);
     doc.setFont("helvetica", style);
@@ -170,23 +170,23 @@ async function generatePDF(contract: Contract, client: Client): Promise<Blob> {
     if (opts?.center) {
       const lines = doc.splitTextToSize(text, maxWidth);
       for (const line of lines) {
-        if (y > 275) { doc.addPage(); addWatermark(); y = 20; }
+        if (y > 280) { doc.addPage(); addWatermark(); y = 20; }
         const lineWidth = doc.getTextWidth(line);
         doc.text(line, (pageWidth - lineWidth) / 2, y);
-        y += size * 0.45;
+        y += size * 0.42;
       }
     } else {
       const lines = doc.splitTextToSize(text, maxWidth);
       for (const line of lines) {
-        if (y > 275) { doc.addPage(); addWatermark(); y = 20; }
+        if (y > 280) { doc.addPage(); addWatermark(); y = 20; }
         doc.text(line, x, y);
-        y += size * 0.45;
+        y += size * 0.42;
       }
     }
   };
 
-  const addSpace = (h = 4) => { y += h; };
-  const checkPage = () => { if (y > 270) { doc.addPage(); addWatermark(); y = 20; } };
+  const addSpace = (h = 3) => { y += h; };
+  const checkPage = () => { if (y > 275) { doc.addPage(); addWatermark(); y = 20; } };
 
   const depositValue = (contract.totalValue * contract.depositPercent) / 100;
   const remainingPercent = 100 - contract.depositPercent;
@@ -198,68 +198,68 @@ async function generatePDF(contract: Contract, client: Client): Promise<Blob> {
   ];
   const sigDate = `${today.getDate()} de ${months[today.getMonth()]} de ${today.getFullYear()}`;
 
-  addText("CONTRATO DE LOCAÇÃO DE ESPAÇO PARA EVENTO", { bold: true, size: 14, center: true });
-  addSpace(6);
+  addText("CONTRATO DE LOCAÇÃO DE ESPAÇO PARA EVENTO", { bold: true, size: 13, center: true });
+  addSpace(4);
   addText("Pelo presente instrumento particular, as partes abaixo identificadas:");
-  addSpace(5);
+  addSpace(3);
 
-  addText("LOCADOR:", { bold: true, size: 12 });
-  addSpace(2);
+  addText("LOCADOR:", { bold: true, size: 11 });
+  addSpace(1);
   addText("Nome: Espaço Lamoniê");
   addText("CNPJ: 61.075.137/0001-08");
   addText("Endereço: Rua Cascadura, nº 380, Botafogo (Justinópolis), Ribeirão das Neves – MG");
   addText("Telefone: (31) 99711-1502");
-  addSpace(5);
+  addSpace(3);
 
-  addText("LOCATÁRIO:", { bold: true, size: 12 });
-  addSpace(2);
+  addText("LOCATÁRIO:", { bold: true, size: 11 });
+  addSpace(1);
   addText(`Nome: ${client.name}`);
   addText(`CPF: ${client.cpf || "Não informado"}`);
   const clientAddressPdf = client.addressStreet ? formatFullAddress(client).replace(/\n/g, ", ") : client.address || "Não informado";
   addText(`Endereço: ${clientAddressPdf}`);
   addText(`Telefone: ${client.phone || "Não informado"}`);
-  addSpace(5);
+  addSpace(3);
 
   addText("Têm entre si justo e contratado o seguinte:");
-  addSpace(5);
+  addSpace(3);
 
   checkPage();
-  addText("CLÁUSULA 1 – DO OBJETO", { bold: true, size: 12 });
-  addSpace(2);
+  addText("CLÁUSULA 1 – DO OBJETO", { bold: true, size: 11 });
+  addSpace(1);
   addText(`1.1. O presente contrato tem por objeto a locação do espaço físico do Espaço Lamoniê, exclusivamente para realização de evento privado, sem fins lucrativos, na data ${formatDate(contract.eventDate)}, no horário de dia inteiro, com devolução das chaves dentro do horário acordado.`);
-  addSpace(5);
+  addSpace(3);
 
   checkPage();
-  addText("CLÁUSULA 2 – DO VALOR E FORMA DE PAGAMENTO", { bold: true, size: 12 });
-  addSpace(2);
+  addText("CLÁUSULA 2 – DO VALOR E FORMA DE PAGAMENTO", { bold: true, size: 11 });
+  addSpace(1);
   addText(`2.1. O valor total da locação é de ${fmt(contract.totalValue)}.`);
   addText("2.2. Será pago:");
   addText(`• Cliente optou em dar um sinal de ${contract.depositPercent}% (${fmt(depositValue)}) no ato da assinatura deste contrato, a título de sinal;`, { indent: 5 });
   addText(`• ${remainingPercent}% (${fmt(remainingValue)}) até 7 dias antes da data do evento.`, { indent: 5 });
   addText("2.3. O pagamento será realizado via Pix ou depósito bancário.");
   addText("2.4. O sinal pago não será devolvido, exceto nas hipóteses previstas neste contrato.");
-  addSpace(5);
+  addSpace(3);
 
   checkPage();
-  addText("CLÁUSULA 3 – DO CANCELAMENTO", { bold: true, size: 12 });
-  addSpace(2);
+  addText("CLÁUSULA 3 – DO CANCELAMENTO", { bold: true, size: 11 });
+  addSpace(1);
   addText("3.1. Em caso de cancelamento pelo LOCATÁRIO:");
   addText("• Com até 15 dias de antecedência, será permitido remarcar o evento, sujeito à disponibilidade;", { indent: 5 });
   addText("• Com prazo inferior a 15 dias, não haverá devolução de valores.", { indent: 5 });
   addText("3.2. Em caso de cancelamento pelo LOCADOR por motivo de força maior, todos os valores pagos serão integralmente devolvidos.");
-  addSpace(5);
+  addSpace(3);
 
   checkPage();
-  addText("CLÁUSULA 4 – DO USO DO ESPAÇO", { bold: true, size: 12 });
-  addSpace(2);
+  addText("CLÁUSULA 4 – DO USO DO ESPAÇO", { bold: true, size: 11 });
+  addSpace(1);
   addText("4.1. O espaço destina-se exclusivamente a eventos privados, sendo vedada qualquer atividade comercial, cobrança de ingressos ou divulgação pública.");
   addText("4.2. A capacidade máxima é de 120 pessoas, sendo o controle de público de responsabilidade do LOCATÁRIO.");
   addText("4.3. O uso de som será restrito a som ambiente já instalado no espaço para utilização, sendo proibidos DJs, bandas ou equipamentos profissionais.");
-  addSpace(5);
+  addSpace(3);
 
   checkPage();
-  addText("CLÁUSULA 5 – DA RESPONSABILIDADE", { bold: true, size: 12 });
-  addSpace(2);
+  addText("CLÁUSULA 5 – DA RESPONSABILIDADE", { bold: true, size: 11 });
+  addSpace(1);
   addText("5.1. O LOCATÁRIO se responsabiliza integralmente por:");
   addText("• Danos causados ao espaço, mobiliário ou equipamentos;", { indent: 5 });
   addText("• Conduta de convidados;", { indent: 5 });
@@ -269,59 +269,61 @@ async function generatePDF(contract: Contract, client: Client): Promise<Blob> {
   addText("• Drogas ilícitas;", { indent: 5 });
   addText("• Brigas, excessos ou comportamento ofensivo;", { indent: 5 });
   addText("• Fogos, narguilé, cigarro comum ou eletrônico em área interna.", { indent: 5 });
-  addSpace(5);
+  addSpace(3);
 
   checkPage();
-  addText("CLÁUSULA 6 – DA LIMPEZA", { bold: true, size: 12 });
-  addSpace(2);
+  addText("CLÁUSULA 6 – DA LIMPEZA", { bold: true, size: 11 });
+  addSpace(1);
   addText("6.1. O espaço será entregue limpo e deverá ser devolvido nas mesmas condições.");
   addText("6.2. A não realização da limpeza implicará cobrança de R$ 250,00.");
-  addSpace(5);
+  addSpace(3);
 
   checkPage();
-  addText("CLÁUSULA 7 – DAS PENALIDADES", { bold: true, size: 12 });
-  addSpace(2);
+  addText("CLÁUSULA 7 – DAS PENALIDADES", { bold: true, size: 11 });
+  addSpace(1);
   addText("7.1. O descumprimento de qualquer cláusula autoriza:");
   addText("• Encerramento imediato do evento;", { indent: 5 });
   addText("• Aplicação de multa equivalente a 20% do valor total do contrato;", { indent: 5 });
   addText("• Cobrança integral de danos apurados.", { indent: 5 });
-  addSpace(5);
+  addSpace(3);
 
   checkPage();
-  addText("CLÁUSULA 8 – CASO FORTUITO E FORÇA MAIOR", { bold: true, size: 12 });
-  addSpace(2);
+  addText("CLÁUSULA 8 – CASO FORTUITO E FORÇA MAIOR", { bold: true, size: 11 });
+  addSpace(1);
   addText("8.1. Nenhuma das partes será responsabilizada por eventos imprevisíveis ou inevitáveis, como queda de energia, fenômenos naturais ou atos de autoridade pública.");
-  addSpace(5);
+  addSpace(3);
 
   checkPage();
-  addText("CLÁUSULA 9 – DO FORO", { bold: true, size: 12 });
-  addSpace(2);
+  addText("CLÁUSULA 9 – DO FORO", { bold: true, size: 11 });
+  addSpace(1);
   addText("9.1. Fica eleito o foro da Comarca de Ribeirão das Neves – MG, renunciando a qualquer outro, por mais privilegiado que seja.");
-  addSpace(5);
+  addSpace(3);
 
   checkPage();
-  addText("CLÁUSULA 10 – DISPOSIÇÕES FINAIS", { bold: true, size: 12 });
-  addSpace(2);
+  addText("CLÁUSULA 10 – DISPOSIÇÕES FINAIS", { bold: true, size: 11 });
+  addSpace(1);
   addText("10.1. Este contrato é celebrado em caráter irrevogável e irretratável.");
   addText("10.2. As partes declaram ter lido, compreendido e aceito todas as cláusulas.");
-  addSpace(8);
+  addSpace(4);
+
+  // === SIGNATURE BLOCK — keep together, avoid page break inside ===
+  const signatureBlockHeight = 50; // approximate height needed for date + 2 signatures
+  if (y + signatureBlockHeight > pageHeight - 15) {
+    doc.addPage(); addWatermark(); y = 20;
+  }
 
   addText(`Ribeirão das Neves – MG, ${sigDate}.`);
-  addSpace(15);
+  addSpace(8);
 
-  // Signature lines
-  checkPage();
   doc.setDrawColor(0);
   doc.line(margin, y, margin + 70, y);
-  y += 5;
+  y += 4;
   addText("LOCATÁRIO");
-  addSpace(12);
+  addSpace(8);
 
-  checkPage();
   doc.line(margin, y, margin + 70, y);
-  y += 5;
+  y += 4;
   addText("LOCADOR – Espaço Lamoniê", { bold: true });
-  addSpace(1);
 
   // Auto-signature for Locador
   doc.setFontSize(9);
