@@ -15,6 +15,8 @@ import {
 import type { ContractStatus, PaymentStatus } from "@/types";
 import { updateContract } from "@/data/store";
 import { toast } from "sonner";
+import { triggerGoogleSync } from "@/lib/googleSync";
+
 
 interface ContractStatusSelectProps {
   contractId: string;
@@ -36,6 +38,8 @@ export function ContractStatusSelect({ contractId, value, onChanged }: ContractS
       }
       await updateContract(contractId, updates);
       toast.success(`Status alterado para "${CONTRACT_STATUS_LABELS[newStatus as ContractStatus]}"`);
+      // Trigger Google Calendar sync asynchronously
+      triggerGoogleSync(contractId);
       onChanged();
     } catch (e: any) {
       toast.error(e.message || "Erro ao alterar status");
@@ -87,6 +91,8 @@ export function PaymentStatusSelect({ contractId, value, isCancelled, onChanged 
     try {
       await updateContract(contractId, { paymentStatus: newStatus });
       toast.success(`Pagamento alterado para "${PAYMENT_STATUS_LABELS[newStatus as PaymentStatus]}"`);
+      // Trigger Google Calendar sync asynchronously
+      triggerGoogleSync(contractId);
       onChanged();
     } catch (e: any) {
       toast.error(e.message || "Erro ao alterar pagamento");
