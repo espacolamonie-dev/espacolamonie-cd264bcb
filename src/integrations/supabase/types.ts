@@ -156,6 +156,7 @@ export type Database = {
           event_date: string
           event_time: string
           event_type: string
+          google_event_id: string | null
           guest_count: number
           id: string
           payment_status: string
@@ -174,6 +175,7 @@ export type Database = {
           event_date: string
           event_time?: string
           event_type: string
+          google_event_id?: string | null
           guest_count?: number
           id?: string
           payment_status?: string
@@ -192,6 +194,7 @@ export type Database = {
           event_date?: string
           event_time?: string
           event_type?: string
+          google_event_id?: string | null
           guest_count?: number
           id?: string
           payment_status?: string
@@ -274,6 +277,84 @@ export type Database = {
           date?: string
           description?: string
           id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      google_settings: {
+        Row: {
+          access_token: string | null
+          calendar_id: string | null
+          calendar_name: string | null
+          connected_at: string | null
+          connected_email: string | null
+          created_at: string
+          id: string
+          is_connected: boolean
+          refresh_token: string | null
+          token_expires_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token?: string | null
+          calendar_id?: string | null
+          calendar_name?: string | null
+          connected_at?: string | null
+          connected_email?: string | null
+          created_at?: string
+          id?: string
+          is_connected?: boolean
+          refresh_token?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string | null
+          calendar_id?: string | null
+          calendar_name?: string | null
+          connected_at?: string | null
+          connected_email?: string | null
+          created_at?: string
+          id?: string
+          is_connected?: boolean
+          refresh_token?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      google_sync_logs: {
+        Row: {
+          action: string
+          contract_id: string | null
+          created_at: string
+          google_event_id: string | null
+          id: string
+          message: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          contract_id?: string | null
+          created_at?: string
+          google_event_id?: string | null
+          id?: string
+          message?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          contract_id?: string | null
+          created_at?: string
+          google_event_id?: string | null
+          id?: string
+          message?: string | null
+          status?: string
           user_id?: string
         }
         Relationships: []
