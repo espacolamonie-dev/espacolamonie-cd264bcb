@@ -1,10 +1,12 @@
 import { useEffect, useState, useRef, lazy, Suspense } from "react";
 import { CurrencyInput } from "@/components/CurrencyInput";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { CalendarDays, Users, DollarSign, FileText, Plus, AlertTriangle, Upload, Trash2, Download, FileOutput, ShieldCheck, Monitor, Smartphone, Globe, Hash, Clock } from "lucide-react";
@@ -53,6 +55,11 @@ export default function ContractDetailModal({ contractId, onClose }: Props) {
   const [generateOpen, setGenerateOpen] = useState(false);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
 
+  // Payment selection state
+  const [selectedPaymentIds, setSelectedPaymentIds] = useState<Set<string>>(new Set());
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [paymentIdsToDelete, setPaymentIdsToDelete] = useState<string[]>([]);
+
   const load = async () => {
     try {
       const [allContracts, allClients, allPayments, allDocs] = await Promise.all([
@@ -89,6 +96,66 @@ export default function ContractDetailModal({ contractId, onClose }: Props) {
       setPayForm({ amount: 0, date: new Date().toISOString().split("T")[0], description: "" });
       await load();
     } catch (e: any) { toast.error(e.message); }
+  };
+
+  // Payment selection helpers
+  const allSelected = payments.length > 0 && selectedPaymentIds.size === payments.length;
+  const someSelected = selectedPaymentIds.size > 0 && selectedPaymentIds.size < payments.length;
+
+  const togglePayment = (id: string) => {
+    setSelectedPaymentIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (allSelected) {
+      setSelectedPaymentIds(new Set());
+    } else {
+      setSelectedPaymentIds(new Set(payments.map((p) => p.id)));
+    }
+  };
+
+  const requestDeletePayments = (ids: string[]) => {
+    setPaymentIdsToDelete(ids);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDeletePayments = async () => {
+    setDeleteConfirmOpen(false);
+    try {
+      // Delete each selected payment
+      for (const id of paymentIdsToDelete) {
+        await supabase.from("payments").delete().eq("id", id);
+      }
+
+      // Recalculate contract payment status and remaining value
+      const remainingPayments = payments.filter((p) => !paymentIdsToDelete.includes(p.id));
+      const totalPaidAfter = remainingPayments.reduce((s, p) => s + p.amount, 0);
+      const contractTotal = contract!.totalValue;
+      const remaining = Math.max(0, contractTotal - totalPaidAfter);
+
+      let newPaymentStatus = "pending";
+      if (totalPaidAfter >= contractTotal) newPaymentStatus = "paid_full";
+      else if (totalPaidAfter > 0) newPaymentStatus = "deposit_paid";
+
+      await supabase
+        .from("contracts")
+        .update({ remaining_value: remaining, payment_status: newPaymentStatus })
+        .eq("id", contractId);
+
+      setSelectedPaymentIds(new Set());
+      toast.success(
+        paymentIdsToDelete.length === 1
+          ? "Pagamento excluído com sucesso"
+          : `${paymentIdsToDelete.length} pagamentos excluídos com sucesso`
+      );
+      await load();
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao excluir pagamento(s)");
+    }
   };
 
   const handleCancel = async () => {
@@ -200,28 +267,73 @@ export default function ContractDetailModal({ contractId, onClose }: Props) {
           </TabsContent>
 
           <TabsContent value="payments" className="space-y-4 pt-4">
-            <div>
-              <p className="text-sm text-muted-foreground">
-                Total pago: <span className="font-semibold text-foreground">{fmt(totalPaid)}</span> de {fmt(contract.totalValue)}
-              </p>
-              <span className={`text-[10px] font-medium rounded-full px-2 py-0.5 ${PAYMENT_STATUS_COLORS[contract.paymentStatus]}`}>
-                {PAYMENT_STATUS_LABELS[contract.paymentStatus]}
-              </span>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  Total pago: <span className="font-semibold text-foreground">{fmt(totalPaid)}</span> de {fmt(contract.totalValue)}
+                </p>
+                <span className={`text-[10px] font-medium rounded-full px-2 py-0.5 ${PAYMENT_STATUS_COLORS[contract.paymentStatus]}`}>
+                  {PAYMENT_STATUS_LABELS[contract.paymentStatus]}
+                </span>
+              </div>
+              {selectedPaymentIds.size > 0 && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="gap-1.5 h-8 text-xs"
+                  onClick={() => requestDeletePayments([...selectedPaymentIds])}
+                >
+                  <Trash2 size={13} />
+                  Excluir selecionados ({selectedPaymentIds.size})
+                </Button>
+              )}
             </div>
 
             <div className="divide-y divide-border/40 rounded-md border border-border/60">
               {payments.length === 0 ? (
                 <p className="px-4 py-6 text-sm text-center text-muted-foreground">Nenhum pagamento</p>
               ) : (
-                payments.map((p) => (
-                  <div key={p.id} className="flex items-center justify-between px-4 py-3">
-                    <div>
-                      <p className="text-sm font-medium">{p.description || "Pagamento"}</p>
-                      <p className="text-xs text-muted-foreground">{new Date(p.date).toLocaleDateString("pt-BR")}</p>
-                    </div>
-                    <span className="font-medium text-success tabular-nums text-sm">{fmt(p.amount)}</span>
+                <>
+                  {/* Select-all header row */}
+                  <div className="flex items-center gap-3 px-4 py-2 bg-muted/20">
+                    <Checkbox
+                      checked={allSelected ? true : someSelected ? "indeterminate" : false}
+                      onCheckedChange={toggleAll}
+                      aria-label="Selecionar todos"
+                    />
+                    <span className="text-xs text-muted-foreground">
+                      {allSelected ? "Desmarcar todos" : "Selecionar todos"}
+                    </span>
                   </div>
-                ))
+                  {payments.map((p) => (
+                    <div
+                      key={p.id}
+                      className={`flex items-center gap-3 px-4 py-3 transition-colors ${selectedPaymentIds.has(p.id) ? "bg-primary/5" : ""}`}
+                    >
+                      <Checkbox
+                        checked={selectedPaymentIds.has(p.id)}
+                        onCheckedChange={() => togglePayment(p.id)}
+                        aria-label={`Selecionar pagamento de ${fmt(p.amount)}`}
+                      />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{p.description || "Pagamento"}</p>
+                        <p className="text-xs text-muted-foreground">{new Date(p.date).toLocaleDateString("pt-BR")}</p>
+                      </div>
+                      <span className="font-medium text-success tabular-nums text-sm mr-2">{fmt(p.amount)}</span>
+                      {contract.status !== "cancelled" && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0"
+                          onClick={() => requestDeletePayments([p.id])}
+                          aria-label="Excluir pagamento"
+                        >
+                          <Trash2 size={13} />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </>
               )}
             </div>
 
@@ -379,6 +491,31 @@ export default function ContractDetailModal({ contractId, onClose }: Props) {
           onGenerated={load}
         />
       )}
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              {paymentIdsToDelete.length === 1
+                ? "Tem certeza que deseja excluir este pagamento? O valor restante e o status do contrato serão atualizados automaticamente."
+                : `Tem certeza que deseja excluir ${paymentIdsToDelete.length} pagamentos? O valor restante e o status do contrato serão atualizados automaticamente.`}
+              <br /><br />
+              <span className="font-medium text-destructive">Esta ação não pode ser desfeita.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={confirmDeletePayments}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
