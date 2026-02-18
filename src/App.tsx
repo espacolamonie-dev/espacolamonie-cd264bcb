@@ -10,6 +10,7 @@ import Contracts from "@/pages/Contracts";
 import Financial from "@/pages/Financial";
 import Agenda from "@/pages/Agenda";
 import Reports from "@/pages/Reports";
+import Settings from "@/pages/Settings";
 import SignContract from "@/pages/SignContract";
 import Auth from "@/pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -75,6 +76,7 @@ const App = () => (
                     <Route path="/financial" element={<Financial />} />
                     <Route path="/agenda" element={<Agenda />} />
                     <Route path="/reports" element={<Reports />} />
+                    <Route path="/settings" element={<Settings />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Layout>

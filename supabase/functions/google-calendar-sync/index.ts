@@ -1,0 +1,295 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
+const GOOGLE_CLIENT_ID = Deno.env.get('GOOGLE_CLIENT_ID')!;
+const GOOGLE_CLIENT_SECRET = Deno.env.get('GOOGLE_CLIENT_SECRET')!;
+
+const CONTRACT_STATUS_LABELS: Record<string, string> = {
+  awaiting_documents: 'Aguardando Documentos',
+  awaiting_signature: 'Aguardando Assinatura',
+  signed: 'Assinado',
+  confirmed: 'Confirmado',
+  cancelled: 'Cancelado',
+};
+
+const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  pending: 'Pendente',
+  deposit_paid: 'Sinal Pago',
+  paid_full: 'Pago Total',
+};
+
+// Google Calendar color IDs
+const PAYMENT_COLOR_IDS: Record<string, string> = {
+  pending: '5',      // yellow/banana
+  deposit_paid: '2', // sage/green light
+  paid_full: '10',   // basil/green dark
+  cancelled: '8',    // graphite
+};
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
+  }
+
+  const supabaseUser = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    global: { headers: { Authorization: authHeader } },
+  });
+  const { data: { user }, error: authError } = await supabaseUser.auth.getUser();
+  if (authError || !user) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
+  }
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  const body = await req.json().catch(() => ({}));
+  const action = body.action as string;
+
+  try {
+    // Get user's google settings
+    const { data: settings } = await supabase
+      .from('google_settings')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    if (action === 'get-auth-url') {
+      const redirectUri = `${SUPABASE_URL}/functions/v1/google-oauth-callback`;
+      const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+      authUrl.searchParams.set('client_id', GOOGLE_CLIENT_ID);
+      authUrl.searchParams.set('redirect_uri', redirectUri);
+      authUrl.searchParams.set('response_type', 'code');
+      authUrl.searchParams.set('scope', 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/userinfo.email');
+      authUrl.searchParams.set('access_type', 'offline');
+      authUrl.searchParams.set('prompt', 'consent');
+      authUrl.searchParams.set('state', user.id);
+      return new Response(JSON.stringify({ url: authUrl.toString() }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (action === 'disconnect') {
+      await supabase.from('google_settings').update({ is_connected: false, access_token: null, refresh_token: null }).eq('user_id', user.id);
+      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    if (action === 'get-settings') {
+      return new Response(JSON.stringify({ settings }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    if (action === 'get-calendars') {
+      if (!settings?.is_connected) {
+        return new Response(JSON.stringify({ error: 'Not connected' }), { status: 400, headers: corsHeaders });
+      }
+      const token = await getValidToken(supabase, user.id, settings);
+      const res = await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      return new Response(JSON.stringify({ calendars: data.items || [] }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    if (action === 'set-calendar') {
+      await supabase.from('google_settings')
+        .update({ calendar_id: body.calendar_id, calendar_name: body.calendar_name })
+        .eq('user_id', user.id);
+      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    if (action === 'sync-contract') {
+      // Create or update a Google Calendar event for a contract
+      if (!settings?.is_connected) {
+        return new Response(JSON.stringify({ error: 'Not connected to Google Calendar' }), { status: 400, headers: corsHeaders });
+      }
+
+      const { contract_id } = body;
+      if (!contract_id) {
+        return new Response(JSON.stringify({ error: 'contract_id required' }), { status: 400, headers: corsHeaders });
+      }
+
+      const { data: contract } = await supabase.from('contracts').select('*').eq('id', contract_id).single();
+      const { data: client } = await supabase.from('clients').select('*').eq('id', contract.client_id).single();
+
+      const token = await getValidToken(supabase, user.id, settings);
+      const calendarId = settings.calendar_id || 'primary';
+
+      const isCancelled = contract.status === 'cancelled';
+      const title = isCancelled
+        ? `[CANCELADO] [Lamoniê] ${contract.event_type} — ${client.name}`
+        : `[Lamoniê] ${contract.event_type} — ${client.name}`;
+
+      const description = buildDescription(contract, client);
+      const colorId = isCancelled ? PAYMENT_COLOR_IDS.cancelled : (PAYMENT_COLOR_IDS[contract.payment_status] || '5');
+
+      const eventBody = {
+        summary: title,
+        description,
+        location: 'Espaço Lamoniê — Endereço do espaço',
+        start: { date: contract.event_date },
+        end: { date: contract.event_date },
+        colorId,
+        extendedProperties: {
+          private: {
+            contract_id: contract.id,
+            crm: 'lamonie',
+          },
+        },
+      };
+
+      let googleEventId = contract.google_event_id;
+      let googleRes;
+      let resBody;
+
+      if (googleEventId) {
+        // Update existing event
+        googleRes = await fetch(
+          `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${googleEventId}`,
+          { method: 'PUT', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(eventBody) }
+        );
+        resBody = await googleRes.json();
+        if (!googleRes.ok) {
+          // Event might have been deleted on Google side; create new one
+          if (googleRes.status === 404) {
+            googleEventId = null;
+          }
+        }
+      }
+
+      if (!googleEventId) {
+        // Create new event
+        googleRes = await fetch(
+          `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`,
+          { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(eventBody) }
+        );
+        resBody = await googleRes.json();
+        if (googleRes.ok && resBody.id) {
+          googleEventId = resBody.id;
+          // Save google_event_id to contract
+          await supabase.from('contracts').update({ google_event_id: googleEventId }).eq('id', contract_id);
+        }
+      }
+
+      // Log
+      await supabase.from('google_sync_logs').insert({
+        user_id: user.id,
+        contract_id,
+        action: 'sync-contract',
+        status: googleRes?.ok ? 'success' : 'error',
+        message: googleRes?.ok ? `Event synced: ${googleEventId}` : JSON.stringify(resBody),
+        google_event_id: googleEventId,
+      });
+
+      return new Response(JSON.stringify({ success: googleRes?.ok, google_event_id: googleEventId }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (action === 'fetch-google-events') {
+      if (!settings?.is_connected) {
+        return new Response(JSON.stringify({ events: [] }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const token = await getValidToken(supabase, user.id, settings);
+      const calendarId = settings.calendar_id || 'primary';
+      const timeMin = body.time_min || new Date(new Date().getFullYear(), 0, 1).toISOString();
+      const timeMax = body.time_max || new Date(new Date().getFullYear() + 1, 11, 31).toISOString();
+
+      const eventsRes = await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime&maxResults=250`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const eventsData = await eventsRes.json();
+      return new Response(JSON.stringify({ events: eventsData.items || [] }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (action === 'get-sync-logs') {
+      const { data: logs } = await supabase
+        .from('google_sync_logs')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      return new Response(JSON.stringify({ logs }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    return new Response(JSON.stringify({ error: 'Unknown action' }), { status: 400, headers: corsHeaders });
+
+  } catch (err) {
+    console.error('google-calendar-sync error:', err);
+    return new Response(JSON.stringify({ error: String(err) }), { status: 500, headers: corsHeaders });
+  }
+});
+
+async function getValidToken(supabase: ReturnType<typeof createClient>, userId: string, settings: Record<string, unknown>): Promise<string> {
+  const expiresAt = settings.token_expires_at ? new Date(settings.token_expires_at as string) : null;
+  const now = new Date();
+  // Refresh if expired or expiring in next 5 minutes
+  if (!expiresAt || expiresAt.getTime() - now.getTime() < 5 * 60 * 1000) {
+    if (!settings.refresh_token) throw new Error('No refresh token available');
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: GOOGLE_CLIENT_ID,
+        client_secret: GOOGLE_CLIENT_SECRET,
+        refresh_token: settings.refresh_token as string,
+        grant_type: 'refresh_token',
+      }),
+    });
+    const tokens = await tokenRes.json();
+    if (!tokenRes.ok || !tokens.access_token) throw new Error('Failed to refresh token');
+    const newExpiry = new Date(Date.now() + (tokens.expires_in || 3600) * 1000).toISOString();
+    await supabase.from('google_settings').update({
+      access_token: tokens.access_token,
+      token_expires_at: newExpiry,
+    }).eq('user_id', userId);
+    return tokens.access_token;
+  }
+  return settings.access_token as string;
+}
+
+function buildDescription(contract: Record<string, unknown>, client: Record<string, unknown>): string {
+  const fmtCurrency = (v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+  const contractStatusLabels: Record<string, string> = {
+    awaiting_documents: 'Aguardando Documentos',
+    awaiting_signature: 'Aguardando Assinatura',
+    signed: 'Assinado',
+    confirmed: 'Confirmado',
+    cancelled: 'Cancelado',
+  };
+  const paymentStatusLabels: Record<string, string> = {
+    pending: 'Pendente',
+    deposit_paid: 'Sinal Pago',
+    paid_full: 'Pago Total',
+  };
+
+  return [
+    `🎉 ${contract.event_type}`,
+    ``,
+    `👤 Cliente: ${client.name}`,
+    `📄 CPF: ${client.cpf || '—'}`,
+    `📞 Telefone: ${client.phone || '—'}`,
+    ``,
+    `💰 Valor Total: ${fmtCurrency(Number(contract.total_value))}`,
+    `💵 Sinal (${contract.deposit_percent}%): ${fmtCurrency(Number(contract.deposit_value))}`,
+    `📋 Restante: ${fmtCurrency(Number(contract.remaining_value))}`,
+    ``,
+    `📊 Status Contrato: ${contractStatusLabels[contract.status as string] || contract.status}`,
+    `💳 Status Pagamento: ${paymentStatusLabels[contract.payment_status as string] || contract.payment_status}`,
+    ``,
+    `🆔 ID Contrato: ${contract.id}`,
+    ``,
+    `— Criado automaticamente pelo CRM Lamoniê`,
+  ].join('\n');
+}

@@ -8,3 +8,10 @@ verify_jwt = false
 
 [functions.parse-statement-pdf]
 verify_jwt = false
+
+[functions.google-oauth-callback]
+verify_jwt = false
+
+[functions.google-calendar-sync]
+verify_jwt = false
+

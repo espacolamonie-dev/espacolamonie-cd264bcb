@@ -9,6 +9,7 @@ import {
   Menu,
   X,
   LogOut,
+  Settings,
 } from "lucide-react";
 import { useState } from "react";
 import logo from "@/assets/logo.png";
@@ -34,6 +35,12 @@ const navGroups = [
     items: [
       { to: "/agenda", label: "Agenda", icon: CalendarDays },
       { to: "/reports", label: "Relatórios", icon: BarChart3 },
+    ],
+  },
+  {
+    label: "Sistema",
+    items: [
+      { to: "/settings", label: "Configurações", icon: Settings },
     ],
   },
 ];
