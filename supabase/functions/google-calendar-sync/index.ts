@@ -106,8 +106,75 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
+    if (action === 'delete-event') {
+      // Delete a Google Calendar event when a contract is cancelled
+      const { contract_id } = body;
+      if (!contract_id) {
+        return new Response(JSON.stringify({ error: 'contract_id required' }), { status: 400, headers: corsHeaders });
+      }
+
+      const { data: contract } = await supabase.from('contracts').select('google_event_id').eq('id', contract_id).single();
+      const googleEventId = contract?.google_event_id;
+
+      if (!googleEventId) {
+        // No event linked — nothing to delete on Google
+        return new Response(JSON.stringify({ success: true, message: 'No Google event linked' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (!settings?.is_connected) {
+        // Not connected — just clear the google_event_id from the contract
+        await supabase.from('contracts').update({ google_event_id: null }).eq('id', contract_id);
+        return new Response(JSON.stringify({ success: true, message: 'Not connected, cleared event id' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const token = await getValidToken(supabase, user.id, settings);
+      const calendarId = settings.calendar_id || 'primary';
+
+      const deleteRes = await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId as string)}/events/${googleEventId}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // 204 = success, 404 = already gone — both are fine
+      const isOk = deleteRes.status === 204 || deleteRes.status === 404;
+
+      // Clear google_event_id from contract regardless
+      await supabase.from('contracts').update({ google_event_id: null }).eq('id', contract_id);
+
+      // Log
+      await supabase.from('google_sync_logs').insert({
+        user_id: user.id,
+        contract_id,
+        action: 'delete-event',
+        status: isOk ? 'success' : 'error',
+        message: isOk
+          ? `Event ${googleEventId} deleted from Google Calendar`
+          : `Failed to delete event ${googleEventId} (status ${deleteRes.status})`,
+        google_event_id: googleEventId,
+      });
+
+      return new Response(JSON.stringify({ success: isOk, google_event_id: googleEventId }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     if (action === 'sync-contract') {
       // Create or update a Google Calendar event for a contract
+      // Never sync cancelled contracts
+      const { contract_id: syncContractId } = body;
+      if (syncContractId) {
+        const { data: checkContract } = await supabase.from('contracts').select('status').eq('id', syncContractId).single();
+        if (checkContract?.status === 'cancelled') {
+          return new Response(JSON.stringify({ skipped: true, reason: 'Contract is cancelled' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
       if (!settings?.is_connected) {
         return new Response(JSON.stringify({ error: 'Not connected to Google Calendar' }), { status: 400, headers: corsHeaders });
       }
