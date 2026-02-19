@@ -22,7 +22,7 @@ import { Link } from "react-router-dom";
 
 type ViewMode = "month" | "week";
 type FilterType = "all" | "contracts" | "google";
-type FilterPayment = "all" | "pending" | "deposit_paid" | "paid_full" | "cancelled";
+type FilterPayment = "all" | "pending" | "deposit_paid" | "paid_full";
 
 const STATUS_COLORS: Record<string, string> = {
   confirmed: "bg-success/15 text-success border-success/30",
@@ -128,18 +128,18 @@ export default function Agenda() {
   const eventsByDate = useMemo(() => {
     const map: Record<string, DayEvent[]> = {};
 
-    // Add CRM contracts
+    // Add CRM contracts — cancelled contracts are hidden from the calendar
     contracts.forEach((c) => {
       const key = c.eventDate;
       if (!map[key]) map[key] = [];
       const client = clientMap[c.clientId];
       const isCancelled = c.status === "cancelled";
 
+      // Cancelled contracts are removed from the agenda view
+      if (isCancelled) return;
+
       // Payment filter
-      if (filterPayment !== "all") {
-        if (filterPayment === "cancelled" && !isCancelled) return;
-        if (filterPayment !== "cancelled" && c.paymentStatus !== filterPayment && !isCancelled) return;
-      }
+      if (filterPayment !== "all" && c.paymentStatus !== filterPayment) return;
 
       if (filterType !== "google") {
         map[key].push({
@@ -297,7 +297,6 @@ export default function Agenda() {
             <SelectItem value="pending">Pendente</SelectItem>
             <SelectItem value="deposit_paid">Sinal Pago</SelectItem>
             <SelectItem value="paid_full">Pago Total</SelectItem>
-            <SelectItem value="cancelled">Cancelado</SelectItem>
           </SelectContent>
         </Select>
       </div>

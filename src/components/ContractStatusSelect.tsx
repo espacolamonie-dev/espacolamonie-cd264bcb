@@ -15,7 +15,7 @@ import {
 import type { ContractStatus, PaymentStatus } from "@/types";
 import { updateContract } from "@/data/store";
 import { toast } from "sonner";
-import { triggerGoogleSync } from "@/lib/googleSync";
+import { triggerGoogleSync, deleteGoogleEvent } from "@/lib/googleSync";
 
 
 interface ContractStatusSelectProps {
@@ -38,8 +38,12 @@ export function ContractStatusSelect({ contractId, value, onChanged }: ContractS
       }
       await updateContract(contractId, updates);
       toast.success(`Status alterado para "${CONTRACT_STATUS_LABELS[newStatus as ContractStatus]}"`);
-      // Trigger Google Calendar sync asynchronously
-      triggerGoogleSync(contractId);
+      // When cancelled: delete Google event. Otherwise: sync/update it.
+      if (newStatus === "cancelled") {
+        deleteGoogleEvent(contractId);
+      } else {
+        triggerGoogleSync(contractId);
+      }
       onChanged();
     } catch (e: any) {
       toast.error(e.message || "Erro ao alterar status");
