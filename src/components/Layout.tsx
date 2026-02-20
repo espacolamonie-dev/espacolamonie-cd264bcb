@@ -16,15 +16,29 @@ import { useState } from "react";
 import logo from "@/assets/logo.png";
 import { useAuth } from "@/hooks/useAuth";
 
-const navItems = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/clients", label: "Clientes", icon: Users },
-  { to: "/contracts", label: "Contratos", icon: FileText },
-  { to: "/financial", label: "Financeiro", icon: CreditCard },
-  { to: "/agenda", label: "Agenda", icon: CalendarDays },
-  { to: "/visits", label: "Agendar Visita", icon: ClipboardCheck },
-  { to: "/reports", label: "Relatórios", icon: BarChart3 },
-  { to: "/settings", label: "Configurações", icon: Settings },
+const navGroups = [
+  {
+    label: "Gestão",
+    items: [
+      { to: "/", label: "Dashboard", icon: LayoutDashboard },
+      { to: "/clients", label: "Clientes", icon: Users },
+      { to: "/contracts", label: "Contratos", icon: FileText },
+    ],
+  },
+  {
+    label: "Financeiro",
+    items: [
+      { to: "/financial", label: "Financeiro", icon: CreditCard },
+    ],
+  },
+  {
+    label: "Planejamento",
+    items: [
+      { to: "/agenda", label: "Agenda", icon: CalendarDays },
+      { to: "/visits", label: "Agendar Visita", icon: ClipboardCheck },
+      { to: "/reports", label: "Relatórios", icon: BarChart3 },
+    ],
+  },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -44,22 +58,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Sidebar */}
       <aside
-        className={`sidebar-gradient fixed inset-y-0 left-0 z-50 flex w-[260px] flex-col transition-transform duration-300 md:relative md:translate-x-0 ${
-          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        className={`sidebar-gradient fixed inset-y-0 left-0 z-50 flex w-[260px] flex-col transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${
+          mobileOpen ? "translate-x-0 animate-slide-in-left" : "-translate-x-full"
         }`}
       >
-        {/* Logo */}
-        <div className="flex items-center gap-3.5 px-7 pt-8 pb-10">
+        {/* Logo — compact & elegant */}
+        <div className="flex items-center gap-3 px-6 pt-7 pb-8">
           <img
             src={logo}
             alt="Lamoniê"
-            className="h-10 w-10 rounded-xl object-cover ring-2 ring-white/10"
+            className="h-11 w-11 rounded-xl object-cover ring-2 ring-white/10"
           />
           <div className="min-w-0">
-            <h1 className="font-display text-[17px] font-semibold tracking-tight text-white leading-tight">
+            <h1 className="font-display text-lg font-semibold tracking-tight text-white leading-tight">
               Espaço Lamoniê
             </h1>
-            <p className="text-[10px] text-white/35 tracking-[0.16em] uppercase mt-0.5 font-medium">
+            <p className="text-[10px] text-white/30 tracking-[0.14em] uppercase mt-0.5" style={{ fontFamily: "var(--font-body)" }}>
               Gestão de Eventos
             </p>
           </div>
@@ -71,39 +85,66 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </button>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 px-4 overflow-y-auto space-y-1">
-          {navItems.map((item) => {
-            const active = location.pathname === item.to;
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                onClick={() => setMobileOpen(false)}
-                className={`group flex items-center gap-3.5 rounded-xl px-4 py-3 text-[13.5px] font-medium tracking-wide transition-all duration-200 ${
-                  active
-                    ? "bg-white/15 text-white shadow-sm"
-                    : "text-white/50 hover:text-white/80 hover:bg-white/5"
-                }`}
-              >
-                <item.icon size={20} strokeWidth={active ? 2 : 1.5} className="shrink-0" />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
+        {/* Nav groups */}
+        <nav className="flex-1 px-4 overflow-y-auto space-y-6">
+          {navGroups.map((group) => (
+            <div key={group.label}>
+              <p className="px-4 mb-2 text-[9px] font-semibold uppercase tracking-[0.18em] text-white/25" style={{ fontFamily: "var(--font-body)" }}>
+                {group.label}
+              </p>
+              <div className="space-y-0.5">
+                {group.items.map((item) => {
+                  const active = location.pathname === item.to;
+                  return (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      onClick={() => setMobileOpen(false)}
+                      className={`group flex items-center gap-3 rounded-xl px-4 py-2.5 text-[13px] font-medium tracking-wide transition-all duration-200 ${
+                        active
+                          ? "bg-white/15 text-white shadow-sm backdrop-blur-sm"
+                          : "text-white/45 hover:text-white/80 hover:bg-white/5"
+                      }`}
+                      style={{ fontFamily: "var(--font-body)" }}
+                    >
+                      <item.icon size={18} strokeWidth={active ? 2 : 1.5} className="shrink-0" />
+                      <span>{item.label}</span>
+                      {active && (
+                        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-white/60" />
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         {/* Footer */}
         <div className="px-4 pb-6 pt-4">
-          <div className="border-t border-white/8 mb-4" />
+          <div className="border-t border-white/8 mb-3" />
+          <Link
+            to="/settings"
+            onClick={() => setMobileOpen(false)}
+            className={`flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-[13px] font-medium tracking-wide transition-all duration-200 ${
+              location.pathname === "/settings"
+                ? "bg-white/15 text-white"
+                : "text-white/30 hover:text-white/60 hover:bg-white/5"
+            }`}
+            style={{ fontFamily: "var(--font-body)" }}
+          >
+            <Settings size={18} strokeWidth={1.5} />
+            Configurações
+          </Link>
           <button
             onClick={signOut}
-            className="flex w-full items-center gap-3.5 rounded-xl px-4 py-3 text-[13.5px] font-medium tracking-wide text-white/30 hover:text-white/60 hover:bg-white/5 transition-all duration-200"
+            className="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-[13px] font-medium tracking-wide text-white/30 hover:text-white/60 hover:bg-white/5 transition-all duration-200 mt-0.5"
+            style={{ fontFamily: "var(--font-body)" }}
           >
-            <LogOut size={20} strokeWidth={1.5} />
+            <LogOut size={18} strokeWidth={1.5} />
             Sair
           </button>
-          <p className="text-[9px] text-white/15 tracking-[0.15em] uppercase mt-4 px-4">
+          <p className="text-[9px] text-white/12 tracking-[0.15em] uppercase mt-4 px-4" style={{ fontFamily: "var(--font-body)" }}>
             Espaço Lamoniê © 2025
           </p>
         </div>
@@ -111,8 +152,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Main */}
       <main className="flex-1 min-w-0">
-        {/* Top bar */}
-        <header className="flex items-center gap-4 border-b border-border bg-card/50 backdrop-blur-sm px-6 py-4 md:px-10 sticky top-0 z-30">
+        {/* Top bar — minimal */}
+        <header className="flex items-center gap-4 border-b border-border bg-card/60 backdrop-blur-md px-6 py-3.5 md:px-10 sticky top-0 z-30">
           <button
             className="text-muted-foreground hover:text-foreground transition-colors md:hidden"
             onClick={() => setMobileOpen(true)}
@@ -122,7 +163,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="flex-1" />
         </header>
 
-        <div className="p-6 md:p-10 max-w-[1440px]">{children}</div>
+        <div className="p-6 md:p-10 max-w-[1440px] page-enter">{children}</div>
       </main>
     </div>
   );
