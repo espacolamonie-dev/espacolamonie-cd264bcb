@@ -261,6 +261,145 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (action === 'sync-visit') {
+      // Create or update a Google Calendar event for a visit
+      const { visit_id } = body;
+      if (!visit_id) {
+        return new Response(JSON.stringify({ error: 'visit_id required' }), { status: 400, headers: corsHeaders });
+      }
+
+      const { data: visit } = await supabase.from('visits').select('*').eq('id', visit_id).single();
+      if (!visit) {
+        return new Response(JSON.stringify({ error: 'Visit not found' }), { status: 404, headers: corsHeaders });
+      }
+      if (visit.status === 'Cancelada') {
+        return new Response(JSON.stringify({ skipped: true, reason: 'Visit is cancelled' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (!settings?.is_connected) {
+        return new Response(JSON.stringify({ error: 'Not connected to Google Calendar' }), { status: 400, headers: corsHeaders });
+      }
+
+      const token = await getValidToken(supabase, user.id, settings);
+      const calendarId = settings.calendar_id || 'primary';
+
+      const visitStatusLabels: Record<string, string> = {
+        Agendada: 'Agendada', Confirmada: 'Confirmada', Remarcada: 'Remarcada', Cancelada: 'Cancelada',
+      };
+
+      const visitTitle = `[Visita Lamoniê] ${visit.client_name}`;
+      const visitDesc = [
+        `👤 Cliente: ${visit.client_name} | ${visit.client_phone}`,
+        `📅 Data de interesse do evento: ${visit.interest_event_date || '—'}`,
+        `📊 Status: ${visitStatusLabels[visit.status] || visit.status}`,
+        visit.notes ? `📝 Observações: ${visit.notes}` : '',
+        '', '— Criado automaticamente pelo CRM Lamoniê',
+      ].filter(Boolean).join('\n');
+
+      const visitColorId = visit.status === 'Confirmada' ? '10' : visit.status === 'Remarcada' ? '5' : '7';
+
+      // Build start/end with dateTime (not all-day)
+      const startDateTime = `${visit.visit_date}T${visit.visit_time}`;
+      const endDate = new Date(`${visit.visit_date}T${visit.visit_time}`);
+      endDate.setHours(endDate.getHours() + 1);
+      const endDateTime = endDate.toISOString().replace('Z', '');
+
+      const eventBody = {
+        summary: visitTitle,
+        description: visitDesc,
+        location: 'Espaço Lamoniê',
+        start: { dateTime: startDateTime, timeZone: 'America/Sao_Paulo' },
+        end: { dateTime: endDateTime.slice(0, 19), timeZone: 'America/Sao_Paulo' },
+        colorId: visitColorId,
+        extendedProperties: { private: { visit_id: visit.id, crm: 'lamonie' } },
+      };
+
+      let googleEventId = visit.google_event_id;
+      let googleRes;
+      let resBody;
+
+      if (googleEventId) {
+        googleRes = await fetch(
+          `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${googleEventId}`,
+          { method: 'PUT', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(eventBody) }
+        );
+        resBody = await googleRes.json();
+        if (!googleRes.ok && googleRes.status === 404) googleEventId = null;
+      }
+
+      if (!googleEventId) {
+        googleRes = await fetch(
+          `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`,
+          { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(eventBody) }
+        );
+        resBody = await googleRes.json();
+        if (googleRes.ok && resBody.id) {
+          googleEventId = resBody.id;
+          await supabase.from('visits').update({ google_event_id: googleEventId }).eq('id', visit_id);
+        }
+      }
+
+      await supabase.from('google_sync_logs').insert({
+        user_id: user.id,
+        action: 'sync-visit',
+        status: googleRes?.ok ? 'success' : 'error',
+        message: googleRes?.ok ? `Visit event synced: ${googleEventId}` : JSON.stringify(resBody),
+        google_event_id: googleEventId,
+      });
+
+      return new Response(JSON.stringify({ success: googleRes?.ok, google_event_id: googleEventId }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (action === 'delete-visit-event') {
+      const { visit_id } = body;
+      if (!visit_id) {
+        return new Response(JSON.stringify({ error: 'visit_id required' }), { status: 400, headers: corsHeaders });
+      }
+
+      const { data: visit } = await supabase.from('visits').select('google_event_id').eq('id', visit_id).single();
+      const gEventId = visit?.google_event_id;
+
+      if (!gEventId) {
+        return new Response(JSON.stringify({ success: true, message: 'No Google event linked' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (!settings?.is_connected) {
+        await supabase.from('visits').update({ google_event_id: null }).eq('id', visit_id);
+        return new Response(JSON.stringify({ success: true, message: 'Not connected, cleared event id' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const token = await getValidToken(supabase, user.id, settings);
+      const calendarId = settings.calendar_id || 'primary';
+
+      const deleteRes = await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId as string)}/events/${gEventId}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const isOk = deleteRes.status === 204 || deleteRes.status === 404;
+      await supabase.from('visits').update({ google_event_id: null }).eq('id', visit_id);
+
+      await supabase.from('google_sync_logs').insert({
+        user_id: user.id,
+        action: 'delete-visit-event',
+        status: isOk ? 'success' : 'error',
+        message: isOk ? `Visit event ${gEventId} deleted` : `Failed (status ${deleteRes.status})`,
+        google_event_id: gEventId,
+      });
+
+      return new Response(JSON.stringify({ success: isOk }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     if (action === 'fetch-google-events') {
       if (!settings?.is_connected) {
         return new Response(JSON.stringify({ events: [] }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });

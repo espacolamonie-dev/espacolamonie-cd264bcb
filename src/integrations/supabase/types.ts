@@ -501,6 +501,51 @@ export type Database = {
           },
         ]
       }
+      visits: {
+        Row: {
+          client_name: string
+          client_phone: string
+          created_at: string
+          google_event_id: string | null
+          id: string
+          interest_event_date: string | null
+          notes: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          visit_date: string
+          visit_time: string
+        }
+        Insert: {
+          client_name: string
+          client_phone: string
+          created_at?: string
+          google_event_id?: string | null
+          id?: string
+          interest_event_date?: string | null
+          notes?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          visit_date: string
+          visit_time: string
+        }
+        Update: {
+          client_name?: string
+          client_phone?: string
+          created_at?: string
+          google_event_id?: string | null
+          id?: string
+          interest_event_date?: string | null
+          notes?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          visit_date?: string
+          visit_time?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
