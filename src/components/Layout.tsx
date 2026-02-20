@@ -69,21 +69,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             alt="Lamoniê"
             className="h-11 w-11 rounded-xl object-cover ring-2 ring-white/10"
           />
-          <div className="min-w-0">
-            <h1 className="font-display text-lg font-semibold tracking-tight text-white leading-tight">
-              Espaço Lamoniê
-            </h1>
-            <p className="text-[10px] text-white/30 tracking-[0.14em] uppercase mt-0.5" style={{ fontFamily: "var(--font-body)" }}>
-              Gestão de Eventos
-            </p>
-          </div>
+          <div className="flex-1" />
           <button
-            className="ml-auto text-white/30 hover:text-white transition-colors md:hidden"
+            className="text-white/30 hover:text-white transition-colors md:hidden"
             onClick={() => setMobileOpen(false)}
           >
             <X size={18} />
           </button>
         </div>
+
+
 
         {/* Nav groups */}
         <nav className="flex-1 px-4 overflow-y-auto space-y-6">
