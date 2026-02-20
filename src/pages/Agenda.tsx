@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import {
   ChevronLeft, ChevronRight, Lock, Cake, Heart, PartyPopper, Building2, Users,
-  RefreshCw, Calendar as CalendarIcon, ExternalLink, Filter,
+  RefreshCw, Calendar as CalendarIcon, ExternalLink, Filter, ClipboardCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,6 +10,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { getContracts, getClients } from "@/data/store";
+import { getVisits, type Visit } from "@/data/visitStore";
 import type { Contract, Client } from "@/types";
 import {
   addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek,
@@ -21,7 +22,7 @@ import { useGoogleCalendar, GoogleEvent } from "@/hooks/useGoogleCalendar";
 import { Link } from "react-router-dom";
 
 type ViewMode = "month" | "week";
-type FilterType = "all" | "contracts" | "google";
+type FilterType = "all" | "contracts" | "google" | "visits";
 type FilterPayment = "all" | "pending" | "deposit_paid" | "paid_full";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -41,7 +42,7 @@ const EVENT_ICONS: Record<string, React.ElementType> = {
 };
 
 interface DayEvent {
-  type: "contract" | "google";
+  type: "contract" | "google" | "visit";
   id: string;
   title: string;
   subtitle?: string;
@@ -49,6 +50,7 @@ interface DayEvent {
   isCancelled?: boolean;
   contract?: Contract;
   googleEvent?: GoogleEvent;
+  visit?: Visit;
   Icon?: React.ElementType;
 }
 
@@ -59,6 +61,7 @@ function googleEventDate(evt: GoogleEvent): string {
 export default function Agenda() {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [visitsList, setVisitsList] = useState<Visit[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<ViewMode>("month");
   const [loading, setLoading] = useState(true);
@@ -74,9 +77,10 @@ export default function Agenda() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [c, cl] = await Promise.all([getContracts(), getClients()]);
+      const [c, cl, v] = await Promise.all([getContracts(), getClients(), getVisits()]);
       setContracts(c);
       setClients(cl);
+      setVisitsList(v);
     } finally {
       setLoading(false);
     }
@@ -156,7 +160,7 @@ export default function Agenda() {
     });
 
     // Add external Google events
-    if (filterType !== "contracts" && filterPayment === "all") {
+    if (filterType !== "contracts" && filterType !== "visits" && filterPayment === "all") {
       externalGoogleEvents.forEach((ge) => {
         const key = googleEventDate(ge);
         if (!key) return;
@@ -172,8 +176,30 @@ export default function Agenda() {
       });
     }
 
+    // Add visits — cancelled visits are hidden
+    if (filterType === "all" || filterType === "visits") {
+      visitsList.forEach((v) => {
+        if (v.status === "Cancelada") return;
+        const key = v.visitDate;
+        if (!map[key]) map[key] = [];
+        map[key].push({
+          type: "visit",
+          id: v.id,
+          title: v.clientName,
+          subtitle: `Visita ${v.visitTime.slice(0, 5)}`,
+          statusColor: v.status === "Confirmada"
+            ? "bg-success/15 text-success border-success/30"
+            : v.status === "Remarcada"
+            ? "bg-warning/15 text-warning border-warning/30"
+            : "bg-primary/15 text-primary border-primary/30",
+          visit: v,
+          Icon: ClipboardCheck,
+        });
+      });
+    }
+
     return map;
-  }, [contracts, clientMap, externalGoogleEvents, filterType, filterPayment]);
+  }, [contracts, clientMap, externalGoogleEvents, visitsList, filterType, filterPayment]);
 
   const blockedDates = useMemo(() => {
     const set = new Set<string>();
@@ -284,6 +310,7 @@ export default function Agenda() {
           <SelectContent>
             <SelectItem value="all">Todos os eventos</SelectItem>
             <SelectItem value="contracts">Apenas contratos</SelectItem>
+            <SelectItem value="visits">Apenas visitas</SelectItem>
             <SelectItem value="google">Apenas Google (externos)</SelectItem>
           </SelectContent>
         </Select>
@@ -430,6 +457,11 @@ export default function Agenda() {
                               Contrato (CRM)
                             </Badge>
                           )}
+                          {evt.type === "visit" && (
+                            <Badge className="mt-1 text-[9px] h-4 bg-accent text-accent-foreground border-border">
+                              Visita
+                            </Badge>
+                          )}
                         </div>
                       </div>
 
@@ -448,6 +480,17 @@ export default function Agenda() {
                       {evt.type === "google" && evt.googleEvent?.description && (
                         <div className="text-[11px] text-muted-foreground pl-8 whitespace-pre-wrap line-clamp-4">
                           {evt.googleEvent.description}
+                        </div>
+                      )}
+
+                      {evt.type === "visit" && evt.visit && (
+                        <div className="text-[11px] text-muted-foreground space-y-0.5 pl-8">
+                          <p>📞 {evt.visit.clientPhone}</p>
+                          <p>🕐 {evt.visit.visitTime.slice(0, 5)}</p>
+                          {evt.visit.interestEventDate && (
+                            <p>📅 Interesse: {evt.visit.interestEventDate}</p>
+                          )}
+                          {evt.visit.notes && <p>📝 {evt.visit.notes}</p>}
                         </div>
                       )}
                     </div>
@@ -475,6 +518,9 @@ export default function Agenda() {
         </div>
         <div className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/40" /> Externo (Google)
+        </div>
+        <div className="flex items-center gap-1.5">
+          <ClipboardCheck size={10} /> Visita
         </div>
         <div className="flex items-center gap-1.5">
           <Lock size={10} /> Data ocupada
