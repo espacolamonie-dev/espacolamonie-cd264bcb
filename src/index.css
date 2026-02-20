@@ -2,54 +2,54 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=Poppins:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap');
 
 @layer base {
   :root {
-    --background: 40 23% 97%;
-    --foreground: 0 0% 11%;
+    --background: 228 14% 97%;
+    --foreground: 220 26% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 11%;
+    --card-foreground: 220 26% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 11%;
+    --popover-foreground: 220 26% 10%;
 
-    --primary: 147 33% 18%;
-    --primary-foreground: 40 23% 97%;
+    --primary: 153 42% 26%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 147 20% 95%;
-    --secondary-foreground: 0 0% 11%;
+    --secondary: 220 13% 95%;
+    --secondary-foreground: 220 26% 10%;
 
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 42%;
+    --muted: 220 13% 95%;
+    --muted-foreground: 220 9% 46%;
 
-    --accent: 147 15% 92%;
-    --accent-foreground: 0 0% 11%;
+    --accent: 153 20% 93%;
+    --accent-foreground: 220 26% 10%;
 
-    --destructive: 0 64% 51%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 93%;
-    --input: 0 0% 90%;
-    --ring: 147 33% 18%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 153 42% 26%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    --sidebar-background: 147 33% 14%;
-    --sidebar-foreground: 40 15% 92%;
-    --sidebar-primary: 147 33% 18%;
-    --sidebar-primary-foreground: 40 23% 97%;
-    --sidebar-accent: 147 25% 20%;
-    --sidebar-accent-foreground: 40 15% 92%;
-    --sidebar-border: 147 20% 20%;
-    --sidebar-ring: 147 33% 18%;
+    --sidebar-background: 153 42% 22%;
+    --sidebar-foreground: 0 0% 96%;
+    --sidebar-primary: 153 42% 26%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 153 30% 96%;
+    --sidebar-accent-foreground: 153 42% 22%;
+    --sidebar-border: 153 30% 30%;
+    --sidebar-ring: 153 42% 26%;
 
-    --success: 122 46% 34%;
+    --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
-    --warning: 48 100% 45%;
+    --warning: 38 92% 50%;
     --warning-foreground: 0 0% 11%;
-    --danger: 0 64% 51%;
+    --danger: 0 84% 60%;
     --danger-foreground: 0 0% 100%;
 
     --gold: 42 45% 56%;
@@ -57,37 +57,37 @@
     --gold-dark: 42 50% 40%;
 
     --font-display: 'Playfair Display', serif;
-    --font-body: 'Inter', sans-serif;
+    --font-body: 'Poppins', sans-serif;
   }
 
   .dark {
-    --background: 150 8% 6%;
-    --foreground: 40 15% 92%;
-    --card: 150 8% 8%;
-    --card-foreground: 40 15% 92%;
-    --popover: 150 8% 8%;
-    --popover-foreground: 40 15% 92%;
-    --primary: 147 33% 32%;
+    --background: 220 14% 7%;
+    --foreground: 0 0% 96%;
+    --card: 220 14% 10%;
+    --card-foreground: 0 0% 96%;
+    --popover: 220 14% 10%;
+    --popover-foreground: 0 0% 96%;
+    --primary: 153 42% 38%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 150 8% 14%;
-    --secondary-foreground: 40 15% 92%;
-    --muted: 150 6% 13%;
-    --muted-foreground: 0 0% 52%;
-    --accent: 147 12% 16%;
-    --accent-foreground: 40 15% 92%;
-    --destructive: 0 55% 40%;
+    --secondary: 220 10% 14%;
+    --secondary-foreground: 0 0% 96%;
+    --muted: 220 10% 14%;
+    --muted-foreground: 220 9% 52%;
+    --accent: 153 12% 16%;
+    --accent-foreground: 0 0% 96%;
+    --destructive: 0 55% 45%;
     --destructive-foreground: 0 0% 100%;
-    --border: 150 6% 16%;
-    --input: 150 6% 16%;
-    --ring: 147 33% 32%;
-    --sidebar-background: 150 10% 5%;
-    --sidebar-foreground: 40 15% 92%;
-    --sidebar-primary: 147 33% 28%;
+    --border: 220 10% 18%;
+    --input: 220 10% 18%;
+    --ring: 153 42% 38%;
+    --sidebar-background: 220 14% 5%;
+    --sidebar-foreground: 0 0% 96%;
+    --sidebar-primary: 153 42% 34%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 150 8% 10%;
-    --sidebar-accent-foreground: 40 15% 92%;
-    --sidebar-border: 150 8% 12%;
-    --sidebar-ring: 147 33% 28%;
+    --sidebar-accent: 220 10% 10%;
+    --sidebar-accent-foreground: 0 0% 96%;
+    --sidebar-border: 220 10% 12%;
+    --sidebar-ring: 153 42% 34%;
   }
 }
 
@@ -112,7 +112,7 @@
 
 @layer utilities {
   .sidebar-gradient {
-    background: linear-gradient(180deg, hsl(147 33% 14%), hsl(147 30% 10%));
+    background: linear-gradient(180deg, hsl(153 42% 22%), hsl(153 38% 16%));
   }
 
   .gold-gradient {
@@ -120,12 +120,13 @@
   }
 
   .stat-card {
-    @apply relative overflow-hidden rounded-xl border border-border bg-card p-5 transition-all duration-200;
+    @apply relative overflow-hidden rounded-2xl border border-border bg-card p-6 transition-all duration-200;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04);
   }
 
   .stat-card:hover {
-    @apply shadow-md border-border/80;
-    transform: translateY(-1px);
+    box-shadow: 0 4px 12px -2px rgb(0 0 0 / 0.08), 0 2px 6px -2px rgb(0 0 0 / 0.04);
+    transform: translateY(-2px);
   }
 
   .table-premium {
@@ -137,22 +138,28 @@
   }
 
   .table-premium thead th {
-    @apply px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground;
+    @apply px-5 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground;
+    font-family: var(--font-body);
   }
 
   .table-premium tbody tr {
-    @apply border-b border-border/60 transition-colors duration-150;
+    @apply border-b border-border/50 transition-colors duration-150;
   }
 
   .table-premium tbody tr:hover {
-    @apply bg-secondary/50;
+    @apply bg-muted/40;
   }
 
   .table-premium tbody td {
-    @apply px-4 py-3.5;
+    @apply px-5 py-4;
   }
 
   .table-premium tbody tr:last-child {
     @apply border-b-0;
+  }
+
+  .card-premium {
+    @apply rounded-2xl border border-border bg-card overflow-hidden;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04);
   }
 }
