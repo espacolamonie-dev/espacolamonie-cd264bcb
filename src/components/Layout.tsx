@@ -63,15 +63,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         }`}
       >
         {/* Logo — compact & elegant */}
-        <div className="flex items-center gap-3 px-6 pt-7 pb-8">
+        <div className="flex items-center justify-center px-6 pt-7 pb-8 relative">
           <img
             src={logo}
             alt="Lamoniê"
             className="h-10 w-auto object-contain"
           />
-          <div className="flex-1" />
           <button
-            className="text-white/30 hover:text-white transition-colors md:hidden"
+            className="absolute right-4 text-white/30 hover:text-white transition-colors md:hidden"
             onClick={() => setMobileOpen(false)}
           >
             <X size={18} />
