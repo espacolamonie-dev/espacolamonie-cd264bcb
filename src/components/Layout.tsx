@@ -67,7 +67,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <img
             src={logo}
             alt="Lamoniê"
-            className="h-11 w-11 rounded-xl object-cover ring-2 ring-white/10"
+            className="h-10 w-auto object-contain"
           />
           <div className="flex-1" />
           <button
