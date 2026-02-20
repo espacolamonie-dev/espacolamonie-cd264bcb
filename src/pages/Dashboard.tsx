@@ -213,7 +213,7 @@ export default function Dashboard() {
       )}
 
       {/* Stat cards - Row 1 */}
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 stagger-fade-in">
         {statCards.map((card) => (
           <button key={card.label} onClick={card.onClick} className="stat-card text-left group">
             <div className="flex items-start justify-between">
@@ -229,7 +229,7 @@ export default function Dashboard() {
       </div>
 
       {/* Financial cards - Row 2 */}
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 stagger-fade-in">
         {finCards.map((card) => (
           <div key={card.label} className="stat-card">
             <div className="flex items-start justify-between">
