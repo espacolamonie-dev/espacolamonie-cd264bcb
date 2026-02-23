@@ -17,7 +17,107 @@ import { useGoogleCalendar, GoogleCalendarItem, GoogleSettings } from "@/hooks/u
 import { useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import PipelineSettingsTab from "@/components/PipelineSettingsTab";
+import { supabase } from "@/integrations/supabase/client";
 
+// ─── Masks ───
+function cnpjMask(v: string): string {
+  const d = v.replace(/\D/g, "").slice(0, 14);
+  if (d.length <= 2) return d;
+  if (d.length <= 5) return `${d.slice(0, 2)}.${d.slice(2)}`;
+  if (d.length <= 8) return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5)}`;
+  if (d.length <= 12) return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8)}`;
+  return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
+}
+
+function phoneMask(v: string): string {
+  const d = v.replace(/\D/g, "").slice(0, 11);
+  if (d.length <= 2) return d.length ? `(${d}` : "";
+  if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+}
+
+// ─── Company Settings Store ───
+interface CompanySettings {
+  company_name: string;
+  cnpj: string;
+  phone: string;
+  email: string;
+  address: string;
+  default_bank: string;
+  default_pix_key: string;
+  default_entry_category: string;
+  default_expense_category: string;
+  auto_receipt: boolean;
+  auto_confirm_payment: boolean;
+}
+
+const defaultSettings: CompanySettings = {
+  company_name: "",
+  cnpj: "",
+  phone: "",
+  email: "",
+  address: "",
+  default_bank: "",
+  default_pix_key: "",
+  default_entry_category: "Aluguel extra",
+  default_expense_category: "Outros",
+  auto_receipt: false,
+  auto_confirm_payment: false,
+};
+
+async function loadCompanySettings(): Promise<CompanySettings> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return defaultSettings;
+
+  const { data } = await supabase
+    .from("company_settings")
+    .select("*")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!data) return defaultSettings;
+  return {
+    company_name: (data as any).company_name || "",
+    cnpj: (data as any).cnpj || "",
+    phone: (data as any).phone || "",
+    email: (data as any).email || "",
+    address: (data as any).address || "",
+    default_bank: (data as any).default_bank || "",
+    default_pix_key: (data as any).default_pix_key || "",
+    default_entry_category: (data as any).default_entry_category || "Aluguel extra",
+    default_expense_category: (data as any).default_expense_category || "Outros",
+    auto_receipt: (data as any).auto_receipt || false,
+    auto_confirm_payment: (data as any).auto_confirm_payment || false,
+  };
+}
+
+async function saveCompanySettings(settings: CompanySettings): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Não autenticado");
+
+  const { data: existing } = await supabase
+    .from("company_settings")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  const payload = { ...settings, updated_at: new Date().toISOString() } as any;
+
+  if (existing) {
+    const { error } = await supabase
+      .from("company_settings")
+      .update(payload)
+      .eq("id", (existing as any).id);
+    if (error) throw error;
+  } else {
+    const { error } = await supabase
+      .from("company_settings")
+      .insert({ user_id: user.id, ...payload });
+    if (error) throw error;
+  }
+}
+
+// ─── UI Helpers ───
 function SectionCard({ icon: Icon, title, description, children }: {
   icon: React.ElementType;
   title: string;
@@ -70,10 +170,18 @@ export default function Settings() {
   const [logsLoading, setLogsLoading] = useState(false);
   const { toast } = useToast();
 
+  // Company settings state
+  const [cs, setCs] = useState<CompanySettings>(defaultSettings);
+  const [csLoading, setCsLoading] = useState(true);
+  const [csSaving, setCsSaving] = useState(false);
+
   useEffect(() => {
     const load = async () => {
       setPageLoading(true);
-      const s = await fetchSettings();
+      setCsLoading(true);
+      const [s, companyData] = await Promise.all([fetchSettings(), loadCompanySettings()]);
+      setCs(companyData);
+      setCsLoading(false);
       if (s?.is_connected) {
         loadCalendars();
         loadLogs();
@@ -146,6 +254,22 @@ export default function Settings() {
     await fetchSettings();
   };
 
+  const handleSaveCompany = async () => {
+    setCsSaving(true);
+    try {
+      await saveCompanySettings(cs);
+      toast({ title: "✅ Configurações salvas com sucesso!" });
+    } catch (e: any) {
+      toast({ title: "Erro ao salvar", description: e.message, variant: "destructive" });
+    } finally {
+      setCsSaving(false);
+    }
+  };
+
+  const updateCs = (field: keyof CompanySettings, value: any) => {
+    setCs((prev) => ({ ...prev, [field]: value }));
+  };
+
   return (
     <div className="animate-fade-in space-y-8 max-w-5xl">
       <div>
@@ -167,63 +291,136 @@ export default function Settings() {
           <div className="grid gap-6 lg:grid-cols-2 stagger-fade-in">
             {/* Company Data */}
             <SectionCard icon={Building2} title="Dados da Empresa" description="Informações cadastrais do espaço">
-              <div className="space-y-3">
-                <div>
-                  <Label className="text-xs">Nome da empresa</Label>
-                  <Input defaultValue="Espaço Lamoniê" className="mt-1" />
+              {csLoading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
                 </div>
-                <div>
-                  <Label className="text-xs">CNPJ</Label>
-                  <Input placeholder="00.000.000/0000-00" className="mt-1" />
-                </div>
-                <div>
-                  <Label className="text-xs">Telefone</Label>
-                  <Input placeholder="(00) 00000-0000" className="mt-1" />
-                </div>
-                <div>
-                  <Label className="text-xs">Email</Label>
-                  <Input placeholder="contato@lamonie.com.br" className="mt-1" />
-                </div>
-                <div>
-                  <Label className="text-xs">Endereço</Label>
-                  <Input placeholder="Rua, número, bairro, cidade" className="mt-1" />
-                </div>
-              </div>
-              <Button className="gap-2 w-full sm:w-auto mt-2">
-                <Save size={15} /> Salvar alterações
-              </Button>
+              ) : (
+                <>
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-xs">Nome da empresa</Label>
+                      <Input
+                        value={cs.company_name}
+                        onChange={(e) => updateCs("company_name", e.target.value)}
+                        placeholder="Espaço Lamoniê"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">CNPJ</Label>
+                      <Input
+                        value={cs.cnpj}
+                        onChange={(e) => updateCs("cnpj", cnpjMask(e.target.value))}
+                        placeholder="00.000.000/0000-00"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Telefone</Label>
+                      <Input
+                        value={cs.phone}
+                        onChange={(e) => updateCs("phone", phoneMask(e.target.value))}
+                        placeholder="(00) 00000-0000"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Email</Label>
+                      <Input
+                        value={cs.email}
+                        onChange={(e) => updateCs("email", e.target.value)}
+                        placeholder="contato@lamonie.com.br"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Endereço</Label>
+                      <Input
+                        value={cs.address}
+                        onChange={(e) => updateCs("address", e.target.value)}
+                        placeholder="Rua, número, bairro, cidade"
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                  <Button onClick={handleSaveCompany} disabled={csSaving} className="gap-2 w-full sm:w-auto mt-2">
+                    {csSaving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+                    {csSaving ? "Salvando..." : "Salvar alterações"}
+                  </Button>
+                </>
+              )}
             </SectionCard>
 
             {/* Financial */}
             <SectionCard icon={CreditCard} title="Financeiro" description="Preferências de pagamento e recibos">
-              <div className="space-y-3">
-                <div>
-                  <Label className="text-xs">Banco padrão</Label>
-                  <Input placeholder="Ex: Banco do Brasil" className="mt-1" />
+              {csLoading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
                 </div>
-                <div>
-                  <Label className="text-xs">Chave Pix</Label>
-                  <Input placeholder="CPF, email ou chave aleatória" className="mt-1" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label className="text-xs">Categoria padrão (entrada)</Label>
-                    <Input defaultValue="Aluguel extra" className="mt-1" />
+              ) : (
+                <>
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-xs">Banco padrão</Label>
+                      <Input
+                        value={cs.default_bank}
+                        onChange={(e) => updateCs("default_bank", e.target.value)}
+                        placeholder="Ex: Banco do Brasil"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Chave Pix</Label>
+                      <Input
+                        value={cs.default_pix_key}
+                        onChange={(e) => updateCs("default_pix_key", e.target.value)}
+                        placeholder="CPF, email ou chave aleatória"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs">Categoria padrão (entrada)</Label>
+                        <Input
+                          value={cs.default_entry_category}
+                          onChange={(e) => updateCs("default_entry_category", e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Categoria padrão (saída)</Label>
+                        <Input
+                          value={cs.default_expense_category}
+                          onChange={(e) => updateCs("default_expense_category", e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <Label className="text-xs">Categoria padrão (saída)</Label>
-                    <Input defaultValue="Outros" className="mt-1" />
+                  <div className="border-t border-border pt-4 mt-2 space-y-3">
+                    <SettingRow label="Gerar recibo automático" description="Ao confirmar pagamento">
+                      <Switch
+                        checked={cs.auto_receipt}
+                        onCheckedChange={(v) => updateCs("auto_receipt", v)}
+                      />
+                    </SettingRow>
+                    <SettingRow label="Confirmar pagamento automático" description="Quando sinal é registrado">
+                      <Switch
+                        checked={cs.auto_confirm_payment}
+                        onCheckedChange={(v) => updateCs("auto_confirm_payment", v)}
+                      />
+                    </SettingRow>
                   </div>
-                </div>
-              </div>
-              <div className="border-t border-border pt-4 mt-2 space-y-3">
-                <SettingRow label="Gerar recibo automático" description="Ao confirmar pagamento">
-                  <Switch />
-                </SettingRow>
-                <SettingRow label="Confirmar pagamento automático" description="Quando sinal é registrado">
-                  <Switch />
-                </SettingRow>
-              </div>
+                  <Button onClick={handleSaveCompany} disabled={csSaving} className="gap-2 w-full sm:w-auto mt-2">
+                    {csSaving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+                    {csSaving ? "Salvando..." : "Salvar alterações"}
+                  </Button>
+                </>
+              )}
             </SectionCard>
 
             {/* Google Calendar Integration */}
@@ -423,7 +620,6 @@ export default function Settings() {
         <TabsContent value="pipeline">
           <PipelineSettingsTab />
         </TabsContent>
-
       </Tabs>
     </div>
   );
