@@ -12,6 +12,7 @@ export interface Lead {
   notes: string;
   contract_id: string | null;
   visit_id: string | null;
+  human_mode: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -77,6 +78,7 @@ export async function getLeads(): Promise<Lead[]> {
     notes: d.notes || "",
     contract_id: d.contract_id,
     visit_id: d.visit_id,
+    human_mode: d.human_mode || false,
     created_at: d.created_at,
     updated_at: d.updated_at,
   }));

@@ -398,6 +398,7 @@ export type Database = {
         Row: {
           contract_id: string | null
           created_at: string
+          human_mode: boolean
           id: string
           interest_date: string | null
           last_interaction: string | null
@@ -414,6 +415,7 @@ export type Database = {
         Insert: {
           contract_id?: string | null
           created_at?: string
+          human_mode?: boolean
           id?: string
           interest_date?: string | null
           last_interaction?: string | null
@@ -430,6 +432,7 @@ export type Database = {
         Update: {
           contract_id?: string | null
           created_at?: string
+          human_mode?: boolean
           id?: string
           interest_date?: string | null
           last_interaction?: string | null
@@ -674,6 +677,53 @@ export type Database = {
           },
         ]
       }
+      stage_automation_rules: {
+        Row: {
+          auto_message_template_key: string | null
+          auto_send: boolean
+          created_at: string
+          enabled: boolean
+          followup_after_hours: number | null
+          followup_template_key: string | null
+          id: string
+          stage_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_message_template_key?: string | null
+          auto_send?: boolean
+          created_at?: string
+          enabled?: boolean
+          followup_after_hours?: number | null
+          followup_template_key?: string | null
+          id?: string
+          stage_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_message_template_key?: string | null
+          auto_send?: boolean
+          created_at?: string
+          enabled?: boolean
+          followup_after_hours?: number | null
+          followup_template_key?: string | null
+          id?: string
+          stage_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stage_automation_rules_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       visits: {
         Row: {
           client_name: string
@@ -718,6 +768,119 @@ export type Database = {
           visit_time?: string
         }
         Relationships: []
+      }
+      whatsapp_connection: {
+        Row: {
+          connected_at: string | null
+          connected_phone: string | null
+          created_at: string
+          disconnected_at: string | null
+          id: string
+          session_name: string
+          status: string
+          updated_at: string
+          user_id: string
+          waha_api_key: string
+          waha_url: string
+        }
+        Insert: {
+          connected_at?: string | null
+          connected_phone?: string | null
+          created_at?: string
+          disconnected_at?: string | null
+          id?: string
+          session_name?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          waha_api_key?: string
+          waha_url?: string
+        }
+        Update: {
+          connected_at?: string | null
+          connected_phone?: string | null
+          created_at?: string
+          disconnected_at?: string | null
+          id?: string
+          session_name?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          waha_api_key?: string
+          waha_url?: string
+        }
+        Relationships: []
+      }
+      whatsapp_logs: {
+        Row: {
+          created_at: string
+          details: Json | null
+          event_type: string
+          id: string
+          message: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          details?: Json | null
+          event_type?: string
+          id?: string
+          message?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          details?: Json | null
+          event_type?: string
+          id?: string
+          message?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      whatsapp_messages: {
+        Row: {
+          body: string
+          created_at: string
+          direction: string
+          id: string
+          lead_id: string
+          raw_payload: Json | null
+          status: string
+          timestamp: string
+          user_id: string
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          direction?: string
+          id?: string
+          lead_id: string
+          raw_payload?: Json | null
+          status?: string
+          timestamp?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          direction?: string
+          id?: string
+          lead_id?: string
+          raw_payload?: Json | null
+          status?: string
+          timestamp?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_messages_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       whatsapp_templates: {
         Row: {
