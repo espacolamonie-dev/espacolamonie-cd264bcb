@@ -159,12 +159,13 @@
   }
 
   .card-premium {
-    @apply rounded-2xl border border-border bg-card overflow-hidden transition-all duration-200;
+    @apply rounded-2xl border border-border bg-card overflow-hidden;
     box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+    transition: box-shadow 0.2s ease;
   }
 
   .card-premium:hover {
-    box-shadow: 0 8px 24px -4px rgb(0 0 0 / 0.08), 0 4px 10px -4px rgb(0 0 0 / 0.04);
+    box-shadow: 0 4px 12px -2px rgb(0 0 0 / 0.06), 0 2px 6px -2px rgb(0 0 0 / 0.04);
   }
 
   /* Stagger animation for cards */
