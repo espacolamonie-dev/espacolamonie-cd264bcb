@@ -71,6 +71,60 @@ export type Database = {
         }
         Relationships: []
       }
+      company_settings: {
+        Row: {
+          address: string
+          auto_confirm_payment: boolean
+          auto_receipt: boolean
+          cnpj: string
+          company_name: string
+          created_at: string
+          default_bank: string
+          default_entry_category: string
+          default_expense_category: string
+          default_pix_key: string
+          email: string
+          id: string
+          phone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string
+          auto_confirm_payment?: boolean
+          auto_receipt?: boolean
+          cnpj?: string
+          company_name?: string
+          created_at?: string
+          default_bank?: string
+          default_entry_category?: string
+          default_expense_category?: string
+          default_pix_key?: string
+          email?: string
+          id?: string
+          phone?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string
+          auto_confirm_payment?: boolean
+          auto_receipt?: boolean
+          cnpj?: string
+          company_name?: string
+          created_at?: string
+          default_bank?: string
+          default_entry_category?: string
+          default_expense_category?: string
+          default_pix_key?: string
+          email?: string
+          id?: string
+          phone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       contract_signatures: {
         Row: {
           client_address: string | null
