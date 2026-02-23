@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {
   CheckCircle2, XCircle, RefreshCw, Calendar, ExternalLink,
   AlertCircle, Loader2, Building2, CreditCard, Bell, Shield,
-  Save, Upload, MessageCircle, GitBranch, Phone,
+  Save, Upload, GitBranch,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,9 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useGoogleCalendar, GoogleCalendarItem, GoogleSettings } from "@/hooks/useGoogleCalendar";
 import { useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import WhatsAppSettingsTab from "@/components/WhatsAppSettingsTab";
 import PipelineSettingsTab from "@/components/PipelineSettingsTab";
-import WhatsAppConnectionSettings from "@/components/WhatsAppConnectionSettings";
 
 function SectionCard({ icon: Icon, title, description, children }: {
   icon: React.ElementType;
@@ -162,12 +160,6 @@ export default function Settings() {
           </TabsTrigger>
           <TabsTrigger value="pipeline" className="gap-1.5 text-xs">
             <GitBranch size={14} /> Pipeline
-          </TabsTrigger>
-          <TabsTrigger value="whatsapp" className="gap-1.5 text-xs">
-            <MessageCircle size={14} /> Mensagens WhatsApp
-          </TabsTrigger>
-          <TabsTrigger value="whatsapp-connection" className="gap-1.5 text-xs">
-            <Phone size={14} /> Conexão WhatsApp
           </TabsTrigger>
         </TabsList>
 
@@ -432,13 +424,6 @@ export default function Settings() {
           <PipelineSettingsTab />
         </TabsContent>
 
-        <TabsContent value="whatsapp">
-          <WhatsAppSettingsTab />
-        </TabsContent>
-
-        <TabsContent value="whatsapp-connection">
-          <WhatsAppConnectionSettings />
-        </TabsContent>
       </Tabs>
     </div>
   );
