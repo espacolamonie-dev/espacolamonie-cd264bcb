@@ -1,7 +1,6 @@
 import { Phone, Clock, MessageSquare } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { Lead } from "@/data/leadsStore";
-import { STAGE_COLORS, type LeadStage } from "@/data/leadsStore";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 

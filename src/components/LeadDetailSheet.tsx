@@ -6,12 +6,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Phone, CalendarDays, FileText, CreditCard, MessageSquare, Clock, Save, Trash2 } from "lucide-react";
 import {
-  type Lead, type LeadStatusEntry, type LeadStage,
-  STAGE_LABELS, STAGE_COLORS,
+  type Lead, type LeadStatusEntry,
   getLeadHistory, updateLead, deleteLead, openWhatsApp,
   getTemplates, getDefaultTemplate, resolveTemplate,
   getPixSettings,
 } from "@/data/leadsStore";
+import {
+  type PipelineStage,
+  buildStageLabels, buildStageColors,
+} from "@/data/pipelineStore";
 import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
@@ -28,12 +31,15 @@ interface Props {
   onRefresh: () => void;
   onScheduleVisit?: (lead: Lead) => void;
   onGenerateContract?: (lead: Lead) => void;
+  stages?: PipelineStage[];
 }
 
-export default function LeadDetailSheet({ lead, open, onClose, onRefresh, onScheduleVisit, onGenerateContract }: Props) {
+export default function LeadDetailSheet({ lead, open, onClose, onRefresh, onScheduleVisit, onGenerateContract, stages = [] }: Props) {
   const [history, setHistory] = useState<LeadStatusEntry[]>([]);
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
+  const STAGE_LABELS = buildStageLabels(stages);
+  const STAGE_COLORS = buildStageColors(stages);
 
   useEffect(() => {
     if (lead) {
@@ -94,8 +100,8 @@ export default function LeadDetailSheet({ lead, open, onClose, onRefresh, onSche
       <SheetContent className="w-full sm:max-w-md overflow-y-auto">
         <SheetHeader className="pb-4">
           <SheetTitle className="font-display text-xl">{lead.name}</SheetTitle>
-          <Badge className={`w-fit text-[10px] font-medium border rounded-full px-2.5 py-0.5 ${STAGE_COLORS[lead.stage as LeadStage] || ""}`}>
-            {STAGE_LABELS[lead.stage as LeadStage] || lead.stage}
+          <Badge className={`w-fit text-[10px] font-medium border rounded-full px-2.5 py-0.5 ${STAGE_COLORS[lead.stage] || ""}`}>
+            {STAGE_LABELS[lead.stage] || lead.stage}
           </Badge>
         </SheetHeader>
 
@@ -186,8 +192,8 @@ export default function LeadDetailSheet({ lead, open, onClose, onRefresh, onSche
                   <div key={h.id} className="flex items-center gap-2 text-xs">
                     <div className="h-2 w-2 rounded-full bg-primary/40 shrink-0" />
                     <span className="text-muted-foreground">
-                      {h.from_stage ? `${STAGE_LABELS[h.from_stage as LeadStage] || h.from_stage} →` : "→"}{" "}
-                      <span className="font-medium text-foreground">{STAGE_LABELS[h.to_stage as LeadStage] || h.to_stage}</span>
+                      {h.from_stage ? `${STAGE_LABELS[h.from_stage] || h.from_stage} →` : "→"}{" "}
+                      <span className="font-medium text-foreground">{STAGE_LABELS[h.to_stage] || h.to_stage}</span>
                     </span>
                     <span className="ml-auto text-muted-foreground/60 text-[10px]">
                       {format(new Date(h.changed_at), "dd/MM HH:mm")}
