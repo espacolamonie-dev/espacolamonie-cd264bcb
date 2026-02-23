@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
-import { Plus, Search, Filter } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -14,10 +14,15 @@ import { toast } from "sonner";
 import LeadCard from "@/components/LeadCard";
 import LeadDetailSheet from "@/components/LeadDetailSheet";
 import {
-  type Lead, type LeadStage,
-  STAGE_ORDER, STAGE_LABELS, STAGE_COLORS,
+  type Lead,
   getLeads, addLead, moveLeadStage,
+  getTemplates, getDefaultTemplate, resolveTemplate,
+  getPixSettings, openWhatsApp,
 } from "@/data/leadsStore";
+import {
+  type PipelineStage,
+  getPipelineStages, buildStageLabels,
+} from "@/data/pipelineStore";
 
 function phoneMask(v: string): string {
   const digits = v.replace(/\D/g, "").slice(0, 11);
@@ -28,39 +33,44 @@ function phoneMask(v: string): string {
 
 export default function LeadsWhatsApp() {
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [stages, setStages] = useState<PipelineStage[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // Form
   const [formName, setFormName] = useState("");
   const [formPhone, setFormPhone] = useState("");
   const [formInterest, setFormInterest] = useState("");
   const [formNotes, setFormNotes] = useState("");
 
-  const loadLeads = useCallback(async () => {
+  const activeStages = useMemo(() => stages.filter((s) => s.is_active), [stages]);
+  const stageLabels = useMemo(() => buildStageLabels(stages), [stages]);
+
+  const loadAll = useCallback(async () => {
     setLoading(true);
     try {
-      setLeads(await getLeads());
+      const [l, s] = await Promise.all([getLeads(), getPipelineStages()]);
+      setLeads(l);
+      setStages(s);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => { loadLeads(); }, [loadLeads]);
+  useEffect(() => { loadAll(); }, [loadAll]);
 
   const columns = useMemo(() => {
     const map: Record<string, Lead[]> = {};
-    STAGE_ORDER.forEach((s) => { map[s] = []; });
+    activeStages.forEach((s) => { map[s.stage_key] = []; });
     const q = search.toLowerCase();
     leads.forEach((lead) => {
       if (q && !lead.name.toLowerCase().includes(q) && !lead.phone.includes(q)) return;
       if (map[lead.stage]) map[lead.stage].push(lead);
     });
     return map;
-  }, [leads, search]);
+  }, [leads, search, activeStages]);
 
   const handleDragEnd = async (result: DropResult) => {
     if (!result.destination) return;
@@ -70,19 +80,55 @@ export default function LeadsWhatsApp() {
     const lead = leads.find((l) => l.id === draggableId);
     if (!lead) return;
 
-    // Optimistic update
     setLeads((prev) =>
       prev.map((l) => l.id === draggableId ? { ...l, stage: destination.droppableId } : l)
     );
 
     try {
       await moveLeadStage(draggableId, source.droppableId, destination.droppableId);
-      toast.success(`Lead movido para "${STAGE_LABELS[destination.droppableId as LeadStage]}"`);
-      loadLeads();
+      toast.success(`Lead movido para "${stageLabels[destination.droppableId] || destination.droppableId}"`);
+
+      // Offer to send default message for the new stage
+      const destStage = stages.find((s) => s.stage_key === destination.droppableId);
+      if (destStage?.default_template_key && lead) {
+        sendStageMessage(lead, destStage.default_template_key);
+      }
+
+      loadAll();
     } catch {
       toast.error("Erro ao mover lead");
-      loadLeads();
+      loadAll();
     }
+  };
+
+  const sendStageMessage = async (lead: Lead, templateKey: string) => {
+    const templates = await getTemplates();
+    const found = templates.find((t) => t.template_key === templateKey);
+    const text = found?.template_text || getDefaultTemplate(templateKey);
+    const pix = await getPixSettings();
+
+    const resolved = resolveTemplate(text, {
+      nome: lead.name,
+      data_evento: lead.interest_date ? new Date(lead.interest_date + "T12:00:00").toLocaleDateString("pt-BR") : "—",
+      hora_visita: "—",
+      valor_total: "—",
+      valor_sinal: "—",
+      chave_pix: pix?.pix_key || "—",
+      banco: pix?.bank || "—",
+      favorecido: pix?.beneficiary_name || "—",
+      link_contrato: "—",
+    });
+
+    // Copy to clipboard and show toast with send option
+    navigator.clipboard.writeText(resolved);
+    toast("📲 Mensagem copiada!", {
+      description: "Clique para abrir WhatsApp com a mensagem.",
+      action: {
+        label: "Abrir WhatsApp",
+        onClick: () => openWhatsApp(lead.phone, resolved),
+      },
+      duration: 8000,
+    });
   };
 
   const handleCreate = async () => {
@@ -101,7 +147,7 @@ export default function LeadsWhatsApp() {
       toast.success("Lead adicionado!");
       setModalOpen(false);
       setFormName(""); setFormPhone(""); setFormInterest(""); setFormNotes("");
-      loadLeads();
+      loadAll();
     } catch (e: any) {
       toast.error(e.message || "Erro ao adicionar");
     } finally {
@@ -125,7 +171,6 @@ export default function LeadsWhatsApp() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-3xl font-display font-semibold tracking-tight">Leads WhatsApp</h1>
@@ -136,7 +181,6 @@ export default function LeadsWhatsApp() {
         </Button>
       </div>
 
-      {/* Search */}
       <div className="flex items-center gap-3">
         <div className="relative flex-1 max-w-xs">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -152,11 +196,10 @@ export default function LeadsWhatsApp() {
         </Badge>
       </div>
 
-      {/* Kanban Board */}
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="flex gap-4 overflow-x-auto pb-4 -mx-6 px-6 md:-mx-10 md:px-10">
-          {STAGE_ORDER.map((stage) => (
-            <Droppable key={stage} droppableId={stage}>
+          {activeStages.map((stage) => (
+            <Droppable key={stage.stage_key} droppableId={stage.stage_key}>
               {(provided, snapshot) => (
                 <div
                   ref={provided.innerRef}
@@ -165,21 +208,17 @@ export default function LeadsWhatsApp() {
                     snapshot.isDraggingOver ? "bg-primary/5 border-primary/30" : "bg-muted/30"
                   }`}
                 >
-                  {/* Column Header */}
                   <div className="flex items-center justify-between mb-3 px-1">
-                    <div className="flex items-center gap-2">
-                      <Badge className={`text-[10px] font-medium border rounded-full px-2 py-0.5 ${STAGE_COLORS[stage]}`}>
-                        {STAGE_LABELS[stage]}
-                      </Badge>
-                    </div>
+                    <Badge className={`text-[10px] font-medium border rounded-full px-2 py-0.5 ${stage.color}`}>
+                      {stage.label}
+                    </Badge>
                     <span className="text-[11px] font-medium text-muted-foreground">
-                      {columns[stage]?.length || 0}
+                      {columns[stage.stage_key]?.length || 0}
                     </span>
                   </div>
 
-                  {/* Cards */}
                   <div className="space-y-2.5 min-h-[60px]">
-                    {columns[stage]?.map((lead, index) => (
+                    {columns[stage.stage_key]?.map((lead, index) => (
                       <Draggable key={lead.id} draggableId={lead.id} index={index}>
                         {(prov, snap) => (
                           <div
@@ -202,15 +241,14 @@ export default function LeadsWhatsApp() {
         </div>
       </DragDropContext>
 
-      {/* Detail Sheet */}
       <LeadDetailSheet
         lead={selectedLead}
         open={!!selectedLead}
         onClose={() => setSelectedLead(null)}
-        onRefresh={loadLeads}
+        onRefresh={loadAll}
+        stages={stages}
       />
 
-      {/* Create Modal */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>

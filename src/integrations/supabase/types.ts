@@ -534,6 +534,48 @@ export type Database = {
           },
         ]
       }
+      pipeline_stages: {
+        Row: {
+          color: string
+          created_at: string
+          default_template_key: string | null
+          id: string
+          is_active: boolean
+          is_system: boolean
+          label: string
+          sort_order: number
+          stage_key: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          default_template_key?: string | null
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+          label: string
+          sort_order?: number
+          stage_key: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          default_template_key?: string | null
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+          label?: string
+          sort_order?: number
+          stage_key?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       pix_settings: {
         Row: {
           bank: string
