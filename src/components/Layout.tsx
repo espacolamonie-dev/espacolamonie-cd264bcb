@@ -12,7 +12,6 @@ import {
   Settings,
   ClipboardCheck,
   MessageCircle,
-  Inbox,
 } from "lucide-react";
 import { useState } from "react";
 import logo from "@/assets/logo.png";
@@ -38,7 +37,6 @@ const navGroups = [
     items: [
       { to: "/agenda", label: "Agenda", icon: CalendarDays },
       { to: "/leads", label: "Leads WhatsApp", icon: MessageCircle },
-      { to: "/whatsapp", label: "WhatsApp Inbox", icon: Inbox },
       { to: "/visits", label: "Agendar Visita", icon: ClipboardCheck },
       { to: "/reports", label: "Relatórios", icon: BarChart3 },
     ],
