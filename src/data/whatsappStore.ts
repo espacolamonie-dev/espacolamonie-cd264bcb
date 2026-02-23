@@ -52,7 +52,7 @@ export async function checkWahaStatus(wahaUrl: string, apiKey: string, session: 
 }> {
   try {
     const res = await fetch(`${wahaUrl}/api/sessions/${session}`, {
-      headers: { "Authorization": `Bearer ${apiKey}` },
+      headers: { "Authorization": `Bearer ${apiKey}`, "ngrok-skip-browser-warning": "true" },
     });
     if (!res.ok) return { status: "disconnected" };
     const data = await res.json();
@@ -69,7 +69,7 @@ export async function checkWahaStatus(wahaUrl: string, apiKey: string, session: 
 export async function getWahaQR(wahaUrl: string, apiKey: string, session: string): Promise<string | null> {
   try {
     const res = await fetch(`${wahaUrl}/api/${session}/auth/qr`, {
-      headers: { "Authorization": `Bearer ${apiKey}` },
+      headers: { "Authorization": `Bearer ${apiKey}`, "ngrok-skip-browser-warning": "true" },
     });
     if (!res.ok) return null;
     const data = await res.json();
@@ -87,6 +87,7 @@ export async function startWahaSession(wahaUrl: string, apiKey: string, session:
       headers: {
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "true",
       },
       body: JSON.stringify({
         name: session,
@@ -110,6 +111,7 @@ export async function sendWahaMessage(wahaUrl: string, apiKey: string, session: 
       headers: {
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "true",
       },
       body: JSON.stringify({ session, chatId, text }),
     });
