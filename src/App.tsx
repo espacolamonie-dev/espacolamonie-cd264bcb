@@ -12,6 +12,7 @@ import Agenda from "@/pages/Agenda";
 import Reports from "@/pages/Reports";
 import Settings from "@/pages/Settings";
 import Visits from "@/pages/Visits";
+import LeadsWhatsApp from "@/pages/LeadsWhatsApp";
 import SignContract from "@/pages/SignContract";
 import Auth from "@/pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -78,6 +79,7 @@ const App = () => (
                     <Route path="/agenda" element={<Agenda />} />
                     <Route path="/reports" element={<Reports />} />
                     <Route path="/visits" element={<Visits />} />
+                    <Route path="/leads" element={<LeadsWhatsApp />} />
                     <Route path="/settings" element={<Settings />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>

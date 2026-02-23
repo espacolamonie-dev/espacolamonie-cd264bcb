@@ -359,6 +359,107 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_status_history: {
+        Row: {
+          changed_at: string
+          from_stage: string | null
+          id: string
+          lead_id: string
+          to_stage: string
+          user_id: string
+        }
+        Insert: {
+          changed_at?: string
+          from_stage?: string | null
+          id?: string
+          lead_id: string
+          to_stage: string
+          user_id: string
+        }
+        Update: {
+          changed_at?: string
+          from_stage?: string | null
+          id?: string
+          lead_id?: string
+          to_stage?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_status_history_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leads: {
+        Row: {
+          contract_id: string | null
+          created_at: string
+          id: string
+          interest_date: string | null
+          last_interaction: string | null
+          name: string
+          notes: string | null
+          origin: string
+          phone: string
+          stage: string
+          tags: string[] | null
+          updated_at: string
+          user_id: string
+          visit_id: string | null
+        }
+        Insert: {
+          contract_id?: string | null
+          created_at?: string
+          id?: string
+          interest_date?: string | null
+          last_interaction?: string | null
+          name: string
+          notes?: string | null
+          origin?: string
+          phone?: string
+          stage?: string
+          tags?: string[] | null
+          updated_at?: string
+          user_id: string
+          visit_id?: string | null
+        }
+        Update: {
+          contract_id?: string | null
+          created_at?: string
+          id?: string
+          interest_date?: string | null
+          last_interaction?: string | null
+          name?: string
+          notes?: string | null
+          origin?: string
+          phone?: string
+          stage?: string
+          tags?: string[] | null
+          updated_at?: string
+          user_id?: string
+          visit_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: false
+            referencedRelation: "visits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       manual_entries: {
         Row: {
           amount: number
@@ -432,6 +533,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pix_settings: {
+        Row: {
+          bank: string
+          beneficiary_name: string
+          created_at: string
+          id: string
+          pix_key: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bank?: string
+          beneficiary_name?: string
+          created_at?: string
+          id?: string
+          pix_key?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bank?: string
+          beneficiary_name?: string
+          created_at?: string
+          id?: string
+          pix_key?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       signature_audit_logs: {
         Row: {
@@ -543,6 +674,33 @@ export type Database = {
           user_id?: string
           visit_date?: string
           visit_time?: string
+        }
+        Relationships: []
+      }
+      whatsapp_templates: {
+        Row: {
+          created_at: string
+          id: string
+          template_key: string
+          template_text: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          template_key: string
+          template_text?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          template_key?: string
+          template_text?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
