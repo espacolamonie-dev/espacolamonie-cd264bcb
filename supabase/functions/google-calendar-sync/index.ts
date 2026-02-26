@@ -198,12 +198,17 @@ Deno.serve(async (req) => {
       const description = buildDescription(contract, client);
       const colorId = isCancelled ? PAYMENT_COLOR_IDS.cancelled : (PAYMENT_COLOR_IDS[contract.payment_status] || '5');
 
+      // Google all-day events use exclusive end date, so add 1 day
+      const endDate = new Date(contract.event_date + 'T12:00:00');
+      endDate.setDate(endDate.getDate() + 1);
+      const endDateStr = endDate.toISOString().split('T')[0];
+
       const eventBody = {
         summary: title,
         description,
         location: 'Espaço Lamoniê — Endereço do espaço',
         start: { date: contract.event_date },
-        end: { date: contract.event_date },
+        end: { date: endDateStr },
         colorId,
         extendedProperties: {
           private: {
