@@ -192,8 +192,8 @@ Deno.serve(async (req) => {
 
       const isCancelled = contract.status === 'cancelled';
       const title = isCancelled
-        ? `[CANCELADO] [Lamoniê] ${contract.event_type} — ${client.name}`
-        : `[Lamoniê] ${contract.event_type} — ${client.name}`;
+        ? `[CANCELADO] Lamoniê — ${client.name} — ${contract.event_type}`
+        : `Lamoniê — ${client.name} — ${contract.event_type}`;
 
       const description = buildDescription(contract, client);
       const colorId = isCancelled ? PAYMENT_COLOR_IDS.cancelled : (PAYMENT_COLOR_IDS[contract.payment_status] || '5');

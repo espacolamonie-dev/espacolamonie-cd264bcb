@@ -17,6 +17,7 @@ import type { Contract, ContractStatus, EventType, Client } from "@/types";
 import ContractDetailModal from "@/components/ContractDetailModal";
 import { ContractStatusSelect, PaymentStatusSelect } from "@/components/ContractStatusSelect";
 import { CurrencyInput, PercentInput } from "@/components/CurrencyInput";
+import { triggerGoogleSync } from "@/lib/googleSync";
 import { NumericInput } from "@/components/NumericInput";
 import ImportContractModal from "@/components/ImportContractModal";
 
@@ -116,8 +117,10 @@ export default function Contracts() {
         await updateContract(editing.id, updates);
         toast.success("Contrato salvo com sucesso");
       } else {
-        await addContract(form);
+        const newContract = await addContract(form);
         toast.success("Contrato criado com sucesso");
+        // Sync to Google Calendar immediately (even before signature)
+        triggerGoogleSync(newContract.id);
       }
       setOpen(false); await load();
     } catch (e: any) { toast.error(e.message); }
