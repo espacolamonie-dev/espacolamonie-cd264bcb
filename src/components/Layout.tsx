@@ -16,6 +16,10 @@ import {
 import { useState } from "react";
 import logo from "@/assets/logo.png";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsMobile } from "@/hooks/use-mobile";
+import MobileBottomNav from "@/components/MobileBottomNav";
+import MobileTopBar from "@/components/MobileTopBar";
+import IOSInstallBanner from "@/components/IOSInstallBanner";
 
 const navGroups = [
   {
@@ -47,6 +51,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { signOut } = useAuth();
+  const isMobile = useIsMobile();
 
   return (
     <div className="flex min-h-screen">
@@ -58,13 +63,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar — hidden on mobile, shown on desktop */}
       <aside
         className={`sidebar-gradient fixed inset-y-0 left-0 z-50 flex w-[260px] flex-col transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${
           mobileOpen ? "translate-x-0 animate-slide-in-left" : "-translate-x-full"
         }`}
       >
-        {/* Logo — compact & elegant */}
+        {/* Logo */}
         <div className="flex items-center justify-center px-6 pt-7 pb-8 relative">
           <img
             src={logo}
@@ -78,8 +83,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <X size={18} />
           </button>
         </div>
-
-
 
         {/* Nav groups */}
         <nav className="flex-1 px-4 overflow-y-auto space-y-6">
@@ -148,19 +151,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Main */}
       <main className="flex-1 min-w-0">
-        {/* Top bar — minimal */}
-        <header className="flex items-center gap-4 border-b border-border bg-card/60 backdrop-blur-md px-6 py-3.5 md:px-10 sticky top-0 z-30">
-          <button
-            className="text-muted-foreground hover:text-foreground transition-colors md:hidden"
-            onClick={() => setMobileOpen(true)}
-          >
-            <Menu size={22} />
-          </button>
+        {/* Desktop top bar */}
+        <header className="hidden md:flex items-center gap-4 border-b border-border bg-card/60 backdrop-blur-md px-6 py-3.5 md:px-10 sticky top-0 z-30">
           <div className="flex-1" />
         </header>
 
-        <div className="p-6 md:p-10 max-w-[1440px] page-enter">{children}</div>
+        {/* Mobile top bar */}
+        {isMobile && <MobileTopBar onMenuOpen={() => setMobileOpen(true)} />}
+
+        <div className={`page-enter max-w-[1440px] ${isMobile ? "pt-[60px] pb-[80px] px-4" : "p-6 md:p-10"}`}>
+          {children}
+        </div>
       </main>
+
+      {/* Mobile bottom nav */}
+      {isMobile && <MobileBottomNav />}
+      {isMobile && <IOSInstallBanner />}
     </div>
   );
 }
