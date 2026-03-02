@@ -40,7 +40,8 @@ export const getVisits = async (): Promise<Visit[]> => {
   const { data, error } = await supabase
     .from("visits" as any)
     .select("*")
-    .order("visit_date", { ascending: true });
+    .order("visit_date", { ascending: true })
+    .order("visit_time", { ascending: true });
   if (error) throw error;
   return ((data as any[]) || []).map(mapVisit);
 };

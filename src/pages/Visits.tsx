@@ -128,13 +128,24 @@ export default function Visits() {
 
   const filtered = useMemo(() => {
     let list = visits;
-    if (filterStatus !== "all") list = list.filter((v) => v.status === filterStatus);
+    // By default hide cancelled visits unless explicitly filtering for them
+    if (filterStatus === "all") {
+      list = list.filter((v) => v.status !== "Cancelada");
+    } else {
+      list = list.filter((v) => v.status === filterStatus);
+    }
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter(
         (v) => v.clientName.toLowerCase().includes(q) || v.clientPhone.includes(q)
       );
     }
+    // Sort by visit_date asc, then visit_time asc
+    list = [...list].sort((a, b) => {
+      const dateCompare = a.visitDate.localeCompare(b.visitDate);
+      if (dateCompare !== 0) return dateCompare;
+      return (a.visitTime || "23:59").localeCompare(b.visitTime || "23:59");
+    });
     return list;
   }, [visits, filterStatus, search]);
 
@@ -174,17 +185,32 @@ export default function Visits() {
   const handleStatusChange = async (visit: Visit, newStatus: VisitStatus) => {
     try {
       if (newStatus === "Cancelada") {
+        // Optimistic removal from list
+        setVisits((prev) => prev.filter((v) => v.id !== visit.id));
+        setDetailVisit(null);
         await updateVisit(visit.id, { status: newStatus });
-        deleteVisitGoogleEvent(visit.id);
+        // Try to delete Google Calendar event
+        if (visit.googleEventId) {
+          try {
+            await deleteVisitGoogleEvent(visit.id);
+            toast.success("Visita cancelada e removida da lista.");
+          } catch {
+            toast.warning("Visita cancelada, mas não foi possível excluir do Google Agenda.");
+          }
+        } else {
+          toast.success("Visita cancelada e removida da lista.");
+        }
+        loadVisits();
       } else {
         await updateVisit(visit.id, { status: newStatus });
         syncVisitToGoogle(visit.id);
+        toast.success(`Status alterado para "${newStatus}"`);
+        setDetailVisit(null);
+        loadVisits();
       }
-      toast.success(`Status alterado para "${newStatus}"`);
-      setDetailVisit(null);
-      loadVisits();
     } catch (e: any) {
       toast.error(e.message || "Erro ao alterar status");
+      loadVisits(); // Revert optimistic update on error
     }
   };
 
