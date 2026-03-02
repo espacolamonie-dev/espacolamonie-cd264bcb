@@ -1,20 +1,14 @@
 import { Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard,
-  CalendarDays,
+  ClipboardCheck,
   FileText,
   Users,
-  CreditCard,
-  ClipboardCheck,
 } from "lucide-react";
 
 const items = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/agenda", label: "Agenda", icon: CalendarDays },
+  { to: "/visits", label: "Visitas", icon: ClipboardCheck },
   { to: "/contracts", label: "Contratos", icon: FileText },
   { to: "/clients", label: "Clientes", icon: Users },
-  { to: "/visits", label: "Visita", icon: ClipboardCheck },
-  { to: "/financial", label: "Financeiro", icon: CreditCard },
 ];
 
 export default function MobileBottomNav() {
@@ -35,17 +29,17 @@ export default function MobileBottomNav() {
             <Link
               key={item.to}
               to={item.to}
-              className={`relative flex flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors duration-150 ${
+              className={`relative flex flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-semibold transition-colors duration-150 ${
                 active
                   ? "text-primary"
                   : "text-muted-foreground"
               }`}
               style={{ fontFamily: "var(--font-body)" }}
             >
-              <item.icon size={22} strokeWidth={active ? 2.2 : 1.6} />
+              <item.icon size={24} strokeWidth={active ? 2.2 : 1.6} />
               <span>{item.label}</span>
               {active && (
-                <span className="absolute top-0 h-[3px] w-8 rounded-b-full bg-primary" />
+                <span className="absolute top-0 h-[3px] w-10 rounded-b-full bg-primary" />
               )}
             </Link>
           );

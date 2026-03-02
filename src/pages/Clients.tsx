@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Plus, Search, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Loader2, Phone } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -40,6 +41,7 @@ function formatCEP(value: string): string {
 }
 
 export default function Clients() {
+  const isMobile = useIsMobile();
   const [clients, setClients] = useState<Client[]>([]);
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
@@ -152,11 +154,15 @@ export default function Clients() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-3xl font-display font-semibold tracking-tight">Clientes</h1>
-          <p className="text-sm text-muted-foreground mt-1">{clients.length} cliente{clients.length !== 1 ? "s" : ""} cadastrado{clients.length !== 1 ? "s" : ""}</p>
+          {!isMobile && (
+            <p className="text-sm text-muted-foreground mt-1">{clients.length} cliente{clients.length !== 1 ? "s" : ""} cadastrado{clients.length !== 1 ? "s" : ""}</p>
+          )}
         </div>
-        <Button onClick={openNew} size="sm" className="gap-2 h-9 rounded-lg">
-          <Plus size={15} /> Novo cliente
-        </Button>
+        {!isMobile && (
+          <Button onClick={openNew} size="sm" className="gap-2 h-9 rounded-lg">
+            <Plus size={15} /> Novo cliente
+          </Button>
+        )}
       </div>
 
       <div className="relative max-w-sm">
@@ -164,43 +170,83 @@ export default function Clients() {
         <Input placeholder="Buscar por nome, CPF ou telefone" className="pl-9 h-9 text-sm rounded-lg" value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
 
-      <div className="rounded-xl border border-border bg-card overflow-x-auto">
-        <table className="table-premium">
-          <thead>
-            <tr>
-              <th>Nome</th>
-              <th className="hidden sm:table-cell">CPF</th>
-              <th className="hidden md:table-cell">Telefone</th>
-              <th className="hidden lg:table-cell">Endereço</th>
-              <th className="text-right">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 ? (
-              <tr><td colSpan={5} className="!py-12 text-center text-muted-foreground">Nenhum cliente encontrado</td></tr>
-            ) : (
-              filtered.map((c) => (
-                <tr key={c.id}>
-                  <td className="font-medium">{c.name}</td>
-                  <td className="hidden sm:table-cell text-muted-foreground tabular-nums">{c.cpf || "—"}</td>
-                  <td className="hidden md:table-cell text-muted-foreground">{c.phone || "—"}</td>
-                  <td className="hidden lg:table-cell text-muted-foreground max-w-[250px] truncate">{getDisplayAddress(c)}</td>
-                  <td className="text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => openEdit(c)}>
-                        <Pencil size={14} />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-destructive hover:text-destructive" onClick={() => handleDeleteRequest(c)}>
-                        <Trash2 size={14} />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      {isMobile ? (
+        <div className="space-y-3">
+          {filtered.length === 0 ? (
+            <div className="text-center text-muted-foreground py-12 text-sm">Nenhum cliente encontrado</div>
+          ) : (
+            filtered.map((c) => (
+              <div key={c.id} className="rounded-xl border border-border bg-card p-4">
+                <div className="flex items-start justify-between mb-2">
+                  <p className="font-semibold text-base">{c.name}</p>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg" onClick={() => openEdit(c)}>
+                      <Pencil size={16} />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg text-destructive" onClick={() => handleDeleteRequest(c)}>
+                      <Trash2 size={16} />
+                    </Button>
+                  </div>
+                </div>
+                {c.phone && (
+                  <a href={`tel:${c.phone.replace(/\D/g, "")}`} className="text-sm text-primary flex items-center gap-1.5 mb-1">
+                    <Phone size={13} /> {c.phone}
+                  </a>
+                )}
+                {c.cpf && <p className="text-xs text-muted-foreground tabular-nums">CPF: {c.cpf}</p>}
+              </div>
+            ))
+          )}
+        </div>
+      ) : (
+        <div className="rounded-xl border border-border bg-card overflow-x-auto">
+          <table className="table-premium">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th className="hidden sm:table-cell">CPF</th>
+                <th className="hidden md:table-cell">Telefone</th>
+                <th className="hidden lg:table-cell">Endereço</th>
+                <th className="text-right">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
+                <tr><td colSpan={5} className="!py-12 text-center text-muted-foreground">Nenhum cliente encontrado</td></tr>
+              ) : (
+                filtered.map((c) => (
+                  <tr key={c.id}>
+                    <td className="font-medium">{c.name}</td>
+                    <td className="hidden sm:table-cell text-muted-foreground tabular-nums">{c.cpf || "—"}</td>
+                    <td className="hidden md:table-cell text-muted-foreground">{c.phone || "—"}</td>
+                    <td className="hidden lg:table-cell text-muted-foreground max-w-[250px] truncate">{getDisplayAddress(c)}</td>
+                    <td className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => openEdit(c)}>
+                          <Pencil size={14} />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-destructive hover:text-destructive" onClick={() => handleDeleteRequest(c)}>
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Mobile FAB */}
+      {isMobile && (
+        <button
+          onClick={openNew}
+          className="fixed z-40 bottom-[calc(var(--safe-bottom)+var(--mobile-bottom-h)+16px)] right-4 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+        >
+          <Plus size={28} strokeWidth={2.5} />
+        </button>
+      )}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
