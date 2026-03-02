@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { Plus, Search, Phone, CalendarDays, Clock, Filter, Eye, Check, RotateCcw, X as XIcon } from "lucide-react";
+import { Plus, Search, Phone, CalendarDays, Clock, Filter, Eye, Check, RotateCcw, X as XIcon, AlertTriangle } from "lucide-react";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +19,7 @@ import { ptBR } from "date-fns/locale";
 import { getVisits, addVisit, updateVisit, deleteVisit, type Visit } from "@/data/visitStore";
 import { syncVisitToGoogle, deleteVisitGoogleEvent } from "@/lib/visitGoogleSync";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { supabase } from "@/integrations/supabase/client";
 
 type VisitStatus = "Agendada" | "Confirmada" | "Remarcada" | "Cancelada";
 
@@ -58,7 +60,7 @@ export default function Visits() {
   const [formVisitDate, setFormVisitDate] = useState("");
   const [formVisitTime, setFormVisitTime] = useState("");
   const [formNotes, setFormNotes] = useState("");
-
+  const [dateConflicts, setDateConflicts] = useState<{ name: string; phone: string; stage: string; type: string }[]>([]);
   const loadVisits = useCallback(async () => {
     setLoading(true);
     try {
@@ -69,6 +71,60 @@ export default function Visits() {
   }, []);
 
   useEffect(() => { loadVisits(); }, [loadVisits]);
+
+  // Check for date interest conflicts
+  useEffect(() => {
+    if (!formInterestDate) {
+      setDateConflicts([]);
+      return;
+    }
+    const checkConflicts = async () => {
+      const conflicts: { name: string; phone: string; stage: string; type: string }[] = [];
+      // Check other visits with same interest date
+      const { data: otherVisits } = await supabase
+        .from("visits")
+        .select("client_name, client_phone, status, interest_event_date")
+        .eq("interest_event_date", formInterestDate)
+        .neq("status", "Cancelada");
+      if (otherVisits) {
+        for (const v of otherVisits) {
+          conflicts.push({ name: v.client_name, phone: v.client_phone, stage: v.status, type: "Visita" });
+        }
+      }
+      // Check leads with same interest date
+      const { data: leads } = await supabase
+        .from("leads")
+        .select("name, phone, stage, interest_date")
+        .eq("interest_date", formInterestDate);
+      if (leads) {
+        for (const l of leads) {
+          if (l.stage !== "perdido") {
+            conflicts.push({ name: l.name, phone: l.phone, stage: l.stage, type: "Lead" });
+          }
+        }
+      }
+      // Check contracts with same event date (not cancelled)
+      const { data: contracts } = await supabase
+        .from("contracts")
+        .select("id, client_id, event_date, status")
+        .eq("event_date", formInterestDate)
+        .neq("status", "cancelled");
+      if (contracts && contracts.length > 0) {
+        const clientIds = contracts.map(c => c.client_id);
+        const { data: clients } = await supabase
+          .from("clients")
+          .select("id, name, phone")
+          .in("id", clientIds);
+        const clientMap = Object.fromEntries((clients || []).map(c => [c.id, c]));
+        for (const c of contracts) {
+          const cl = clientMap[c.client_id];
+          conflicts.push({ name: cl?.name || "—", phone: cl?.phone || "", stage: c.status, type: "Contrato" });
+        }
+      }
+      setDateConflicts(conflicts);
+    };
+    checkConflicts();
+  }, [formInterestDate]);
 
   const filtered = useMemo(() => {
     let list = visits;
@@ -85,6 +141,7 @@ export default function Visits() {
   const resetForm = () => {
     setFormName(""); setFormPhone(""); setFormInterestDate("");
     setFormVisitDate(""); setFormVisitTime(""); setFormNotes("");
+    setDateConflicts([]);
   };
 
   const handleCreate = async () => {
@@ -382,6 +439,24 @@ export default function Visits() {
               <Label>Data de interesse do evento (opcional)</Label>
               <Input type="date" value={formInterestDate} onChange={(e) => setFormInterestDate(e.target.value)} className="h-12" />
             </div>
+            {dateConflicts.length > 0 && (
+              <Alert variant="default" className="border-warning/50 bg-warning/10">
+                <AlertTriangle className="h-4 w-4 text-warning" />
+                <AlertTitle className="text-warning font-semibold text-sm">
+                  Atenção: já existe interesse nesta data
+                </AlertTitle>
+                <AlertDescription className="text-xs space-y-1 mt-1">
+                  {dateConflicts.map((c, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <span className="font-medium">{c.name}</span>
+                      <span className="text-muted-foreground">({c.phone})</span>
+                      <Badge variant="outline" className="text-[9px] px-1.5 py-0">{c.type} — {c.stage}</Badge>
+                    </div>
+                  ))}
+                  <p className="text-muted-foreground mt-1">Você ainda pode salvar normalmente.</p>
+                </AlertDescription>
+              </Alert>
+            )}
             <div>
               <Label>Data da visita *</Label>
               <Input type="date" value={formVisitDate} onChange={(e) => setFormVisitDate(e.target.value)} className="h-12" />
