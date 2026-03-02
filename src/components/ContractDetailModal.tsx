@@ -202,8 +202,8 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
 
   return (
     <Dialog open={true} onOpenChange={() => onClose()}>
-      <DialogContent className={isMobile ? "max-w-[100vw] w-full h-full max-h-full rounded-none p-0 flex flex-col" : "max-w-2xl max-h-[90vh] overflow-y-auto"}>
-        <div className={isMobile ? "flex-1 overflow-y-auto px-4 pb-40 pt-4" : ""}>
+      <DialogContent className={isMobile ? "max-w-[100vw] w-full h-full max-h-full rounded-none p-0 flex flex-col border-0" : "max-w-2xl max-h-[90vh] overflow-y-auto"}>
+        <div className={isMobile ? "flex-1 overflow-y-auto px-4 pb-40" : ""} style={isMobile ? { paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)" } : undefined}>
           <DialogHeader className={isMobile ? "pb-3" : ""}>
             <DialogTitle className="font-display text-lg flex items-center gap-2 flex-wrap">
               Detalhes do Contrato
