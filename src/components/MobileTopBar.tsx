@@ -22,6 +22,7 @@ export default function MobileTopBar({ onMenuOpen }: Props) {
   const navigate = useNavigate();
   const title = PAGE_TITLES[pathname] || "Lamoniê CRM";
   const isHome = pathname === "/";
+  const isMainTab = ["/visits", "/contracts", "/clients"].includes(pathname);
 
   return (
     <header
@@ -42,6 +43,8 @@ export default function MobileTopBar({ onMenuOpen }: Props) {
           >
             <Menu size={22} />
           </button>
+        ) : isMainTab ? (
+          <img src="/images/logo-lamonie.png" alt="Lamoniê" className="w-8 h-8 object-contain -ml-1" />
         ) : (
           <button
             onClick={() => navigate(-1)}
