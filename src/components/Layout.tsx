@@ -156,7 +156,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="flex-1" />
         </header>
 
-        <div className={`page-enter max-w-[1440px] ${isMobile ? "pb-[100px] px-4 pt-2" : "p-6 md:p-10"}`}>
+        {/* Mobile header */}
+        {isMobile && <MobileTopBar onMenuOpen={() => setMobileOpen(true)} />}
+
+        <div className={`page-enter max-w-[1440px] ${isMobile ? "px-4 pt-[calc(var(--safe-top)+var(--mobile-header-h)+8px)] pb-[calc(var(--safe-bottom)+var(--mobile-bottom-h)+16px)]" : "p-6 md:p-10"}`}>
           {children}
         </div>
       </main>

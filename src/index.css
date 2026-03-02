@@ -6,6 +6,11 @@
 
 @layer base {
   :root {
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --mobile-header-h: 56px;
+    --mobile-bottom-h: 72px;
+
     --background: 228 14% 97%;
     --foreground: 220 26% 10%;
 

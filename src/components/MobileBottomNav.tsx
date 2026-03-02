@@ -21,8 +21,14 @@ export default function MobileBottomNav() {
   const { pathname } = useLocation();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t border-border bg-card/95 backdrop-blur-lg" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-      <div className="flex items-stretch justify-around">
+    <nav
+      className="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t border-border bg-card/95 backdrop-blur-lg"
+      style={{
+        height: "calc(var(--safe-bottom) + var(--mobile-bottom-h))",
+        paddingBottom: "var(--safe-bottom)",
+      }}
+    >
+      <div className="flex items-stretch justify-around" style={{ height: "var(--mobile-bottom-h)" }}>
         {items.map((item) => {
           const active = pathname === item.to;
           return (
@@ -34,7 +40,7 @@ export default function MobileBottomNav() {
                   ? "text-primary"
                   : "text-muted-foreground"
               }`}
-              style={{ fontFamily: "var(--font-body)", minHeight: 64 }}
+              style={{ fontFamily: "var(--font-body)" }}
             >
               <item.icon size={22} strokeWidth={active ? 2.2 : 1.6} />
               <span>{item.label}</span>
