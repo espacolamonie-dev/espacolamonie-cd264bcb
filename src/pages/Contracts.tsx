@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Plus, Search, Eye, Pencil, Upload, Trash2 } from "lucide-react";
+import { Plus, Search, Eye, Pencil, Upload, Trash2, CalendarDays } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -28,6 +31,7 @@ const emptyForm = {
 };
 
 export default function Contracts() {
+  const isMobile = useIsMobile();
   const [searchParams, setSearchParams] = useSearchParams();
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
@@ -129,16 +133,18 @@ export default function Contracts() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-3xl font-display font-semibold tracking-tight">Contratos</h1>
-          <p className="text-sm text-muted-foreground mt-1">Gestão de contratos e eventos</p>
+          {!isMobile && <p className="text-sm text-muted-foreground mt-1">Gestão de contratos e eventos</p>}
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="gap-2 h-9 rounded-lg" onClick={() => setImportOpen(true)}>
-            <Upload size={15} /> Importar PDF
-          </Button>
-          <Button onClick={openNew} size="sm" className="gap-2 h-9 rounded-lg">
-            <Plus size={15} /> Novo contrato
-          </Button>
-        </div>
+        {!isMobile && (
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" className="gap-2 h-9 rounded-lg" onClick={() => setImportOpen(true)}>
+              <Upload size={15} /> Importar PDF
+            </Button>
+            <Button onClick={openNew} size="sm" className="gap-2 h-9 rounded-lg">
+              <Plus size={15} /> Novo contrato
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-3">
@@ -146,89 +152,147 @@ export default function Contracts() {
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input placeholder="Buscar por nome ou CPF" className="pl-9 h-9 text-sm rounded-lg" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px] h-9 text-sm rounded-lg">
-            <SelectValue placeholder="Todos os status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os status</SelectItem>
-            {Object.entries(CONTRACT_STATUS_LABELS).map(([k, v]) => (
-              <SelectItem key={k} value={k}>{v}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={paymentFilter} onValueChange={setPaymentFilter}>
-          <SelectTrigger className={`w-[220px] h-9 text-sm rounded-lg ${paymentFilter !== "all" ? "border-danger/50 bg-danger/5" : ""}`}>
-            <SelectValue placeholder="Todos os pagamentos" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os pagamentos</SelectItem>
-            <SelectItem value="pending_urgent">⚠ Pendentes (próx. 7 dias)</SelectItem>
-            {Object.entries(PAYMENT_STATUS_LABELS).map(([k, v]) => (
-              <SelectItem key={k} value={k}>{v}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {!isMobile && (
+          <>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[180px] h-9 text-sm rounded-lg">
+                <SelectValue placeholder="Todos os status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os status</SelectItem>
+                {Object.entries(CONTRACT_STATUS_LABELS).map(([k, v]) => (
+                  <SelectItem key={k} value={k}>{v}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+              <SelectTrigger className={`w-[220px] h-9 text-sm rounded-lg ${paymentFilter !== "all" ? "border-danger/50 bg-danger/5" : ""}`}>
+                <SelectValue placeholder="Todos os pagamentos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os pagamentos</SelectItem>
+                <SelectItem value="pending_urgent">⚠ Pendentes (próx. 7 dias)</SelectItem>
+                {Object.entries(PAYMENT_STATUS_LABELS).map(([k, v]) => (
+                  <SelectItem key={k} value={k}>{v}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </>
+        )}
       </div>
 
-      <div className="rounded-xl border border-border bg-card overflow-x-auto">
-        <table className="table-premium">
-          <thead>
-            <tr>
-              <th>Cliente</th>
-              <th className="hidden sm:table-cell">Data</th>
-              <th className="hidden lg:table-cell text-right">Valor</th>
-              <th>Contrato</th>
-              <th className="hidden md:table-cell">Pagamento</th>
-              <th className="text-right">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 ? (
-              <tr><td colSpan={6} className="!py-12 text-center text-muted-foreground">Nenhum contrato encontrado</td></tr>
-            ) : (
-              filtered.map((c) => {
-                const isCancelled = c.status === "cancelled";
-                return (
-                <tr key={c.id} className={isCancelled ? "opacity-50" : ""}>
-                  <td>
+      {isMobile ? (
+        <div className="space-y-3">
+          {filtered.length === 0 ? (
+            <div className="text-center text-muted-foreground py-12 text-sm">Nenhum contrato encontrado</div>
+          ) : (
+            filtered.map((c) => {
+              const isCancelled = c.status === "cancelled";
+              const statusLabel = CONTRACT_STATUS_LABELS[c.status] || c.status;
+              const statusColor = CONTRACT_STATUS_COLORS[c.status] || "";
+              return (
+                <div key={c.id} className={`rounded-xl border border-border bg-card p-4 ${isCancelled ? "opacity-50" : ""}`}>
+                  <div className="flex items-start justify-between mb-2">
                     <div>
-                      <p className="font-semibold text-sm">{clientMap[c.clientId]?.name || "—"}</p>
+                      <p className="font-semibold text-base">{clientMap[c.clientId]?.name || "—"}</p>
                       <p className="text-xs text-muted-foreground">{c.eventType}</p>
                     </div>
-                  </td>
-                  <td className="hidden sm:table-cell text-muted-foreground tabular-nums text-sm">{new Date(c.eventDate).toLocaleDateString("pt-BR")}</td>
-                  <td className="hidden lg:table-cell text-right font-semibold tabular-nums text-sm">
-                    {isCancelled ? <span className="text-muted-foreground line-through">{fmt(c.totalValue)}</span> : fmt(c.totalValue)}
-                  </td>
-                  <td>
-                    <ContractStatusSelect contractId={c.id} value={c.status} onChanged={load} />
-                  </td>
-                  <td className="hidden md:table-cell">
-                    <PaymentStatusSelect contractId={c.id} value={c.paymentStatus} isCancelled={isCancelled} onChanged={load} />
-                  </td>
-                  <td className="text-right">
-                     <div className="flex items-center justify-end gap-1">
-                       <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setDetailId(c.id)}>
-                         <Eye size={14} />
-                       </Button>
-                       {!isCancelled && (
-                         <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => openEdit(c)}>
-                           <Pencil size={14} />
+                    <Badge className={`text-[10px] font-medium border rounded-full px-2.5 py-0.5 shrink-0 ${statusColor}`}>
+                      {statusLabel}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
+                    <span className="flex items-center gap-1">
+                      <CalendarDays size={13} />
+                      {new Date(c.eventDate).toLocaleDateString("pt-BR")}
+                    </span>
+                    <span className="font-semibold text-foreground">{fmt(c.totalValue)}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" className="flex-1 h-11 gap-1.5" onClick={() => setDetailId(c.id)}>
+                      <Eye size={16} /> Detalhes
+                    </Button>
+                    {!isCancelled && (
+                      <Button size="sm" variant="outline" className="flex-1 h-11 gap-1.5" onClick={() => openEdit(c)}>
+                        <Pencil size={16} /> Editar
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      ) : (
+        <div className="rounded-xl border border-border bg-card overflow-x-auto">
+          <table className="table-premium">
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th className="hidden sm:table-cell">Data</th>
+                <th className="hidden lg:table-cell text-right">Valor</th>
+                <th>Contrato</th>
+                <th className="hidden md:table-cell">Pagamento</th>
+                <th className="text-right">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
+                <tr><td colSpan={6} className="!py-12 text-center text-muted-foreground">Nenhum contrato encontrado</td></tr>
+              ) : (
+                filtered.map((c) => {
+                  const isCancelled = c.status === "cancelled";
+                  return (
+                  <tr key={c.id} className={isCancelled ? "opacity-50" : ""}>
+                    <td>
+                      <div>
+                        <p className="font-semibold text-sm">{clientMap[c.clientId]?.name || "—"}</p>
+                        <p className="text-xs text-muted-foreground">{c.eventType}</p>
+                      </div>
+                    </td>
+                    <td className="hidden sm:table-cell text-muted-foreground tabular-nums text-sm">{new Date(c.eventDate).toLocaleDateString("pt-BR")}</td>
+                    <td className="hidden lg:table-cell text-right font-semibold tabular-nums text-sm">
+                      {isCancelled ? <span className="text-muted-foreground line-through">{fmt(c.totalValue)}</span> : fmt(c.totalValue)}
+                    </td>
+                    <td>
+                      <ContractStatusSelect contractId={c.id} value={c.status} onChanged={load} />
+                    </td>
+                    <td className="hidden md:table-cell">
+                      <PaymentStatusSelect contractId={c.id} value={c.paymentStatus} isCancelled={isCancelled} onChanged={load} />
+                    </td>
+                    <td className="text-right">
+                       <div className="flex items-center justify-end gap-1">
+                         <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setDetailId(c.id)}>
+                           <Eye size={14} />
                          </Button>
-                       )}
-                       <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-destructive hover:text-destructive" onClick={() => setDeleteTarget(c)}>
-                         <Trash2 size={14} />
-                       </Button>
-                     </div>
-                  </td>
-                </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
+                         {!isCancelled && (
+                           <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => openEdit(c)}>
+                             <Pencil size={14} />
+                           </Button>
+                         )}
+                         <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-destructive hover:text-destructive" onClick={() => setDeleteTarget(c)}>
+                           <Trash2 size={14} />
+                         </Button>
+                       </div>
+                    </td>
+                  </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Mobile FAB */}
+      {isMobile && (
+        <button
+          onClick={openNew}
+          className="fixed z-40 bottom-[calc(var(--safe-bottom)+var(--mobile-bottom-h)+16px)] right-4 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+        >
+          <Plus size={28} strokeWidth={2.5} />
+        </button>
+      )}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">

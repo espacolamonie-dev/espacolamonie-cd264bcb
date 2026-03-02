@@ -27,6 +27,14 @@ interface MonthlyData {
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const isMobile = window.innerWidth < 768;
+
+  // Mobile: redirect to /visits automatically
+  useEffect(() => {
+    if (isMobile) {
+      navigate("/visits", { replace: true });
+    }
+  }, [isMobile, navigate]);
   const [loading, setLoading] = useState(true);
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [upcoming, setUpcoming] = useState<(Contract & { clientName: string })[]>([]);
