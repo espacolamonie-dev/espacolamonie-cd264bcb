@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { Plus, Search, Phone, CalendarDays, Clock, Filter, Eye, Check, RotateCcw, X as XIcon, AlertTriangle } from "lucide-react";
+import { Plus, Search, Phone, CalendarDays, Clock, Filter, Eye, Check, RotateCcw, X as XIcon, AlertTriangle, Pencil } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,6 +52,12 @@ export default function Visits() {
   const [modalOpen, setModalOpen] = useState(false);
   const [detailVisit, setDetailVisit] = useState<Visit | null>(null);
   const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editForm, setEditForm] = useState({
+    clientName: "", clientPhone: "", visitDate: "", visitTime: "",
+    interestEventDate: "", notes: "", status: "" as string,
+  });
   const isMobile = useIsMobile();
 
   const [formName, setFormName] = useState("");
@@ -559,73 +565,252 @@ export default function Visits() {
       </Dialog>
 
       {/* Detail Modal */}
-      <Dialog open={!!detailVisit} onOpenChange={(open) => !open && setDetailVisit(null)}>
-        <DialogContent className="max-w-md">
+      <Dialog open={!!detailVisit} onOpenChange={(open) => { if (!open) { setDetailVisit(null); setEditing(false); } }}>
+        <DialogContent className={isMobile ? "max-w-[100vw] w-full h-[100dvh] max-h-[100dvh] rounded-none border-0 flex flex-col p-0" : "max-w-md"}>
           {detailVisit && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="font-display">Detalhes da Visita</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Cliente</span>
-                  <span className="font-medium">{detailVisit.clientName}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Telefone</span>
-                  <a href={`tel:${detailVisit.clientPhone.replace(/\D/g, "")}`} className="text-primary">
-                    {detailVisit.clientPhone}
-                  </a>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Data de interesse</span>
-                  <span>
-                    {detailVisit.interestEventDate
-                      ? format(new Date(detailVisit.interestEventDate + "T12:00:00"), "dd/MM/yyyy")
-                      : "—"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Data da visita</span>
-                  <span className="font-medium">
-                    {format(new Date(detailVisit.visitDate + "T12:00:00"), "dd/MM/yyyy")}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Horário</span>
-                  <span>{detailVisit.visitTime.slice(0, 5)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Status</span>
-                  <Badge className={`text-[10px] font-medium border rounded-full px-2.5 py-0.5 ${VISIT_STATUS_COLORS[detailVisit.status as VisitStatus] || ""}`}>
-                    {detailVisit.status}
-                  </Badge>
-                </div>
-                {detailVisit.notes && (
-                  <div>
-                    <span className="text-muted-foreground block mb-1">Observações</span>
-                    <p className="text-sm bg-muted/50 rounded-lg p-3">{detailVisit.notes}</p>
+            isMobile ? (
+              <>
+                {/* Mobile Header */}
+                <div className="shrink-0 flex items-center justify-between border-b border-border px-4" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 12px)", paddingBottom: "12px" }}>
+                  <h2 className="text-lg font-display font-semibold">Detalhes da Visita</h2>
+                  <div className="flex items-center gap-1">
+                    {!editing && detailVisit.status !== "Cancelada" && (
+                      <button
+                        onClick={() => {
+                          setEditForm({
+                            clientName: detailVisit.clientName,
+                            clientPhone: detailVisit.clientPhone,
+                            visitDate: detailVisit.visitDate,
+                            visitTime: detailVisit.visitTime.slice(0, 5),
+                            interestEventDate: detailVisit.interestEventDate || "",
+                            notes: detailVisit.notes || "",
+                            status: detailVisit.status,
+                          });
+                          setEditing(true);
+                        }}
+                        className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-muted"
+                      >
+                        <Pencil size={18} />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => { setDetailVisit(null); setEditing(false); }}
+                      className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-muted"
+                    >
+                      <XIcon size={20} />
+                    </button>
                   </div>
+                </div>
+
+                {/* Body */}
+                <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
+                  {editing ? (
+                    <>
+                      <div>
+                        <Label>Nome do cliente *</Label>
+                        <Input className="h-12" value={editForm.clientName} onChange={(e) => setEditForm(p => ({ ...p, clientName: e.target.value }))} />
+                      </div>
+                      <div>
+                        <Label>Telefone *</Label>
+                        <Input className="h-12" type="tel" value={editForm.clientPhone} onChange={(e) => setEditForm(p => ({ ...p, clientPhone: phoneMask(e.target.value) }))} />
+                      </div>
+                      <div>
+                        <Label>Data da visita *</Label>
+                        <Input className="h-12" type="date" value={editForm.visitDate} onChange={(e) => setEditForm(p => ({ ...p, visitDate: e.target.value }))} />
+                      </div>
+                      <div>
+                        <Label>Horário *</Label>
+                        <Input className="h-12" type="time" value={editForm.visitTime} onChange={(e) => setEditForm(p => ({ ...p, visitTime: e.target.value }))} />
+                      </div>
+                      <div>
+                        <Label>Data de interesse (opcional)</Label>
+                        <Input className="h-12" type="date" value={editForm.interestEventDate} onChange={(e) => setEditForm(p => ({ ...p, interestEventDate: e.target.value }))} />
+                      </div>
+                      <div>
+                        <Label>Status</Label>
+                        <Select value={editForm.status} onValueChange={(v) => setEditForm(p => ({ ...p, status: v }))}>
+                          <SelectTrigger className="h-12"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Agendada">Agendada</SelectItem>
+                            <SelectItem value="Confirmada">Confirmada</SelectItem>
+                            <SelectItem value="Remarcada">Remarcada</SelectItem>
+                            <SelectItem value="Cancelada">Cancelada</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label>Observações</Label>
+                        <Textarea value={editForm.notes} onChange={(e) => setEditForm(p => ({ ...p, notes: e.target.value }))} rows={3} />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="space-y-3 text-sm">
+                      <div className="flex justify-between"><span className="text-muted-foreground">Cliente</span><span className="font-medium">{detailVisit.clientName}</span></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">Telefone</span><a href={`tel:${detailVisit.clientPhone.replace(/\D/g, "")}`} className="text-primary">{detailVisit.clientPhone}</a></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">Data de interesse</span><span>{detailVisit.interestEventDate ? format(new Date(detailVisit.interestEventDate + "T12:00:00"), "dd/MM/yyyy") : "—"}</span></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">Data da visita</span><span className="font-medium">{format(new Date(detailVisit.visitDate + "T12:00:00"), "dd/MM/yyyy")}</span></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">Horário</span><span>{detailVisit.visitTime.slice(0, 5)}</span></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">Status</span><Badge className={`text-[10px] font-medium border rounded-full px-2.5 py-0.5 ${VISIT_STATUS_COLORS[detailVisit.status as VisitStatus] || ""}`}>{detailVisit.status}</Badge></div>
+                      {detailVisit.notes && (
+                        <div><span className="text-muted-foreground block mb-1">Observações</span><p className="text-sm bg-muted/50 rounded-lg p-3">{detailVisit.notes}</p></div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer */}
+                <div className="shrink-0 flex flex-col gap-2 px-4 pt-3 border-t border-border bg-background" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 16px)" }}>
+                  {editing ? (
+                    <>
+                      <Button className="h-12 w-full font-semibold" disabled={editSaving} onClick={async () => {
+                        if (!editForm.clientName.trim() || !editForm.visitDate || !editForm.visitTime) {
+                          toast.error("Preencha os campos obrigatórios"); return;
+                        }
+                        setEditSaving(true);
+                        try {
+                          const updates: Record<string, any> = {
+                            clientName: editForm.clientName.trim(),
+                            clientPhone: editForm.clientPhone.trim(),
+                            visitDate: editForm.visitDate,
+                            visitTime: editForm.visitTime,
+                            interestEventDate: editForm.interestEventDate || null,
+                            notes: editForm.notes.trim(),
+                            status: editForm.status,
+                          };
+                          await updateVisit(detailVisit.id, updates);
+                          // Sync to Google Calendar
+                          try {
+                            await syncVisitToGoogle(detailVisit.id);
+                            toast.success("Visita atualizada e sincronizada!");
+                          } catch {
+                            toast.warning("Salvo no CRM, mas falhou sincronizar com Google Agenda.");
+                          }
+                          if (editForm.status === "Cancelada") {
+                            if (detailVisit.googleEventId) {
+                              try { await deleteVisitGoogleEvent(detailVisit.id); } catch {}
+                            }
+                          }
+                          setEditing(false);
+                          setDetailVisit(null);
+                          loadVisits();
+                        } catch (e: any) {
+                          toast.error(e.message || "Erro ao salvar");
+                        } finally {
+                          setEditSaving(false);
+                        }
+                      }}>
+                        {editSaving ? "Salvando..." : "Salvar alterações"}
+                      </Button>
+                      <Button variant="outline" className="h-12 w-full" onClick={() => setEditing(false)}>Cancelar edição</Button>
+                    </>
+                  ) : detailVisit.status !== "Cancelada" ? (
+                    <>
+                      {detailVisit.status !== "Confirmada" && (
+                        <Button className="h-12 w-full gap-1.5 bg-success hover:bg-success/90 text-success-foreground font-semibold" onClick={() => handleStatusChange(detailVisit, "Confirmada")}>
+                          <Check size={16} /> Confirmar
+                        </Button>
+                      )}
+                      <Button variant="destructive" className="h-12 w-full gap-1.5" onClick={() => handleStatusChange(detailVisit, "Cancelada")}>
+                        <XIcon size={16} /> Cancelar visita
+                      </Button>
+                    </>
+                  ) : null}
+                </div>
+              </>
+            ) : (
+              /* Desktop Detail */
+              <>
+                <DialogHeader>
+                  <div className="flex items-center justify-between pr-8">
+                    <DialogTitle className="font-display">Detalhes da Visita</DialogTitle>
+                    {!editing && detailVisit.status !== "Cancelada" && (
+                      <Button variant="ghost" size="sm" className="gap-1.5 h-8" onClick={() => {
+                        setEditForm({
+                          clientName: detailVisit.clientName,
+                          clientPhone: detailVisit.clientPhone,
+                          visitDate: detailVisit.visitDate,
+                          visitTime: detailVisit.visitTime.slice(0, 5),
+                          interestEventDate: detailVisit.interestEventDate || "",
+                          notes: detailVisit.notes || "",
+                          status: detailVisit.status,
+                        });
+                        setEditing(true);
+                      }}>
+                        <Pencil size={14} /> Editar
+                      </Button>
+                    )}
+                  </div>
+                </DialogHeader>
+                {editing ? (
+                  <div className="space-y-4">
+                    <div><Label>Nome do cliente *</Label><Input className="h-12" value={editForm.clientName} onChange={(e) => setEditForm(p => ({ ...p, clientName: e.target.value }))} /></div>
+                    <div><Label>Telefone *</Label><Input className="h-12" type="tel" value={editForm.clientPhone} onChange={(e) => setEditForm(p => ({ ...p, clientPhone: phoneMask(e.target.value) }))} /></div>
+                    <div><Label>Data da visita *</Label><Input className="h-12" type="date" value={editForm.visitDate} onChange={(e) => setEditForm(p => ({ ...p, visitDate: e.target.value }))} /></div>
+                    <div><Label>Horário *</Label><Input className="h-12" type="time" value={editForm.visitTime} onChange={(e) => setEditForm(p => ({ ...p, visitTime: e.target.value }))} /></div>
+                    <div><Label>Data de interesse (opcional)</Label><Input className="h-12" type="date" value={editForm.interestEventDate} onChange={(e) => setEditForm(p => ({ ...p, interestEventDate: e.target.value }))} /></div>
+                    <div>
+                      <Label>Status</Label>
+                      <Select value={editForm.status} onValueChange={(v) => setEditForm(p => ({ ...p, status: v }))}>
+                        <SelectTrigger className="h-12"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Agendada">Agendada</SelectItem>
+                          <SelectItem value="Confirmada">Confirmada</SelectItem>
+                          <SelectItem value="Remarcada">Remarcada</SelectItem>
+                          <SelectItem value="Cancelada">Cancelada</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div><Label>Observações</Label><Textarea value={editForm.notes} onChange={(e) => setEditForm(p => ({ ...p, notes: e.target.value }))} rows={3} /></div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setEditing(false)}>Cancelar</Button>
+                      <Button disabled={editSaving} onClick={async () => {
+                        if (!editForm.clientName.trim() || !editForm.visitDate || !editForm.visitTime) { toast.error("Preencha os campos obrigatórios"); return; }
+                        setEditSaving(true);
+                        try {
+                          await updateVisit(detailVisit.id, {
+                            clientName: editForm.clientName.trim(), clientPhone: editForm.clientPhone.trim(),
+                            visitDate: editForm.visitDate, visitTime: editForm.visitTime,
+                            interestEventDate: editForm.interestEventDate || null, notes: editForm.notes.trim(), status: editForm.status,
+                          });
+                          try { await syncVisitToGoogle(detailVisit.id); toast.success("Visita atualizada e sincronizada!"); } catch { toast.warning("Salvo, mas falhou sincronizar com Google Agenda."); }
+                          if (editForm.status === "Cancelada" && detailVisit.googleEventId) { try { await deleteVisitGoogleEvent(detailVisit.id); } catch {} }
+                          setEditing(false); setDetailVisit(null); loadVisits();
+                        } catch (e: any) { toast.error(e.message || "Erro ao salvar"); } finally { setEditSaving(false); }
+                      }}>{editSaving ? "Salvando..." : "Salvar alterações"}</Button>
+                    </DialogFooter>
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-3 text-sm">
+                      <div className="flex justify-between"><span className="text-muted-foreground">Cliente</span><span className="font-medium">{detailVisit.clientName}</span></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">Telefone</span><a href={`tel:${detailVisit.clientPhone.replace(/\D/g, "")}`} className="text-primary">{detailVisit.clientPhone}</a></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">Data de interesse</span><span>{detailVisit.interestEventDate ? format(new Date(detailVisit.interestEventDate + "T12:00:00"), "dd/MM/yyyy") : "—"}</span></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">Data da visita</span><span className="font-medium">{format(new Date(detailVisit.visitDate + "T12:00:00"), "dd/MM/yyyy")}</span></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">Horário</span><span>{detailVisit.visitTime.slice(0, 5)}</span></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">Status</span><Badge className={`text-[10px] font-medium border rounded-full px-2.5 py-0.5 ${VISIT_STATUS_COLORS[detailVisit.status as VisitStatus] || ""}`}>{detailVisit.status}</Badge></div>
+                      {detailVisit.notes && (<div><span className="text-muted-foreground block mb-1">Observações</span><p className="text-sm bg-muted/50 rounded-lg p-3">{detailVisit.notes}</p></div>)}
+                    </div>
+                    {detailVisit.status !== "Cancelada" && (
+                      <DialogFooter className="flex-wrap gap-2">
+                        {detailVisit.status !== "Confirmada" && (
+                          <Button size="sm" className="gap-1.5 h-11 bg-success hover:bg-success/90 text-success-foreground" onClick={() => handleStatusChange(detailVisit, "Confirmada")}>
+                            <Check size={14} /> Confirmar
+                          </Button>
+                        )}
+                        {detailVisit.status !== "Remarcada" && (
+                          <Button size="sm" variant="outline" className="gap-1.5 h-11" onClick={() => handleStatusChange(detailVisit, "Remarcada")}>
+                            <RotateCcw size={14} /> Remarcar
+                          </Button>
+                        )}
+                        <Button size="sm" variant="destructive" className="gap-1.5 h-11" onClick={() => handleStatusChange(detailVisit, "Cancelada")}>
+                          <XIcon size={14} /> Cancelar
+                        </Button>
+                      </DialogFooter>
+                    )}
+                  </>
                 )}
-              </div>
-              {detailVisit.status !== "Cancelada" && (
-                <DialogFooter className="flex-wrap gap-2">
-                  {detailVisit.status !== "Confirmada" && (
-                    <Button size="sm" className="gap-1.5 h-11 bg-success hover:bg-success/90 text-success-foreground" onClick={() => handleStatusChange(detailVisit, "Confirmada")}>
-                      <Check size={14} /> Confirmar
-                    </Button>
-                  )}
-                  {detailVisit.status !== "Remarcada" && (
-                    <Button size="sm" variant="outline" className="gap-1.5 h-11" onClick={() => handleStatusChange(detailVisit, "Remarcada")}>
-                      <RotateCcw size={14} /> Remarcar
-                    </Button>
-                  )}
-                  <Button size="sm" variant="destructive" className="gap-1.5 h-11" onClick={() => handleStatusChange(detailVisit, "Cancelada")}>
-                    <XIcon size={14} /> Cancelar
-                  </Button>
-                </DialogFooter>
-              )}
-            </>
+              </>
+            )
           )}
         </DialogContent>
       </Dialog>
