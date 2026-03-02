@@ -203,11 +203,11 @@ export default function Visits() {
       {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-display font-semibold tracking-tight">
-            {isMobile ? "Visitas" : "Agendar Visita"}
-          </h1>
           {!isMobile && (
-            <p className="text-sm text-muted-foreground mt-1">Gerencie visitas presenciais ao Espaço Lamoniê</p>
+            <>
+              <h1 className="text-3xl font-display font-semibold tracking-tight">Agendar Visita</h1>
+              <p className="text-sm text-muted-foreground mt-1">Gerencie visitas presenciais ao Espaço Lamoniê</p>
+            </>
           )}
         </div>
         {!isMobile && (
@@ -416,7 +416,8 @@ export default function Visits() {
 
       {/* Create Modal */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className={isMobile ? "max-w-[100vw] w-full h-full max-h-full rounded-none" : "max-w-md"}>
+        <DialogContent className={isMobile ? "max-w-[100vw] w-full h-full max-h-full rounded-none border-0 flex flex-col p-0" : "max-w-md"}>
+          <div className={isMobile ? "flex-1 overflow-y-auto px-4 pb-32" : ""} style={isMobile ? { paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)" } : undefined}>
           <DialogHeader>
             <DialogTitle className="font-display">Nova Visita</DialogTitle>
           </DialogHeader>
@@ -470,7 +471,8 @@ export default function Visits() {
               <Textarea value={formNotes} onChange={(e) => setFormNotes(e.target.value)} placeholder="Anotações..." rows={3} />
             </div>
           </div>
-          <DialogFooter className={isMobile ? "sticky bottom-0 bg-background pt-3 border-t border-border" : ""}>
+          </div>
+          <DialogFooter className={isMobile ? "sticky bottom-0 bg-background p-4 border-t border-border" : ""} style={isMobile ? { paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 16px)" } : undefined}>
             <Button variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button>
             <Button onClick={handleCreate} disabled={saving} className="h-12 font-semibold">
               {saving ? "Agendando..." : "Salvar visita"}

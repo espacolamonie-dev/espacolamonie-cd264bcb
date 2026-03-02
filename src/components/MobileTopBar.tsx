@@ -2,7 +2,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, Menu } from "lucide-react";
 
 const PAGE_TITLES: Record<string, string> = {
-  "/": "Dashboard",
+  "/": "Lamoniê CRM",
   "/clients": "Clientes",
   "/contracts": "Contratos",
   "/financial": "Financeiro",

@@ -153,9 +153,11 @@ export default function Clients() {
     <div className="animate-fade-in space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-display font-semibold tracking-tight">Clientes</h1>
           {!isMobile && (
-            <p className="text-sm text-muted-foreground mt-1">{clients.length} cliente{clients.length !== 1 ? "s" : ""} cadastrado{clients.length !== 1 ? "s" : ""}</p>
+            <>
+              <h1 className="text-3xl font-display font-semibold tracking-tight">Clientes</h1>
+              <p className="text-sm text-muted-foreground mt-1">{clients.length} cliente{clients.length !== 1 ? "s" : ""} cadastrado{clients.length !== 1 ? "s" : ""}</p>
+            </>
           )}
         </div>
         {!isMobile && (

@@ -135,8 +135,12 @@ export default function Contracts() {
     <div className="animate-fade-in space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-display font-semibold tracking-tight">Contratos</h1>
-          {!isMobile && <p className="text-sm text-muted-foreground mt-1">Gestão de contratos e eventos</p>}
+          {!isMobile && (
+            <>
+              <h1 className="text-3xl font-display font-semibold tracking-tight">Contratos</h1>
+              <p className="text-sm text-muted-foreground mt-1">Gestão de contratos e eventos</p>
+            </>
+          )}
         </div>
         {!isMobile && (
           <div className="flex gap-2">
