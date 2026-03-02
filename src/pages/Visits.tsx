@@ -448,12 +448,19 @@ export default function Visits() {
 
       {/* Create Modal */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className={isMobile ? "max-w-[100vw] w-full h-[100dvh] max-h-[100dvh] rounded-none border-0 flex flex-col p-0" : "max-w-md"}>
+        <DialogContent hideClose={isMobile} className={isMobile ? "max-w-[100vw] w-full h-[100dvh] max-h-[100dvh] rounded-none border-0 flex flex-col p-0" : "max-w-md"}>
           {isMobile ? (
             <>
               {/* Fixed Header */}
-              <div className="shrink-0 flex items-center justify-center border-b border-border px-4" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 12px)", paddingBottom: "12px" }}>
+              <div className="shrink-0 flex items-center justify-between border-b border-border px-4" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 12px)", paddingBottom: "12px" }}>
                 <h2 className="text-lg font-display font-semibold">Nova Visita</h2>
+                <button
+                  onClick={() => setModalOpen(false)}
+                  className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-muted"
+                  aria-label="Fechar"
+                >
+                  <XIcon size={20} />
+                </button>
               </div>
               {/* Scrollable Body */}
               <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
@@ -566,7 +573,7 @@ export default function Visits() {
 
       {/* Detail Modal */}
       <Dialog open={!!detailVisit} onOpenChange={(open) => { if (!open) { setDetailVisit(null); setEditing(false); } }}>
-        <DialogContent className={isMobile ? "max-w-[100vw] w-full h-[100dvh] max-h-[100dvh] rounded-none border-0 flex flex-col p-0" : "max-w-md"}>
+        <DialogContent hideClose={isMobile} className={isMobile ? "max-w-[100vw] w-full h-[100dvh] max-h-[100dvh] rounded-none border-0 flex flex-col p-0" : "max-w-md"}>
           {detailVisit && (
             isMobile ? (
               <>

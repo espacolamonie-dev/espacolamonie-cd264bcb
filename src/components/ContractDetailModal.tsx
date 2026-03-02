@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { CalendarDays, Users, DollarSign, FileText, Plus, AlertTriangle, Upload, Trash2, Download, FileOutput, ShieldCheck, Monitor, Smartphone, Globe, Hash, Clock, Pencil } from "lucide-react";
+import { CalendarDays, Users, DollarSign, FileText, Plus, AlertTriangle, Upload, Trash2, Download, FileOutput, ShieldCheck, Monitor, Smartphone, Globe, Hash, Clock, Pencil, X } from "lucide-react";
 import GenerateContractModal from "@/components/GenerateContractModal";
 import ContractTimeline from "@/components/ContractTimeline";
 import { supabase } from "@/integrations/supabase/client";
@@ -202,16 +202,35 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
 
   return (
     <Dialog open={true} onOpenChange={() => onClose()}>
-      <DialogContent className={isMobile ? "max-w-[100vw] w-full h-full max-h-full rounded-none p-0 flex flex-col border-0" : "max-w-2xl max-h-[90vh] overflow-y-auto"}>
-        <div className={isMobile ? "flex-1 overflow-y-auto px-4 pb-40" : ""} style={isMobile ? { paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)" } : undefined}>
-          <DialogHeader className={isMobile ? "pb-3" : ""}>
-            <DialogTitle className="font-display text-lg flex items-center gap-2 flex-wrap">
-              Detalhes do Contrato
-              <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-medium ${CONTRACT_STATUS_COLORS[contract.status]}`}>
+      <DialogContent hideClose={isMobile} className={isMobile ? "max-w-[100vw] w-full h-[100dvh] max-h-[100dvh] rounded-none p-0 flex flex-col border-0" : "max-w-2xl max-h-[90vh] overflow-y-auto"}>
+        {isMobile && (
+          <div className="shrink-0 flex items-center justify-between border-b border-border px-4" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 12px)", paddingBottom: "12px" }}>
+            <div className="flex items-center gap-2 flex-wrap min-w-0">
+              <h2 className="text-lg font-display font-semibold">Detalhes do Contrato</h2>
+              <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-medium shrink-0 ${CONTRACT_STATUS_COLORS[contract.status]}`}>
                 {CONTRACT_STATUS_LABELS[contract.status]}
               </span>
-            </DialogTitle>
-          </DialogHeader>
+            </div>
+            <button
+              onClick={onClose}
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-muted shrink-0"
+              aria-label="Fechar"
+            >
+              <X size={20} />
+            </button>
+          </div>
+        )}
+        <div className={isMobile ? "flex-1 overflow-y-auto px-4 pb-40" : ""}>
+          {!isMobile && (
+            <DialogHeader>
+              <DialogTitle className="font-display text-lg flex items-center gap-2 flex-wrap">
+                Detalhes do Contrato
+                <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-medium ${CONTRACT_STATUS_COLORS[contract.status]}`}>
+                  {CONTRACT_STATUS_LABELS[contract.status]}
+                </span>
+              </DialogTitle>
+            </DialogHeader>
+          )}
 
           {contract.status === "cancelled" && (
             <div className="flex items-center gap-2.5 rounded-md border border-danger/20 bg-danger/5 p-3 text-sm">

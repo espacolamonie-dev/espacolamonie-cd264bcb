@@ -251,11 +251,25 @@ export default function Clients() {
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="font-display text-xl">{editing ? "Editar cliente" : "Novo cliente"}</DialogTitle>
-            <p className="text-xs text-muted-foreground mt-1">{editing ? "Atualize as informações do cliente" : "Preencha os dados para cadastrar um novo cliente"}</p>
-          </DialogHeader>
+        <DialogContent hideClose={isMobile} className={isMobile ? "max-w-[100vw] w-full h-[100dvh] max-h-[100dvh] rounded-none border-0 flex flex-col p-0" : "max-w-lg max-h-[90vh] overflow-y-auto"}>
+          {isMobile && (
+            <div className="shrink-0 flex items-center justify-between border-b border-border px-4" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 12px)", paddingBottom: "12px" }}>
+              <div>
+                <h2 className="text-lg font-display font-semibold">{editing ? "Editar cliente" : "Novo cliente"}</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">{editing ? "Atualize as informações" : "Preencha os dados"}</p>
+              </div>
+              <button onClick={() => setOpen(false)} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-muted" aria-label="Fechar">
+                <Plus size={20} className="rotate-45" />
+              </button>
+            </div>
+          )}
+          {!isMobile && (
+            <DialogHeader>
+              <DialogTitle className="font-display text-xl">{editing ? "Editar cliente" : "Novo cliente"}</DialogTitle>
+              <p className="text-xs text-muted-foreground mt-1">{editing ? "Atualize as informações do cliente" : "Preencha os dados para cadastrar um novo cliente"}</p>
+            </DialogHeader>
+          )}
+          <div className={isMobile ? "flex-1 overflow-y-auto px-4 py-5" : ""}>
           <div className="grid gap-5 py-3">
             {/* Personal info */}
             <div className="space-y-4">
@@ -335,8 +349,15 @@ export default function Clients() {
               <Label className="text-xs font-medium text-muted-foreground">Observações</Label>
               <Textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={3} className="rounded-lg" placeholder="Informações adicionais sobre o cliente (opcional)" />
             </div>
-            <Button onClick={handleSave} className="mt-1 rounded-lg h-10">{editing ? "Salvar cliente" : "Cadastrar cliente"}</Button>
+            {isMobile ? null : <Button onClick={handleSave} className="mt-1 rounded-lg h-10">{editing ? "Salvar cliente" : "Cadastrar cliente"}</Button>}
           </div>
+          </div>
+          {isMobile && (
+            <div className="shrink-0 flex flex-col gap-2 px-4 pt-3 border-t border-border bg-background" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 16px)" }}>
+              <Button onClick={handleSave} className="h-12 w-full font-semibold rounded-lg">{editing ? "Salvar cliente" : "Cadastrar cliente"}</Button>
+              <Button variant="outline" className="h-12 w-full rounded-lg" onClick={() => setOpen(false)}>Cancelar</Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 

@@ -302,12 +302,26 @@ export default function Contracts() {
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="font-display text-xl">{editing ? "Editar contrato" : "Novo contrato"}</DialogTitle>
-            <p className="text-xs text-muted-foreground mt-1">{editing ? "Atualize as informações do contrato" : "Preencha os dados para criar um novo contrato"}</p>
-          </DialogHeader>
-          <div className="grid gap-5 py-3">
+        <DialogContent hideClose={isMobile} className={isMobile ? "max-w-[100vw] w-full h-[100dvh] max-h-[100dvh] rounded-none border-0 flex flex-col p-0" : "max-w-lg max-h-[90vh] overflow-y-auto"}>
+          {isMobile && (
+            <div className="shrink-0 flex items-center justify-between border-b border-border px-4" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 12px)", paddingBottom: "12px" }}>
+              <div>
+                <h2 className="text-lg font-display font-semibold">{editing ? "Editar contrato" : "Novo contrato"}</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">{editing ? "Atualize as informações" : "Preencha os dados"}</p>
+              </div>
+              <button onClick={() => setOpen(false)} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-muted" aria-label="Fechar">
+                <Plus size={20} className="rotate-45" />
+              </button>
+            </div>
+          )}
+          {!isMobile && (
+            <DialogHeader>
+              <DialogTitle className="font-display text-xl">{editing ? "Editar contrato" : "Novo contrato"}</DialogTitle>
+              <p className="text-xs text-muted-foreground mt-1">{editing ? "Atualize as informações do contrato" : "Preencha os dados para criar um novo contrato"}</p>
+            </DialogHeader>
+          )}
+          <div className={isMobile ? "flex-1 overflow-y-auto px-4 py-5" : ""}>
+            <div className="grid gap-5">
             {/* Step 1: Client & Event */}
             <div className="space-y-4">
               <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Cliente e evento</p>
@@ -388,9 +402,16 @@ export default function Contracts() {
                 </div>
               )}
             </div>
-
-            <Button onClick={handleSave} className="mt-1 rounded-lg h-10">{editing ? "Salvar contrato" : "Criar contrato"}</Button>
+            </div>
           </div>
+          {isMobile ? (
+            <div className="shrink-0 flex flex-col gap-2 px-4 pt-3 border-t border-border bg-background" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 16px)" }}>
+              <Button onClick={handleSave} className="h-12 w-full font-semibold rounded-lg">{editing ? "Salvar contrato" : "Criar contrato"}</Button>
+              <Button variant="outline" className="h-12 w-full rounded-lg" onClick={() => setOpen(false)}>Cancelar</Button>
+            </div>
+          ) : (
+            <Button onClick={handleSave} className="mt-1 rounded-lg h-10">{editing ? "Salvar contrato" : "Criar contrato"}</Button>
+          )}
         </DialogContent>
       </Dialog>
 
