@@ -416,68 +416,119 @@ export default function Visits() {
 
       {/* Create Modal */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className={isMobile ? "max-w-[100vw] w-full h-full max-h-full rounded-none border-0 flex flex-col p-0" : "max-w-md"}>
-          <div className={isMobile ? "flex-1 overflow-y-auto px-4 pb-32" : ""} style={isMobile ? { paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)" } : undefined}>
-          <DialogHeader>
-            <DialogTitle className="font-display">Nova Visita</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 flex-1 overflow-y-auto">
-            <div>
-              <Label>Nome do cliente *</Label>
-              <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Nome completo" className="h-12" />
-            </div>
-            <div>
-              <Label>Telefone *</Label>
-              <Input
-                type="tel"
-                value={formPhone}
-                onChange={(e) => setFormPhone(phoneMask(e.target.value))}
-                placeholder="(00) 00000-0000"
-                className="h-12"
-              />
-            </div>
-            <div>
-              <Label>Data de interesse do evento (opcional)</Label>
-              <Input type="date" value={formInterestDate} onChange={(e) => setFormInterestDate(e.target.value)} className="h-12" />
-            </div>
-            {dateConflicts.length > 0 && (
-              <Alert variant="default" className="border-warning/50 bg-warning/10">
-                <AlertTriangle className="h-4 w-4 text-warning" />
-                <AlertTitle className="text-warning font-semibold text-sm">
-                  Atenção: já existe interesse nesta data
-                </AlertTitle>
-                <AlertDescription className="text-xs space-y-1 mt-1">
-                  {dateConflicts.map((c, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <span className="font-medium">{c.name}</span>
-                      <span className="text-muted-foreground">({c.phone})</span>
-                      <Badge variant="outline" className="text-[9px] px-1.5 py-0">{c.type} — {c.stage}</Badge>
-                    </div>
-                  ))}
-                  <p className="text-muted-foreground mt-1">Você ainda pode salvar normalmente.</p>
-                </AlertDescription>
-              </Alert>
-            )}
-            <div>
-              <Label>Data da visita *</Label>
-              <Input type="date" value={formVisitDate} onChange={(e) => setFormVisitDate(e.target.value)} className="h-12" />
-            </div>
-            <div>
-              <Label>Horário *</Label>
-              <Input type="time" value={formVisitTime} onChange={(e) => setFormVisitTime(e.target.value)} className="h-12" />
-            </div>
-            <div>
-              <Label>Observações</Label>
-              <Textarea value={formNotes} onChange={(e) => setFormNotes(e.target.value)} placeholder="Anotações..." rows={3} />
-            </div>
-          </div>
-          </div>
-          <DialogFooter className={isMobile ? "sticky bottom-0 bg-background p-4 border-t border-border" : ""} style={isMobile ? { paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 16px)" } : undefined}>
-            <Button variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button>
-            <Button onClick={handleCreate} disabled={saving} className="h-12 font-semibold">
-              {saving ? "Agendando..." : "Salvar visita"}
-            </Button>
-          </DialogFooter>
+        <DialogContent className={isMobile ? "max-w-[100vw] w-full h-[100dvh] max-h-[100dvh] rounded-none border-0 flex flex-col p-0" : "max-w-md"}>
+          {isMobile ? (
+            <>
+              {/* Fixed Header */}
+              <div className="shrink-0 flex items-center justify-center border-b border-border px-4" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 12px)", paddingBottom: "12px" }}>
+                <h2 className="text-lg font-display font-semibold">Nova Visita</h2>
+              </div>
+              {/* Scrollable Body */}
+              <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
+                <div>
+                  <Label>Nome do cliente *</Label>
+                  <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Nome completo" className="h-12" autoFocus />
+                </div>
+                <div>
+                  <Label>Telefone *</Label>
+                  <Input type="tel" value={formPhone} onChange={(e) => setFormPhone(phoneMask(e.target.value))} placeholder="(00) 00000-0000" className="h-12" />
+                </div>
+                <div>
+                  <Label>Data de interesse do evento (opcional)</Label>
+                  <Input type="date" value={formInterestDate} onChange={(e) => setFormInterestDate(e.target.value)} className="h-12" />
+                </div>
+                {dateConflicts.length > 0 && (
+                  <Alert variant="default" className="border-warning/50 bg-warning/10">
+                    <AlertTriangle className="h-4 w-4 text-warning" />
+                    <AlertTitle className="text-warning font-semibold text-sm">Atenção: já existe interesse nesta data</AlertTitle>
+                    <AlertDescription className="text-xs space-y-1 mt-1">
+                      {dateConflicts.map((c, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <span className="font-medium">{c.name}</span>
+                          <span className="text-muted-foreground">({c.phone})</span>
+                          <Badge variant="outline" className="text-[9px] px-1.5 py-0">{c.type} — {c.stage}</Badge>
+                        </div>
+                      ))}
+                      <p className="text-muted-foreground mt-1">Você ainda pode salvar normalmente.</p>
+                    </AlertDescription>
+                  </Alert>
+                )}
+                <div>
+                  <Label>Data da visita *</Label>
+                  <Input type="date" value={formVisitDate} onChange={(e) => setFormVisitDate(e.target.value)} className="h-12" />
+                </div>
+                <div>
+                  <Label>Horário *</Label>
+                  <Input type="time" value={formVisitTime} onChange={(e) => setFormVisitTime(e.target.value)} className="h-12" />
+                </div>
+                <div>
+                  <Label>Observações</Label>
+                  <Textarea value={formNotes} onChange={(e) => setFormNotes(e.target.value)} placeholder="Anotações..." rows={3} />
+                </div>
+              </div>
+              {/* Fixed Footer */}
+              <div className="shrink-0 flex flex-col gap-2 px-4 pt-3 border-t border-border bg-background" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 16px)" }}>
+                <Button onClick={handleCreate} disabled={saving} className="h-12 w-full font-semibold">
+                  {saving ? "Agendando..." : "Salvar visita"}
+                </Button>
+                <Button variant="outline" className="h-12 w-full" onClick={() => setModalOpen(false)}>Cancelar</Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle className="font-display">Nova Visita</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label>Nome do cliente *</Label>
+                  <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Nome completo" className="h-12" />
+                </div>
+                <div>
+                  <Label>Telefone *</Label>
+                  <Input type="tel" value={formPhone} onChange={(e) => setFormPhone(phoneMask(e.target.value))} placeholder="(00) 00000-0000" className="h-12" />
+                </div>
+                <div>
+                  <Label>Data de interesse do evento (opcional)</Label>
+                  <Input type="date" value={formInterestDate} onChange={(e) => setFormInterestDate(e.target.value)} className="h-12" />
+                </div>
+                {dateConflicts.length > 0 && (
+                  <Alert variant="default" className="border-warning/50 bg-warning/10">
+                    <AlertTriangle className="h-4 w-4 text-warning" />
+                    <AlertTitle className="text-warning font-semibold text-sm">Atenção: já existe interesse nesta data</AlertTitle>
+                    <AlertDescription className="text-xs space-y-1 mt-1">
+                      {dateConflicts.map((c, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <span className="font-medium">{c.name}</span>
+                          <span className="text-muted-foreground">({c.phone})</span>
+                          <Badge variant="outline" className="text-[9px] px-1.5 py-0">{c.type} — {c.stage}</Badge>
+                        </div>
+                      ))}
+                      <p className="text-muted-foreground mt-1">Você ainda pode salvar normalmente.</p>
+                    </AlertDescription>
+                  </Alert>
+                )}
+                <div>
+                  <Label>Data da visita *</Label>
+                  <Input type="date" value={formVisitDate} onChange={(e) => setFormVisitDate(e.target.value)} className="h-12" />
+                </div>
+                <div>
+                  <Label>Horário *</Label>
+                  <Input type="time" value={formVisitTime} onChange={(e) => setFormVisitTime(e.target.value)} className="h-12" />
+                </div>
+                <div>
+                  <Label>Observações</Label>
+                  <Textarea value={formNotes} onChange={(e) => setFormNotes(e.target.value)} placeholder="Anotações..." rows={3} />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button>
+                <Button onClick={handleCreate} disabled={saving} className="h-12 font-semibold">
+                  {saving ? "Agendando..." : "Salvar visita"}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 
