@@ -8,7 +8,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/financial": "Financeiro",
   "/agenda": "Agenda",
   "/reports": "Relatórios",
-  "/visits": "Agendar Visita",
+  "/visits": "Visitas",
   "/leads": "Leads WhatsApp",
   "/settings": "Configurações",
 };

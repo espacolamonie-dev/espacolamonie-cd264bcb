@@ -390,7 +390,7 @@ export default function Contracts() {
         </DialogContent>
       </Dialog>
 
-      {detailId && <ContractDetailModal contractId={detailId} onClose={() => { setDetailId(null); load(); }} />}
+      {detailId && <ContractDetailModal contractId={detailId} onClose={() => { setDetailId(null); load(); }} onEdit={() => { const c = contracts.find(x => x.id === detailId); if (c) openEdit(c); }} />}
 
       <ImportContractModal open={importOpen} onOpenChange={setImportOpen} onImported={load} />
 
