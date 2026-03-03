@@ -6,6 +6,8 @@ const getUserId = async (): Promise<string> => {
   return user.id;
 };
 
+export type LeadSource = "Orgânico" | "Tráfego Pago";
+
 export interface Visit {
   id: string;
   clientName: string;
@@ -15,6 +17,7 @@ export interface Visit {
   visitTime: string;
   notes: string;
   status: string;
+  leadSource: LeadSource;
   googleEventId: string | null;
   createdAt: string;
   updatedAt: string;
@@ -30,6 +33,7 @@ function mapVisit(row: any): Visit {
     visitTime: row.visit_time,
     notes: row.notes || "",
     status: row.status,
+    leadSource: row.lead_source || "Orgânico",
     googleEventId: row.google_event_id,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -53,6 +57,7 @@ export const addVisit = async (v: {
   visitDate: string;
   visitTime: string;
   notes: string;
+  leadSource?: LeadSource;
 }): Promise<Visit> => {
   const userId = await getUserId();
   const { data, error } = await (supabase.from("visits" as any) as any)
@@ -64,6 +69,7 @@ export const addVisit = async (v: {
       visit_date: v.visitDate,
       visit_time: v.visitTime,
       notes: v.notes,
+      lead_source: v.leadSource || "Orgânico",
     })
     .select()
     .single();
@@ -80,6 +86,7 @@ export const updateVisit = async (id: string, updates: Record<string, any>): Pro
     visitDate: "visit_date",
     visitTime: "visit_time",
     googleEventId: "google_event_id",
+    leadSource: "lead_source",
   };
   for (const [k, v] of Object.entries(updates)) {
     mapped[keyMap[k] || k] = v;
