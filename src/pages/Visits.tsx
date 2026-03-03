@@ -254,10 +254,12 @@ export default function Visits() {
 
       {/* Stats Cards */}
       {(() => {
-        const today = format(new Date(), "yyyy-MM-dd");
+        const todayLocal = new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
+        const today = todayLocal; // yyyy-MM-dd format
+        const toLocalDate = (isoStr: string) => new Date(isoStr).toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
         const activeVisits = visits.filter(v => v.status !== "Cancelada");
         const visitsToday = activeVisits.filter(v => v.visitDate === today).length;
-        const scheduledToday = visits.filter(v => format(new Date(v.createdAt), "yyyy-MM-dd") === today).length;
+        const scheduledToday = visits.filter(v => toLocalDate(v.createdAt) === today).length;
         const organicCount = activeVisits.filter(v => v.leadSource === "Orgânico").length;
         const paidCount = activeVisits.filter(v => v.leadSource === "Tráfego Pago").length;
         const totalLeads = organicCount + paidCount;
