@@ -273,7 +273,7 @@ export default function Visits() {
             <div className="rounded-xl border border-border bg-card p-4">
               <div className="flex items-center gap-2 text-muted-foreground mb-1">
                 <Plus size={14} />
-                <span className="text-xs font-medium">Agendadas Hoje</span>
+                <span className="text-xs font-medium">Agendadas Hoje - {format(new Date(), "dd/MM")}</span>
               </div>
               <p className="text-2xl font-bold">{scheduledToday}</p>
             </div>
