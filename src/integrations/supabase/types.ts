@@ -786,6 +786,7 @@ export type Database = {
           google_event_id: string | null
           id: string
           interest_event_date: string | null
+          lead_source: string
           notes: string | null
           status: string
           updated_at: string
@@ -800,6 +801,7 @@ export type Database = {
           google_event_id?: string | null
           id?: string
           interest_event_date?: string | null
+          lead_source?: string
           notes?: string | null
           status?: string
           updated_at?: string
@@ -814,6 +816,7 @@ export type Database = {
           google_event_id?: string | null
           id?: string
           interest_event_date?: string | null
+          lead_source?: string
           notes?: string | null
           status?: string
           updated_at?: string

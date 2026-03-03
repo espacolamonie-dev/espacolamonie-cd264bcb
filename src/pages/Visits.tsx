@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { Plus, Search, Phone, CalendarDays, Clock, Filter, Eye, Check, RotateCcw, X as XIcon, AlertTriangle, Pencil } from "lucide-react";
+import { Plus, Search, Phone, CalendarDays, Clock, Filter, Eye, Check, RotateCcw, X as XIcon, AlertTriangle, Pencil, Users, Megaphone, TrendingUp } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { getVisits, addVisit, updateVisit, deleteVisit, type Visit } from "@/data/visitStore";
+import { getVisits, addVisit, updateVisit, deleteVisit, type Visit, type LeadSource } from "@/data/visitStore";
 import { syncVisitToGoogle, deleteVisitGoogleEvent } from "@/lib/visitGoogleSync";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
@@ -56,7 +56,7 @@ export default function Visits() {
   const [editSaving, setEditSaving] = useState(false);
   const [editForm, setEditForm] = useState({
     clientName: "", clientPhone: "", visitDate: "", visitTime: "",
-    interestEventDate: "", notes: "", status: "" as string,
+    interestEventDate: "", notes: "", status: "" as string, leadSource: "Orgânico" as LeadSource,
   });
   const isMobile = useIsMobile();
 
@@ -66,6 +66,7 @@ export default function Visits() {
   const [formVisitDate, setFormVisitDate] = useState("");
   const [formVisitTime, setFormVisitTime] = useState("");
   const [formNotes, setFormNotes] = useState("");
+  const [formLeadSource, setFormLeadSource] = useState<LeadSource>("Orgânico");
   const [dateConflicts, setDateConflicts] = useState<{ name: string; phone: string; stage: string; type: string }[]>([]);
   const loadVisits = useCallback(async () => {
     setLoading(true);
@@ -158,6 +159,7 @@ export default function Visits() {
   const resetForm = () => {
     setFormName(""); setFormPhone(""); setFormInterestDate("");
     setFormVisitDate(""); setFormVisitTime(""); setFormNotes("");
+    setFormLeadSource("Orgânico");
     setDateConflicts([]);
   };
 
@@ -175,6 +177,7 @@ export default function Visits() {
         visitDate: formVisitDate,
         visitTime: formVisitTime,
         notes: formNotes.trim(),
+        leadSource: formLeadSource,
       });
       toast.success("Visita agendada com sucesso!");
       syncVisitToGoogle(visit.id);
@@ -248,6 +251,49 @@ export default function Visits() {
           </Button>
         )}
       </div>
+
+      {/* Stats Cards */}
+      {(() => {
+        const today = format(new Date(), "yyyy-MM-dd");
+        const activeVisits = visits.filter(v => v.status !== "Cancelada");
+        const visitsToday = activeVisits.filter(v => v.visitDate === today).length;
+        const scheduledToday = visits.filter(v => v.createdAt.startsWith(today)).length;
+        const organicCount = activeVisits.filter(v => v.leadSource === "Orgânico").length;
+        const paidCount = activeVisits.filter(v => v.leadSource === "Tráfego Pago").length;
+        const totalLeads = organicCount + paidCount;
+        return (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="rounded-xl border border-border bg-card p-4">
+              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                <CalendarDays size={14} />
+                <span className="text-xs font-medium">Visitas Hoje</span>
+              </div>
+              <p className="text-2xl font-bold">{visitsToday}</p>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-4">
+              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                <Plus size={14} />
+                <span className="text-xs font-medium">Agendadas Hoje</span>
+              </div>
+              <p className="text-2xl font-bold">{scheduledToday}</p>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-4">
+              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                <Users size={14} />
+                <span className="text-xs font-medium">Orgânico</span>
+              </div>
+              <p className="text-2xl font-bold">{organicCount}<span className="text-sm font-normal text-muted-foreground ml-1">/ {totalLeads}</span></p>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-4">
+              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                <Megaphone size={14} />
+                <span className="text-xs font-medium">Tráfego Pago</span>
+              </div>
+              <p className="text-2xl font-bold">{paidCount}<span className="text-sm font-normal text-muted-foreground ml-1">/ {totalLeads}</span></p>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
@@ -501,6 +547,16 @@ export default function Visits() {
                   <Input type="time" value={formVisitTime} onChange={(e) => setFormVisitTime(e.target.value)} className="h-12" />
                 </div>
                 <div>
+                  <Label>Fonte do Lead *</Label>
+                  <Select value={formLeadSource} onValueChange={(v) => setFormLeadSource(v as LeadSource)}>
+                    <SelectTrigger className="h-12"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Orgânico">Orgânico</SelectItem>
+                      <SelectItem value="Tráfego Pago">Tráfego Pago</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
                   <Label>Observações</Label>
                   <Textarea value={formNotes} onChange={(e) => setFormNotes(e.target.value)} placeholder="Anotações..." rows={3} />
                 </div>
@@ -556,6 +612,16 @@ export default function Visits() {
                   <Input type="time" value={formVisitTime} onChange={(e) => setFormVisitTime(e.target.value)} className="h-12" />
                 </div>
                 <div>
+                  <Label>Fonte do Lead *</Label>
+                  <Select value={formLeadSource} onValueChange={(v) => setFormLeadSource(v as LeadSource)}>
+                    <SelectTrigger className="h-12"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Orgânico">Orgânico</SelectItem>
+                      <SelectItem value="Tráfego Pago">Tráfego Pago</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
                   <Label>Observações</Label>
                   <Textarea value={formNotes} onChange={(e) => setFormNotes(e.target.value)} placeholder="Anotações..." rows={3} />
                 </div>
@@ -592,6 +658,7 @@ export default function Visits() {
                             interestEventDate: detailVisit.interestEventDate || "",
                             notes: detailVisit.notes || "",
                             status: detailVisit.status,
+                            leadSource: detailVisit.leadSource || "Orgânico",
                           });
                           setEditing(true);
                         }}
@@ -646,6 +713,16 @@ export default function Visits() {
                         </Select>
                       </div>
                       <div>
+                        <Label>Fonte do Lead</Label>
+                        <Select value={editForm.leadSource} onValueChange={(v) => setEditForm(p => ({ ...p, leadSource: v as LeadSource }))}>
+                          <SelectTrigger className="h-12"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Orgânico">Orgânico</SelectItem>
+                            <SelectItem value="Tráfego Pago">Tráfego Pago</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
                         <Label>Observações</Label>
                         <Textarea value={editForm.notes} onChange={(e) => setEditForm(p => ({ ...p, notes: e.target.value }))} rows={3} />
                       </div>
@@ -658,6 +735,7 @@ export default function Visits() {
                       <div className="flex justify-between"><span className="text-muted-foreground">Data da visita</span><span className="font-medium">{format(new Date(detailVisit.visitDate + "T12:00:00"), "dd/MM/yyyy")}</span></div>
                       <div className="flex justify-between"><span className="text-muted-foreground">Horário</span><span>{detailVisit.visitTime.slice(0, 5)}</span></div>
                       <div className="flex justify-between"><span className="text-muted-foreground">Status</span><Badge className={`text-[10px] font-medium border rounded-full px-2.5 py-0.5 ${VISIT_STATUS_COLORS[detailVisit.status as VisitStatus] || ""}`}>{detailVisit.status}</Badge></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">Fonte do Lead</span><Badge variant="outline" className="text-[10px] font-medium rounded-full px-2.5 py-0.5">{detailVisit.leadSource || "Orgânico"}</Badge></div>
                       {detailVisit.notes && (
                         <div><span className="text-muted-foreground block mb-1">Observações</span><p className="text-sm bg-muted/50 rounded-lg p-3">{detailVisit.notes}</p></div>
                       )}
@@ -683,6 +761,7 @@ export default function Visits() {
                             interestEventDate: editForm.interestEventDate || null,
                             notes: editForm.notes.trim(),
                             status: editForm.status,
+                            leadSource: editForm.leadSource,
                           };
                           await updateVisit(detailVisit.id, updates);
                           // Sync to Google Calendar
@@ -740,6 +819,7 @@ export default function Visits() {
                           interestEventDate: detailVisit.interestEventDate || "",
                           notes: detailVisit.notes || "",
                           status: detailVisit.status,
+                          leadSource: detailVisit.leadSource || "Orgânico",
                         });
                         setEditing(true);
                       }}>
@@ -767,6 +847,16 @@ export default function Visits() {
                         </SelectContent>
                       </Select>
                     </div>
+                    <div>
+                      <Label>Fonte do Lead</Label>
+                      <Select value={editForm.leadSource} onValueChange={(v) => setEditForm(p => ({ ...p, leadSource: v as LeadSource }))}>
+                        <SelectTrigger className="h-12"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Orgânico">Orgânico</SelectItem>
+                          <SelectItem value="Tráfego Pago">Tráfego Pago</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <div><Label>Observações</Label><Textarea value={editForm.notes} onChange={(e) => setEditForm(p => ({ ...p, notes: e.target.value }))} rows={3} /></div>
                     <DialogFooter>
                       <Button variant="outline" onClick={() => setEditing(false)}>Cancelar</Button>
@@ -777,7 +867,7 @@ export default function Visits() {
                           await updateVisit(detailVisit.id, {
                             clientName: editForm.clientName.trim(), clientPhone: editForm.clientPhone.trim(),
                             visitDate: editForm.visitDate, visitTime: editForm.visitTime,
-                            interestEventDate: editForm.interestEventDate || null, notes: editForm.notes.trim(), status: editForm.status,
+                            interestEventDate: editForm.interestEventDate || null, notes: editForm.notes.trim(), status: editForm.status, leadSource: editForm.leadSource,
                           });
                           try { await syncVisitToGoogle(detailVisit.id); toast.success("Visita atualizada e sincronizada!"); } catch { toast.warning("Salvo, mas falhou sincronizar com Google Agenda."); }
                           if (editForm.status === "Cancelada" && detailVisit.googleEventId) { try { await deleteVisitGoogleEvent(detailVisit.id); } catch {} }
@@ -795,6 +885,7 @@ export default function Visits() {
                       <div className="flex justify-between"><span className="text-muted-foreground">Data da visita</span><span className="font-medium">{format(new Date(detailVisit.visitDate + "T12:00:00"), "dd/MM/yyyy")}</span></div>
                       <div className="flex justify-between"><span className="text-muted-foreground">Horário</span><span>{detailVisit.visitTime.slice(0, 5)}</span></div>
                       <div className="flex justify-between"><span className="text-muted-foreground">Status</span><Badge className={`text-[10px] font-medium border rounded-full px-2.5 py-0.5 ${VISIT_STATUS_COLORS[detailVisit.status as VisitStatus] || ""}`}>{detailVisit.status}</Badge></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">Fonte do Lead</span><Badge variant="outline" className="text-[10px] font-medium rounded-full px-2.5 py-0.5">{detailVisit.leadSource || "Orgânico"}</Badge></div>
                       {detailVisit.notes && (<div><span className="text-muted-foreground block mb-1">Observações</span><p className="text-sm bg-muted/50 rounded-lg p-3">{detailVisit.notes}</p></div>)}
                     </div>
                     {detailVisit.status !== "Cancelada" && (
