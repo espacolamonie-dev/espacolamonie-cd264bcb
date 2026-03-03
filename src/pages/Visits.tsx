@@ -254,9 +254,11 @@ export default function Visits() {
 
       {/* Stats Cards */}
       {(() => {
-        const todayLocal = new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
-        const today = todayLocal; // yyyy-MM-dd format
-        const toLocalDate = (isoStr: string) => new Date(isoStr).toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
+        const now = new Date();
+        const spFormatter = new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" });
+        const today = spFormatter.format(now); // yyyy-MM-dd
+        const spDayMonth = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit" }).format(now);
+        const toLocalDate = (isoStr: string) => spFormatter.format(new Date(isoStr));
         const activeVisits = visits.filter(v => v.status !== "Cancelada");
         const visitsToday = activeVisits.filter(v => v.visitDate === today).length;
         const scheduledToday = visits.filter(v => toLocalDate(v.createdAt) === today).length;
@@ -275,7 +277,7 @@ export default function Visits() {
             <div className="rounded-xl border border-border bg-card p-4">
               <div className="flex items-center gap-2 text-muted-foreground mb-1">
                 <Plus size={14} />
-                <span className="text-xs font-medium">Agendadas Hoje - {format(new Date(), "dd/MM")}</span>
+                <span className="text-xs font-medium">Agendadas Hoje - {spDayMonth}</span>
               </div>
               <p className="text-2xl font-bold">{scheduledToday}</p>
             </div>
