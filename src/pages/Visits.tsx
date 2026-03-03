@@ -257,7 +257,7 @@ export default function Visits() {
         const today = format(new Date(), "yyyy-MM-dd");
         const activeVisits = visits.filter(v => v.status !== "Cancelada");
         const visitsToday = activeVisits.filter(v => v.visitDate === today).length;
-        const scheduledToday = visits.filter(v => v.createdAt.startsWith(today)).length;
+        const scheduledToday = visits.filter(v => format(new Date(v.createdAt), "yyyy-MM-dd") === today).length;
         const organicCount = activeVisits.filter(v => v.leadSource === "Orgânico").length;
         const paidCount = activeVisits.filter(v => v.leadSource === "Tráfego Pago").length;
         const totalLeads = organicCount + paidCount;
