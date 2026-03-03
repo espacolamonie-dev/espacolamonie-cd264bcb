@@ -736,6 +736,7 @@ export default function Visits() {
                       <div className="flex justify-between"><span className="text-muted-foreground">Horário</span><span>{detailVisit.visitTime.slice(0, 5)}</span></div>
                       <div className="flex justify-between"><span className="text-muted-foreground">Status</span><Badge className={`text-[10px] font-medium border rounded-full px-2.5 py-0.5 ${VISIT_STATUS_COLORS[detailVisit.status as VisitStatus] || ""}`}>{detailVisit.status}</Badge></div>
                       <div className="flex justify-between"><span className="text-muted-foreground">Fonte do Lead</span><Badge variant="outline" className="text-[10px] font-medium rounded-full px-2.5 py-0.5">{detailVisit.leadSource || "Orgânico"}</Badge></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">Data de cadastro</span><span className="text-sm">{format(new Date(detailVisit.createdAt), "dd/MM/yyyy 'às' HH:mm")}</span></div>
                       {detailVisit.notes && (
                         <div><span className="text-muted-foreground block mb-1">Observações</span><p className="text-sm bg-muted/50 rounded-lg p-3">{detailVisit.notes}</p></div>
                       )}
@@ -886,6 +887,7 @@ export default function Visits() {
                       <div className="flex justify-between"><span className="text-muted-foreground">Horário</span><span>{detailVisit.visitTime.slice(0, 5)}</span></div>
                       <div className="flex justify-between"><span className="text-muted-foreground">Status</span><Badge className={`text-[10px] font-medium border rounded-full px-2.5 py-0.5 ${VISIT_STATUS_COLORS[detailVisit.status as VisitStatus] || ""}`}>{detailVisit.status}</Badge></div>
                       <div className="flex justify-between"><span className="text-muted-foreground">Fonte do Lead</span><Badge variant="outline" className="text-[10px] font-medium rounded-full px-2.5 py-0.5">{detailVisit.leadSource || "Orgânico"}</Badge></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">Data de cadastro</span><span className="text-sm">{format(new Date(detailVisit.createdAt), "dd/MM/yyyy 'às' HH:mm")}</span></div>
                       {detailVisit.notes && (<div><span className="text-muted-foreground block mb-1">Observações</span><p className="text-sm bg-muted/50 rounded-lg p-3">{detailVisit.notes}</p></div>)}
                     </div>
                     {detailVisit.status !== "Cancelada" && (
