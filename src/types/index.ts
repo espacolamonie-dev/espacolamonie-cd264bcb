@@ -44,11 +44,15 @@ export type EventType =
   | "Confraternização"
   | "Evento Corporativo";
 
+export type RentalType = "Locação (1 dia)" | "Locação (2 dias)";
+
 export interface Contract {
   id: string;
   clientId: string;
   eventType: EventType;
   eventDate: string;
+  eventDateEnd?: string;
+  rentalType: RentalType;
   eventTime: string;
   guestCount: number;
   totalValue: number;

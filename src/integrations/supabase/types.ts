@@ -208,6 +208,7 @@ export type Database = {
           deposit_percent: number
           deposit_value: number
           event_date: string
+          event_date_end: string | null
           event_time: string
           event_type: string
           google_event_id: string | null
@@ -215,6 +216,7 @@ export type Database = {
           id: string
           payment_status: string
           remaining_value: number
+          rental_type: string
           status: string
           total_value: number
           user_id: string
@@ -227,6 +229,7 @@ export type Database = {
           deposit_percent?: number
           deposit_value?: number
           event_date: string
+          event_date_end?: string | null
           event_time?: string
           event_type: string
           google_event_id?: string | null
@@ -234,6 +237,7 @@ export type Database = {
           id?: string
           payment_status?: string
           remaining_value?: number
+          rental_type?: string
           status?: string
           total_value?: number
           user_id: string
@@ -246,6 +250,7 @@ export type Database = {
           deposit_percent?: number
           deposit_value?: number
           event_date?: string
+          event_date_end?: string | null
           event_time?: string
           event_type?: string
           google_event_id?: string | null
@@ -253,6 +258,7 @@ export type Database = {
           id?: string
           payment_status?: string
           remaining_value?: number
+          rental_type?: string
           status?: string
           total_value?: number
           user_id?: string
