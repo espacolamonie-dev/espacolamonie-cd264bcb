@@ -2,11 +2,10 @@ import { supabase } from "@/integrations/supabase/client";
 
 const EDGE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-calendar-sync`;
 
-async function getSessionHeaders(): Promise<{ headers: Record<string, string>; session: { access_token: string } } | null> {
+async function getSessionHeaders() {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return null;
   return {
-    session,
     headers: {
       Authorization: `Bearer ${session.access_token}`,
       "Content-Type": "application/json",
@@ -15,26 +14,15 @@ async function getSessionHeaders(): Promise<{ headers: Record<string, string>; s
   };
 }
 
-async function isGoogleConnected(userId: string): Promise<boolean> {
-  const { data: settings } = await supabase
-    .from("google_settings" as never)
-    .select("is_connected")
-    .eq("user_id", userId)
-    .single();
-  return !!(settings as { is_connected: boolean } | null)?.is_connected;
-}
-
 /**
  * Trigger Google Calendar sync for a contract.
- * Called whenever a contract status or payment status changes (not cancelled).
- * Silently fails if Google is not connected.
+ * Called whenever a contract is created, edited, or status changes (not cancelled).
+ * The edge function itself checks if Google is connected — no local pre-check needed.
  */
 export async function triggerGoogleSync(contractId: string): Promise<void> {
   try {
     const ctx = await getSessionHeaders();
     if (!ctx) return;
-    if (!await isGoogleConnected(ctx.session.access_token ? (await supabase.auth.getUser()).data.user?.id ?? "" : "")) return;
-    // Fire and forget — don't block UI
     fetch(EDGE_URL, {
       method: "POST",
       headers: ctx.headers,
