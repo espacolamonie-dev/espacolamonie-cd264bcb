@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { getContracts, getClients, addContract, updateContract, deleteContract } from "@/data/store";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { CONTRACT_STATUS_LABELS, CONTRACT_STATUS_COLORS, PAYMENT_STATUS_LABELS, PAYMENT_STATUS_COLORS } from "@/types";
-import type { Contract, ContractStatus, EventType, Client } from "@/types";
+import type { Contract, ContractStatus, EventType, Client, RentalType } from "@/types";
 import ContractDetailModal from "@/components/ContractDetailModal";
 import { ContractStatusSelect, PaymentStatusSelect } from "@/components/ContractStatusSelect";
 import { CurrencyInput, PercentInput } from "@/components/CurrencyInput";
@@ -26,8 +26,11 @@ const EVENT_TYPES: EventType[] = [
   "Aniversário Adulto", "Aniversário Infantil", "Casamento", "Confraternização", "Evento Corporativo",
 ];
 
+const RENTAL_TYPES: RentalType[] = ["Locação (1 dia)", "Locação (2 dias)"];
+
 const emptyForm = {
-  clientId: "", eventType: "Aniversário Infantil" as EventType, eventDate: "", eventTime: "",
+  clientId: "", eventType: "Aniversário Infantil" as EventType, eventDate: "", eventDateEnd: "",
+  rentalType: "Locação (1 dia)" as RentalType, eventTime: "",
   guestCount: 0, totalValue: 0, depositPercent: 30,
   status: "awaiting_documents" as ContractStatus, paymentStatus: "pending" as Contract["paymentStatus"],
 };
@@ -87,17 +90,18 @@ export default function Contracts() {
 
   const openNew = () => {
     if (clients.length === 0) { toast.error("Cadastre um cliente antes de criar um contrato"); return; }
-    setEditing(null); setForm({ ...emptyForm, clientId: clients[0].id }); setOpen(true);
+    setEditing(null); setForm({ ...emptyForm, clientId: clients[0].id, rentalType: "Locação (1 dia)", eventDateEnd: "" }); setOpen(true);
   };
 
   const openEdit = (c: Contract) => {
     setEditing(c);
-    setForm({ clientId: c.clientId, eventType: c.eventType, eventDate: c.eventDate, eventTime: c.eventTime, guestCount: c.guestCount, totalValue: c.totalValue, depositPercent: c.depositPercent, status: c.status, paymentStatus: c.paymentStatus });
+    setForm({ clientId: c.clientId, eventType: c.eventType, eventDate: c.eventDate, eventDateEnd: c.eventDateEnd || "", rentalType: c.rentalType || "Locação (1 dia)", eventTime: c.eventTime, guestCount: c.guestCount, totalValue: c.totalValue, depositPercent: c.depositPercent, status: c.status, paymentStatus: c.paymentStatus });
     setOpen(true);
   };
 
   const handleSave = async () => {
     if (!form.clientId || !form.eventDate) { toast.error("Cliente e data são obrigatórios"); return; }
+    if (form.rentalType === "Locação (2 dias)" && !form.eventDateEnd) { toast.error("Informe a data fim para locação de 2 dias"); return; }
     if (!editing || form.eventDate !== editing.eventDate) {
       const conflict = contracts.find(
         (c) => c.eventDate === form.eventDate && c.status !== "cancelled" && c.id !== editing?.id
@@ -211,10 +215,11 @@ export default function Contracts() {
                       {statusLabel}
                     </Badge>
                   </div>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
+                   <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
                     <span className="flex items-center gap-1">
                       <CalendarDays size={13} />
                       {formatDateBR(c.eventDate)}
+                      {c.eventDateEnd && ` – ${formatDateBR(c.eventDateEnd)}`}
                     </span>
                     <span className="font-semibold text-foreground">{fmt(c.totalValue)}</span>
                   </div>
@@ -260,7 +265,7 @@ export default function Contracts() {
                         <p className="text-xs text-muted-foreground">{c.eventType}</p>
                       </div>
                     </td>
-                    <td className="hidden sm:table-cell text-muted-foreground tabular-nums text-sm">{formatDateBR(c.eventDate)}</td>
+                    <td className="hidden sm:table-cell text-muted-foreground tabular-nums text-sm">{formatDateBR(c.eventDate)}{c.eventDateEnd && ` – ${formatDateBR(c.eventDateEnd)}`}</td>
                     <td className="hidden lg:table-cell text-right font-semibold tabular-nums text-sm">
                       {isCancelled ? <span className="text-muted-foreground line-through">{fmt(c.totalValue)}</span> : fmt(c.totalValue)}
                     </td>
@@ -343,9 +348,25 @@ export default function Contracts() {
                 </Select>
               </div>
               <div className="grid gap-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">Data do evento *</Label>
+                <Label className="text-xs font-medium text-muted-foreground">Tipo de locação</Label>
+                <Select value={form.rentalType} onValueChange={(v) => {
+                  set("rentalType", v);
+                  if (v === "Locação (1 dia)") set("eventDateEnd", "");
+                }}>
+                  <SelectTrigger className="rounded-lg"><SelectValue /></SelectTrigger>
+                  <SelectContent>{RENTAL_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-1.5">
+                <Label className="text-xs font-medium text-muted-foreground">{form.rentalType === "Locação (2 dias)" ? "Data início *" : "Data do evento *"}</Label>
                 <Input type="date" value={form.eventDate} onChange={(e) => set("eventDate", e.target.value)} className="rounded-lg" />
               </div>
+              {form.rentalType === "Locação (2 dias)" && (
+                <div className="grid gap-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground">Data fim *</Label>
+                  <Input type="date" value={form.eventDateEnd} onChange={(e) => set("eventDateEnd", e.target.value)} className="rounded-lg" min={form.eventDate || undefined} />
+                </div>
+              )}
               <div className="grid gap-1.5">
                 <Label className="text-xs font-medium text-muted-foreground">Convidados</Label>
                 <NumericInput value={form.guestCount} onChange={(v) => set("guestCount", v)} placeholder="Nº de convidados" />

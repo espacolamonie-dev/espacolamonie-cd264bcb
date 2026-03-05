@@ -39,7 +39,8 @@ export const getContracts = async () => {
 };
 
 export const addContract = async (c: {
-  clientId: string; eventType: string; eventDate: string; eventTime: string;
+  clientId: string; eventType: string; eventDate: string; eventDateEnd?: string;
+  rentalType?: string; eventTime: string;
   guestCount: number; totalValue: number; depositPercent: number;
   status: string; paymentStatus: string;
 }) => {
@@ -50,6 +51,8 @@ export const addContract = async (c: {
     client_id: c.clientId,
     event_type: c.eventType,
     event_date: c.eventDate,
+    event_date_end: c.eventDateEnd || null,
+    rental_type: c.rentalType || "Locação (1 dia)",
     event_time: c.eventTime,
     guest_count: c.guestCount,
     total_value: c.totalValue,
@@ -80,6 +83,7 @@ export const updateContract = async (id: string, updates: Record<string, any>) =
   const mapped: Record<string, any> = {};
   const keyMap: Record<string, string> = {
     clientId: "client_id", eventType: "event_type", eventDate: "event_date",
+    eventDateEnd: "event_date_end", rentalType: "rental_type",
     eventTime: "event_time", guestCount: "guest_count", totalValue: "total_value",
     depositPercent: "deposit_percent", depositValue: "deposit_value",
     remainingValue: "remaining_value", paymentStatus: "payment_status",
@@ -319,6 +323,8 @@ function mapContract(row: any) {
     clientId: row.client_id,
     eventType: row.event_type,
     eventDate: row.event_date,
+    eventDateEnd: row.event_date_end || undefined,
+    rentalType: row.rental_type || "Locação (1 dia)",
     eventTime: row.event_time || "",
     guestCount: Number(row.guest_count),
     totalValue: Number(row.total_value),
