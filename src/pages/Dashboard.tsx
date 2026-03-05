@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { parseLocalDate, formatDateBR } from "@/lib/dateUtils";
 import {
   FileText, CheckCircle, Clock, CalendarDays, TrendingUp, TrendingDown, Wallet,
   Plus, DollarSign, AlertTriangle, ArrowRight, Receipt,
@@ -61,7 +62,7 @@ export default function Dashboard() {
           (c) => c.paymentStatus === "pending" || c.paymentStatus === "deposit_paid"
         ).length;
         const future = active.filter(
-          (c) => new Date(c.eventDate) >= new Date()
+          (c) => parseLocalDate(c.eventDate) >= new Date()
         );
 
         const unsignedCount = active.filter(
@@ -69,7 +70,7 @@ export default function Dashboard() {
         ).length;
         const sevenDaysFromNow = addDays(new Date(), 7);
         const urgentPayments = active.filter(
-          (c) => c.paymentStatus !== "paid_full" && new Date(c.eventDate) <= sevenDaysFromNow && new Date(c.eventDate) >= new Date()
+          (c) => c.paymentStatus !== "paid_full" && parseLocalDate(c.eventDate) <= sevenDaysFromNow && parseLocalDate(c.eventDate) >= new Date()
         ).length;
         setAlerts({ unsignedCount, urgentPayments });
 
@@ -84,7 +85,7 @@ export default function Dashboard() {
 
         setUpcoming(
           future
-            .sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime())
+            .sort((a, b) => parseLocalDate(a.eventDate).getTime() - parseLocalDate(b.eventDate).getTime())
             .slice(0, 5)
             .map((c) => ({ ...c, clientName: clientMap[c.clientId] || "—" }))
         );
@@ -92,7 +93,7 @@ export default function Dashboard() {
         setPendingPayments(
           active
             .filter((c) => c.paymentStatus !== "paid_full")
-            .sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime())
+            .sort((a, b) => parseLocalDate(a.eventDate).getTime() - parseLocalDate(b.eventDate).getTime())
             .slice(0, 5)
             .map((c) => ({ ...c, clientName: clientMap[c.clientId] || "—" }))
         );
@@ -330,7 +331,7 @@ export default function Dashboard() {
                       <p className="text-xs text-muted-foreground">{ev.eventType}</p>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-sm font-medium tabular-nums">{new Date(ev.eventDate).toLocaleDateString("pt-BR")}</p>
+                      <p className="text-sm font-medium tabular-nums">{formatDateBR(ev.eventDate)}</p>
                       <p className="text-xs text-muted-foreground">{ev.eventTime}</p>
                     </div>
                   </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { parseLocalDate, formatDateBR } from "@/lib/dateUtils";
 import { useSearchParams } from "react-router-dom";
 import { Plus, Search, Eye, Pencil, Upload, Trash2, CalendarDays } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -76,7 +77,7 @@ export default function Contracts() {
     if (paymentFilter === "pending_urgent") {
       const sevenDays = new Date();
       sevenDays.setDate(sevenDays.getDate() + 7);
-      const eventDate = new Date(c.eventDate);
+      const eventDate = parseLocalDate(c.eventDate);
       matchPayment = c.paymentStatus !== "paid_full" && c.status !== "cancelled" && eventDate >= new Date() && eventDate <= sevenDays;
     } else if (paymentFilter !== "all") {
       matchPayment = c.paymentStatus === paymentFilter;
@@ -103,7 +104,7 @@ export default function Contracts() {
       );
       if (conflict) {
         const conflictClient = clientMap[conflict.clientId]?.name || "outro evento";
-        toast.error(`Data bloqueada! Já existe um evento em ${new Date(form.eventDate).toLocaleDateString("pt-BR")} (${conflictClient})`);
+        toast.error(`Data bloqueada! Já existe um evento em ${formatDateBR(form.eventDate)} (${conflictClient})`);
         return;
       }
     }
@@ -211,7 +212,7 @@ export default function Contracts() {
                   <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
                     <span className="flex items-center gap-1">
                       <CalendarDays size={13} />
-                      {new Date(c.eventDate).toLocaleDateString("pt-BR")}
+                      {formatDateBR(c.eventDate)}
                     </span>
                     <span className="font-semibold text-foreground">{fmt(c.totalValue)}</span>
                   </div>
@@ -257,7 +258,7 @@ export default function Contracts() {
                         <p className="text-xs text-muted-foreground">{c.eventType}</p>
                       </div>
                     </td>
-                    <td className="hidden sm:table-cell text-muted-foreground tabular-nums text-sm">{new Date(c.eventDate).toLocaleDateString("pt-BR")}</td>
+                    <td className="hidden sm:table-cell text-muted-foreground tabular-nums text-sm">{formatDateBR(c.eventDate)}</td>
                     <td className="hidden lg:table-cell text-right font-semibold tabular-nums text-sm">
                       {isCancelled ? <span className="text-muted-foreground line-through">{fmt(c.totalValue)}</span> : fmt(c.totalValue)}
                     </td>
