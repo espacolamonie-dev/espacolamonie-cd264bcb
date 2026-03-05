@@ -117,6 +117,8 @@ export default function Contracts() {
         }
         await updateContract(editing.id, updates);
         toast.success("Contrato salvo com sucesso");
+        // Sync to Google Calendar on edit too
+        triggerGoogleSync(editing.id);
       } else {
         const newContract = await addContract(form);
         toast.success("Contrato criado com sucesso");
