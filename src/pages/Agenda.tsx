@@ -247,8 +247,23 @@ export default function Agenda() {
     );
   }
 
+  const totalContracts = activeContracts.length;
+  const totalVisits = visitsList.filter((v) => v.status !== "Cancelada").length;
+
   return (
     <div className="animate-fade-in space-y-6">
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="rounded-xl border border-border bg-card p-4">
+          <p className="text-xs text-muted-foreground">Contratos ativos</p>
+          <p className="text-2xl font-display font-semibold mt-1">{totalContracts}</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <p className="text-xs text-muted-foreground">Visitas agendadas</p>
+          <p className="text-2xl font-display font-semibold mt-1">{totalVisits}</p>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
