@@ -84,7 +84,7 @@ CLÁUSULA 3 – DO CANCELAMENTO
 
 CLÁUSULA 4 – DO USO DO ESPAÇO
 4.1. O espaço destina-se exclusivamente a eventos privados, sendo vedada qualquer atividade comercial, cobrança de ingressos ou divulgação pública.
-4.2. A capacidade máxima é de 120 pessoas, sendo o controle de público de responsabilidade do LOCATÁRIO.
+4.2. A capacidade máxima é de 150 pessoas, sendo o controle de público de responsabilidade do LOCATÁRIO.
 4.3. O uso de som será restrito a som ambiente já instalado no espaço para utilização, sendo proibidos DJs, bandas ou equipamentos profissionais.
 
 CLÁUSULA 5 – DA RESPONSABILIDADE
@@ -253,7 +253,7 @@ async function generatePDF(contract: Contract, client: Client): Promise<Blob> {
   addText("CLÁUSULA 4 – DO USO DO ESPAÇO", { bold: true, size: 11 });
   addSpace(1);
   addText("4.1. O espaço destina-se exclusivamente a eventos privados, sendo vedada qualquer atividade comercial, cobrança de ingressos ou divulgação pública.");
-  addText("4.2. A capacidade máxima é de 120 pessoas, sendo o controle de público de responsabilidade do LOCATÁRIO.");
+  addText("4.2. A capacidade máxima é de 150 pessoas, sendo o controle de público de responsabilidade do LOCATÁRIO.");
   addText("4.3. O uso de som será restrito a som ambiente já instalado no espaço para utilização, sendo proibidos DJs, bandas ou equipamentos profissionais.");
   addSpace(3);
 
