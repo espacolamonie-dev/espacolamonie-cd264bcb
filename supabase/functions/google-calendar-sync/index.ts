@@ -162,6 +162,91 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (action === 'sync-all-contracts') {
+      // Sync ALL non-cancelled contracts to Google Calendar
+      if (!settings?.is_connected) {
+        return new Response(JSON.stringify({ error: 'Not connected to Google Calendar' }), { status: 400, headers: corsHeaders });
+      }
+
+      const { data: allContracts } = await supabase.from('contracts').select('*').eq('user_id', user.id).neq('status', 'cancelled');
+      if (!allContracts || allContracts.length === 0) {
+        return new Response(JSON.stringify({ success: true, synced: 0 }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      const clientIds = [...new Set(allContracts.map((c: any) => c.client_id))];
+      const { data: allClients } = await supabase.from('clients').select('*').in('id', clientIds);
+      const clientMap: Record<string, any> = {};
+      (allClients || []).forEach((c: any) => { clientMap[c.id] = c; });
+
+      const token = await getValidToken(supabase, user.id, settings);
+      const calendarId = settings.calendar_id || 'primary';
+      let synced = 0;
+
+      for (const contract of allContracts) {
+        try {
+          const client = clientMap[contract.client_id];
+          if (!client) continue;
+
+          const title = `Lamoniê — ${client.name} — ${contract.event_type}`;
+          const description = buildDescription(contract, client);
+          const colorId = PAYMENT_COLOR_IDS[contract.payment_status] || '5';
+
+          const endDate = new Date(contract.event_date + 'T12:00:00');
+          endDate.setDate(endDate.getDate() + 1);
+          const endDateStr = endDate.toISOString().split('T')[0];
+
+          const eventBody = {
+            summary: title, description,
+            location: 'Espaço Lamoniê — Endereço do espaço',
+            start: { date: contract.event_date },
+            end: { date: endDateStr },
+            colorId,
+            extendedProperties: { private: { contract_id: contract.id, crm: 'lamonie' } },
+          };
+
+          let googleEventId = contract.google_event_id;
+          let googleRes;
+          let resBody;
+
+          if (googleEventId) {
+            googleRes = await fetch(
+              `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${googleEventId}`,
+              { method: 'PUT', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(eventBody) }
+            );
+            resBody = await googleRes.json();
+            if (!googleRes.ok && googleRes.status === 404) googleEventId = null;
+          }
+
+          if (!googleEventId) {
+            googleRes = await fetch(
+              `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`,
+              { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(eventBody) }
+            );
+            resBody = await googleRes.json();
+            if (googleRes!.ok && resBody.id) {
+              googleEventId = resBody.id;
+              await supabase.from('contracts').update({ google_event_id: googleEventId }).eq('id', contract.id);
+            }
+          }
+
+          if (googleRes?.ok) synced++;
+        } catch (err) {
+          console.error(`Failed to sync contract ${contract.id}:`, err);
+        }
+      }
+
+      await supabase.from('google_sync_logs').insert({
+        user_id: user.id,
+        action: 'sync-all-contracts',
+        status: 'success',
+        message: `Bulk synced ${synced}/${allContracts.length} contracts`,
+      });
+
+      return new Response(JSON.stringify({ success: true, synced, total: allContracts.length }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     if (action === 'sync-contract') {
       // Create or update a Google Calendar event for a contract
       // Never sync cancelled contracts
