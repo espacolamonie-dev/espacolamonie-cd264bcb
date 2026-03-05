@@ -166,6 +166,7 @@ export default function Settings() {
   const [selectedCalendar, setSelectedCalendar] = useState<string>("");
   const [calendarLoading, setCalendarLoading] = useState(false);
   const [connectLoading, setConnectLoading] = useState(false);
+  const [syncAllLoading, setSyncAllLoading] = useState(false);
   const [logs, setLogs] = useState<Record<string, unknown>[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
   const { toast } = useToast();
@@ -252,6 +253,34 @@ export default function Settings() {
     const cal = calendars.find((c) => c.id === selectedCalendar);
     await setCalendar(selectedCalendar, cal?.summary || selectedCalendar);
     await fetchSettings();
+  };
+
+  const handleSyncAll = async () => {
+    setSyncAllLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Não autenticado");
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-calendar-sync`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({ action: "sync-all-contracts" }),
+        }
+      );
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Erro");
+      toast({ title: `✅ ${json.synced}/${json.total} contratos sincronizados` });
+      loadLogs();
+    } catch (e: any) {
+      toast({ title: "Erro ao sincronizar", description: e.message, variant: "destructive" });
+    } finally {
+      setSyncAllLoading(false);
+    }
   };
 
   const handleSaveCompany = async () => {
@@ -502,6 +531,16 @@ export default function Settings() {
                     <SettingRow label="Remover ao cancelar contrato">
                       <Switch defaultChecked />
                     </SettingRow>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSyncAll}
+                      disabled={syncAllLoading}
+                      className="gap-2 w-full mt-2"
+                    >
+                      {syncAllLoading ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                      Sincronizar todos os contratos
+                    </Button>
                   </div>
 
                   {/* Sync logs */}
