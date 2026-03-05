@@ -271,6 +271,50 @@ export default function Financial() {
         </div>
       </div>
 
+      {/* Receivables Summary */}
+      {(() => {
+        const activeContracts = contracts.filter(c => c.status !== "cancelled");
+        const depositPaid = activeContracts.filter(c => c.paymentStatus === "deposit_paid");
+        const pending = activeContracts.filter(c => c.paymentStatus === "pending");
+        const remainingFromDeposit = depositPaid.reduce((s, c) => s + c.remainingValue, 0);
+        const pendingDepositTotal = pending.reduce((s, c) => s + (c.totalValue * c.depositPercent / 100), 0);
+        const totalReceivable = activeContracts.reduce((s, c) => s + c.remainingValue, 0);
+        return (
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="stat-card !border-warning/20">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="rounded-full bg-warning/10 p-2">
+                  <HandCoins size={14} className="text-warning" />
+                </div>
+                <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider">Restante (sinal pago)</p>
+              </div>
+              <p className="text-2xl font-display font-bold text-warning tracking-tight">{fmt(remainingFromDeposit)}</p>
+              <p className="text-[11px] text-muted-foreground mt-1">{depositPaid.length} contrato(s) com sinal pago</p>
+            </div>
+            <div className="stat-card !border-danger/20">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="rounded-full bg-danger/10 p-2">
+                  <CreditCard size={14} className="text-danger" />
+                </div>
+                <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider">Sinal pendente</p>
+              </div>
+              <p className="text-2xl font-display font-bold text-danger tracking-tight">{fmt(pendingDepositTotal)}</p>
+              <p className="text-[11px] text-muted-foreground mt-1">{pending.length} contrato(s) sem pagamento</p>
+            </div>
+            <div className="stat-card !border-primary/20">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="rounded-full bg-primary/10 p-2">
+                  <Landmark size={14} className="text-primary" />
+                </div>
+                <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider">Total a receber</p>
+              </div>
+              <p className="text-2xl font-display font-bold text-primary tracking-tight">{fmt(totalReceivable)}</p>
+              <p className="text-[11px] text-muted-foreground mt-1">De todos os contratos ativos</p>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Tabs */}
       <Tabs defaultValue="entries" className="space-y-4">
         <TabsList className="rounded-lg">
