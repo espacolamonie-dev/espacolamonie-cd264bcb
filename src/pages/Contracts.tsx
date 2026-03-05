@@ -340,15 +340,9 @@ export default function Contracts() {
                   <SelectContent>{EVENT_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-1.5">
-                  <Label className="text-xs font-medium text-muted-foreground">Data do evento *</Label>
-                  <Input type="date" value={form.eventDate} onChange={(e) => set("eventDate", e.target.value)} className="rounded-lg" />
-                </div>
-                <div className="grid gap-1.5">
-                  <Label className="text-xs font-medium text-muted-foreground">Horário</Label>
-                  <Input type="time" value={form.eventTime} onChange={(e) => set("eventTime", e.target.value)} className="rounded-lg" />
-                </div>
+              <div className="grid gap-1.5">
+                <Label className="text-xs font-medium text-muted-foreground">Data do evento *</Label>
+                <Input type="date" value={form.eventDate} onChange={(e) => set("eventDate", e.target.value)} className="rounded-lg" />
               </div>
               <div className="grid gap-1.5">
                 <Label className="text-xs font-medium text-muted-foreground">Convidados</Label>
