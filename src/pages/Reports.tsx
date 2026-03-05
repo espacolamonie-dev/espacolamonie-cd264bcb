@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import { formatDateBR } from "@/lib/dateUtils";
 import { CalendarDays, DollarSign, Users, TrendingUp } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -185,7 +186,7 @@ export default function Reports() {
                     <p className="text-xs text-muted-foreground">{c.eventType}</p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-sm font-medium tabular-nums">{new Date(c.eventDate).toLocaleDateString("pt-BR")}</p>
+                    <p className="text-sm font-medium tabular-nums">{formatDateBR(c.eventDate)}</p>
                     <p className="text-xs text-muted-foreground tabular-nums">{fmt(c.totalValue)}</p>
                   </div>
                 </div>

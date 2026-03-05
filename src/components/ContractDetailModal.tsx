@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, lazy, Suspense } from "react";
+import { formatDateBR } from "@/lib/dateUtils";
 import { CurrencyInput } from "@/components/CurrencyInput";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -294,7 +295,7 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
                   <div className="rounded-xl border border-border bg-card p-4 space-y-3 shadow-sm">
                     <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Informações do Evento</p>
                     <InfoRow icon={Users} label="Cliente" value={client?.name || "—"} />
-                    <InfoRow icon={CalendarDays} label="Data" value={new Date(contract.eventDate).toLocaleDateString("pt-BR")} />
+                    <InfoRow icon={CalendarDays} label="Data" value={formatDateBR(contract.eventDate)} />
                     <InfoRow icon={Clock} label="Horário" value={contract.eventTime || "—"} />
                     <InfoRow icon={FileText} label="Tipo" value={contract.eventType} />
                     <InfoRow icon={Users} label="Convidados" value={String(contract.guestCount)} />
@@ -310,7 +311,7 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
               ) : (
                 <div className="grid gap-3 sm:grid-cols-2">
                   <InfoRow icon={Users} label="Cliente" value={client?.name || "—"} />
-                  <InfoRow icon={CalendarDays} label="Data" value={new Date(contract.eventDate).toLocaleDateString("pt-BR")} />
+                  <InfoRow icon={CalendarDays} label="Data" value={formatDateBR(contract.eventDate)} />
                   <InfoRow icon={CalendarDays} label="Horário" value={contract.eventTime || "—"} />
                   <InfoRow icon={Users} label="Convidados" value={String(contract.guestCount)} />
                   <InfoRow icon={FileText} label="Tipo" value={contract.eventType} />
