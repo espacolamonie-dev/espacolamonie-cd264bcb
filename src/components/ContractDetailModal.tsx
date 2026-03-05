@@ -466,6 +466,7 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
                         <SelectContent>
                           <SelectItem value="identidade">Identidade</SelectItem>
                           <SelectItem value="cnh">CNH</SelectItem>
+                          <SelectItem value="comprovante_residencia">Comprovante de Residência</SelectItem>
                           <SelectItem value="contrato">Contrato</SelectItem>
                           <SelectItem value="recibo">Recibo</SelectItem>
                           <SelectItem value="outro">Outro</SelectItem>

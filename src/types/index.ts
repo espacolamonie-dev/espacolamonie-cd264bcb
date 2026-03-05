@@ -75,7 +75,7 @@ export interface Document {
   id: string;
   contractId: string;
   name: string;
-  type: "identidade" | "cnh" | "contrato" | "recibo" | "outro";
+  type: "identidade" | "cnh" | "contrato" | "recibo" | "comprovante_residencia" | "outro";
   fileName: string;
   createdAt: string;
 }
