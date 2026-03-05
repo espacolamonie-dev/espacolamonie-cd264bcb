@@ -135,8 +135,10 @@ export type Database = {
           created_at: string
           deposit_percent: number
           event_date: string
+          event_date_end: string | null
           event_type: string
           id: string
+          rental_type: string | null
           sent_at: string | null
           sent_to_phone: string | null
           signed_at: string | null
@@ -156,8 +158,10 @@ export type Database = {
           created_at?: string
           deposit_percent?: number
           event_date: string
+          event_date_end?: string | null
           event_type: string
           id?: string
+          rental_type?: string | null
           sent_at?: string | null
           sent_to_phone?: string | null
           signed_at?: string | null
@@ -177,8 +181,10 @@ export type Database = {
           created_at?: string
           deposit_percent?: number
           event_date?: string
+          event_date_end?: string | null
           event_type?: string
           id?: string
+          rental_type?: string | null
           sent_at?: string | null
           sent_to_phone?: string | null
           signed_at?: string | null

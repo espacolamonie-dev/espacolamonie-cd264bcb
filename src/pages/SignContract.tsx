@@ -31,6 +31,8 @@ interface SignatureData {
   client_phone: string;
   client_address: string;
   event_date: string;
+  event_date_end: string | null;
+  rental_type: string;
   event_type: string;
   total_value: number;
   deposit_percent: number;
@@ -63,7 +65,7 @@ Telefone: ${d.client_phone || "Não informado"}
 Têm entre si justo e contratado o seguinte:
 
 CLÁUSULA 1 – DO OBJETO
-1.1. O presente contrato tem por objeto a locação do espaço físico do Espaço Lamoniê, exclusivamente para realização de evento privado, sem fins lucrativos, na data ${formatDate(d.event_date)}, no horário de dia inteiro, com devolução das chaves dentro do horário acordado.
+1.1. O presente contrato tem por objeto a locação do espaço físico do Espaço Lamoniê, exclusivamente para realização de evento privado, sem fins lucrativos, ${d.rental_type === "Locação (2 dias)" && d.event_date_end ? `na modalidade de Locação de 2 (dois) dias, compreendendo os dias ${formatDate(d.event_date)} e ${formatDate(d.event_date_end)}` : `na data ${formatDate(d.event_date)}`}, no horário de dia inteiro, com devolução das chaves dentro do horário acordado.
 
 CLÁUSULA 2 – DO VALOR E FORMA DE PAGAMENTO
 2.1. O valor total da locação é de ${fmt(d.total_value)}.
@@ -202,7 +204,10 @@ async function generateSignedPDF(d: SignatureData, signatureDataUrl: string): Pr
 
   checkPage();
   addText("CLÁUSULA 1 – DO OBJETO", { bold: true, size: 12 }); addSpace(2);
-  addText(`1.1. O presente contrato tem por objeto a locação do espaço físico do Espaço Lamoniê, exclusivamente para realização de evento privado, sem fins lucrativos, na data ${formatDate(d.event_date)}, no horário de dia inteiro, com devolução das chaves dentro do horário acordado.`);
+  const dateClausePdf = d.rental_type === "Locação (2 dias)" && d.event_date_end
+    ? `na modalidade de Locação de 2 (dois) dias, compreendendo os dias ${formatDate(d.event_date)} e ${formatDate(d.event_date_end)}`
+    : `na data ${formatDate(d.event_date)}`;
+  addText(`1.1. O presente contrato tem por objeto a locação do espaço físico do Espaço Lamoniê, exclusivamente para realização de evento privado, sem fins lucrativos, ${dateClausePdf}, no horário de dia inteiro, com devolução das chaves dentro do horário acordado.`);
   addSpace(5);
 
   checkPage();
@@ -553,7 +558,11 @@ export default function SignContract() {
             </p>
             <div className="bg-secondary rounded-xl p-5 text-left space-y-2 text-sm max-w-sm mx-auto">
               <Row label="Evento" value={data.event_type} />
-              <Row label="Data" value={formatDate(data.event_date)} />
+              <Row label="Data" value={
+                data.rental_type === "Locação (2 dias)" && data.event_date_end
+                  ? `${formatDate(data.event_date)} – ${formatDate(data.event_date_end)}`
+                  : formatDate(data.event_date)
+              } />
             </div>
           </div>
         )}
@@ -571,7 +580,12 @@ export default function SignContract() {
                 <Row label="Cliente" value={data.client_name} />
                 {data.client_cpf && <Row label="CPF" value={data.client_cpf} />}
                 <Row label="Evento" value={data.event_type} />
-                <Row label="Data" value={formatDate(data.event_date)} />
+                <Row label="Modalidade" value={data.rental_type || "Locação (1 dia)"} />
+                <Row label="Data" value={
+                  data.rental_type === "Locação (2 dias)" && data.event_date_end
+                    ? `${formatDate(data.event_date)} – ${formatDate(data.event_date_end)}`
+                    : formatDate(data.event_date)
+                } />
                 <div className="border-t border-border my-2" />
                 <Row label="Valor Total" value={fmt(data.total_value)} bold />
                 <Row label={`Sinal (${data.deposit_percent}%)`} value={fmt(depositValue)} />
