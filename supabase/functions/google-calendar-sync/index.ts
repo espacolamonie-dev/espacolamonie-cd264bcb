@@ -471,6 +471,7 @@ async function getValidToken(supabase: ReturnType<typeof createClient>, userId: 
 }
 
 function buildDescription(contract: Record<string, unknown>, client: Record<string, unknown>): string {
+  const fmtCurrency = (v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
   const contractStatusLabels: Record<string, string> = {
     awaiting_documents: 'Aguardando Documentos',
     awaiting_signature: 'Aguardando Assinatura',
@@ -485,9 +486,21 @@ function buildDescription(contract: Record<string, unknown>, client: Record<stri
   };
 
   return [
-    `📊 Status: ${contractStatusLabels[contract.status as string] || contract.status}`,
-    `💳 Pagamento: ${paymentStatusLabels[contract.payment_status as string] || contract.payment_status}`,
+    `🎉 ${contract.event_type}`,
     ``,
-    `— Atualizado automaticamente pelo CRM Lamoniê`,
+    `👤 Cliente: ${client.name}`,
+    `📄 CPF: ${client.cpf || '—'}`,
+    `📞 Telefone: ${client.phone || '—'}`,
+    ``,
+    `💰 Valor Total: ${fmtCurrency(Number(contract.total_value))}`,
+    `💵 Sinal (${contract.deposit_percent}%): ${fmtCurrency(Number(contract.deposit_value))}`,
+    `📋 Restante: ${fmtCurrency(Number(contract.remaining_value))}`,
+    ``,
+    `📊 Status Contrato: ${contractStatusLabels[contract.status as string] || contract.status}`,
+    `💳 Status Pagamento: ${paymentStatusLabels[contract.payment_status as string] || contract.payment_status}`,
+    ``,
+    `🆔 ID Contrato: ${contract.id}`,
+    ``,
+    `— Criado automaticamente pelo CRM Lamoniê`,
   ].join('\n');
 }
