@@ -13,7 +13,8 @@ import {
   ClipboardCheck,
   MessageCircle,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useContractNotifications } from "@/hooks/useContractNotifications";
 import logo from "@/assets/logo.png";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -52,6 +53,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { signOut } = useAuth();
   const isMobile = useIsMobile();
+  useContractNotifications();
 
   return (
     <div className="flex min-h-screen">

@@ -19,12 +19,18 @@ export async function syncVisitToGoogle(visitId: string): Promise<void> {
   try {
     const ctx = await getSessionHeaders();
     if (!ctx) return;
-    fetch(EDGE_URL, {
+    const res = await fetch(EDGE_URL, {
       method: "POST",
       headers: ctx.headers,
       body: JSON.stringify({ action: "sync-visit", visit_id: visitId }),
-    }).catch(() => {});
-  } catch {}
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      console.warn("syncVisitToGoogle failed:", err);
+    }
+  } catch (e) {
+    console.warn("syncVisitToGoogle error:", e);
+  }
 }
 
 export async function deleteVisitGoogleEvent(visitId: string): Promise<void> {
