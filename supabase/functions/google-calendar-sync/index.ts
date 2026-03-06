@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -191,7 +191,8 @@ Deno.serve(async (req) => {
           const description = buildDescription(contract, client);
           const colorId = PAYMENT_COLOR_IDS[contract.payment_status] || '5';
 
-          const endDate = new Date(contract.event_date + 'T12:00:00');
+          const baseEndDate = contract.event_date_end || contract.event_date;
+          const endDate = new Date(baseEndDate + 'T12:00:00');
           endDate.setDate(endDate.getDate() + 1);
           const endDateStr = endDate.toISOString().split('T')[0];
 
@@ -284,7 +285,8 @@ Deno.serve(async (req) => {
       const colorId = isCancelled ? PAYMENT_COLOR_IDS.cancelled : (PAYMENT_COLOR_IDS[contract.payment_status] || '5');
 
       // Google all-day events use exclusive end date, so add 1 day
-      const endDate = new Date(contract.event_date + 'T12:00:00');
+      const baseEndDate = contract.event_date_end || contract.event_date;
+      const endDate = new Date(baseEndDate + 'T12:00:00');
       endDate.setDate(endDate.getDate() + 1);
       const endDateStr = endDate.toISOString().split('T')[0];
 
@@ -570,12 +572,20 @@ function buildDescription(contract: Record<string, unknown>, client: Record<stri
     paid_full: 'Pago Total',
   };
 
+  const rentalType = (contract.rental_type as string) || 'Locação (1 dia)';
+  const dateInfo = contract.event_date_end
+    ? `📅 Datas: ${contract.event_date} a ${contract.event_date_end}`
+    : `📅 Data: ${contract.event_date}`;
+
   return [
     `🎉 ${contract.event_type}`,
     ``,
     `👤 Cliente: ${client.name}`,
     `📄 CPF: ${client.cpf || '—'}`,
     `📞 Telefone: ${client.phone || '—'}`,
+    ``,
+    `🏠 Modalidade: ${rentalType}`,
+    dateInfo,
     ``,
     `💰 Valor Total: ${fmtCurrency(Number(contract.total_value))}`,
     `💵 Sinal (${contract.deposit_percent}%): ${fmtCurrency(Number(contract.deposit_value))}`,
