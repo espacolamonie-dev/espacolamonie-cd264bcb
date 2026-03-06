@@ -209,6 +209,102 @@ serve(async (req) => {
       .update({ status: "signed" })
       .eq("id", sig.contract_id);
 
+    // Trigger Google Calendar sync to update status in the event description
+    try {
+      const { data: gSettings } = await supabase
+        .from("google_settings")
+        .select("*")
+        .eq("user_id", sig.user_id)
+        .single();
+
+      if (gSettings?.is_connected) {
+        const GOOGLE_CLIENT_ID = Deno.env.get("GOOGLE_CLIENT_ID")!;
+        const GOOGLE_CLIENT_SECRET = Deno.env.get("GOOGLE_CLIENT_SECRET")!;
+
+        // Get valid token (refresh if needed)
+        let accessToken = gSettings.access_token;
+        const expiresAt = gSettings.token_expires_at ? new Date(gSettings.token_expires_at) : null;
+        if (!expiresAt || expiresAt.getTime() - Date.now() < 5 * 60 * 1000) {
+          if (gSettings.refresh_token) {
+            const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+              method: "POST",
+              headers: { "Content-Type": "application/x-www-form-urlencoded" },
+              body: new URLSearchParams({
+                client_id: GOOGLE_CLIENT_ID,
+                client_secret: GOOGLE_CLIENT_SECRET,
+                refresh_token: gSettings.refresh_token,
+                grant_type: "refresh_token",
+              }),
+            });
+            const tokens = await tokenRes.json();
+            if (tokenRes.ok && tokens.access_token) {
+              accessToken = tokens.access_token;
+              await supabase.from("google_settings").update({
+                access_token: tokens.access_token,
+                token_expires_at: new Date(Date.now() + (tokens.expires_in || 3600) * 1000).toISOString(),
+              }).eq("user_id", sig.user_id);
+            }
+          }
+        }
+
+        if (accessToken) {
+          // Re-fetch contract with updated status
+          const { data: updatedContract } = await supabase.from("contracts").select("*").eq("id", sig.contract_id).single();
+          const { data: client } = await supabase.from("clients").select("*").eq("id", updatedContract.client_id).single();
+
+          if (updatedContract && client && updatedContract.google_event_id) {
+            const calendarId = gSettings.calendar_id || "primary";
+            const fmtCurrency = (v: number) => `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+            const contractStatusLabels: Record<string, string> = {
+              awaiting_documents: "Aguardando Documentos", awaiting_signature: "Aguardando Assinatura",
+              signed: "Assinado", confirmed: "Confirmado", cancelled: "Cancelado",
+            };
+            const paymentStatusLabels: Record<string, string> = {
+              pending: "Pendente", deposit_paid: "Sinal Pago", paid_full: "Pago Total",
+            };
+            const rentalType = updatedContract.rental_type || "Locação (1 dia)";
+            const dateInfo = updatedContract.event_date_end
+              ? `📅 Datas: ${updatedContract.event_date} a ${updatedContract.event_date_end}`
+              : `📅 Data: ${updatedContract.event_date}`;
+            const description = [
+              `🎉 ${updatedContract.event_type}`, ``,
+              `👤 Cliente: ${client.name}`, `📄 CPF: ${client.cpf || "—"}`, `📞 Telefone: ${client.phone || "—"}`, ``,
+              `🏠 Modalidade: ${rentalType}`, dateInfo, ``,
+              `💰 Valor Total: ${fmtCurrency(Number(updatedContract.total_value))}`,
+              `💵 Sinal (${updatedContract.deposit_percent}%): ${fmtCurrency(Number(updatedContract.deposit_value))}`,
+              `📋 Restante: ${fmtCurrency(Number(updatedContract.remaining_value))}`, ``,
+              `📊 Status Contrato: ${contractStatusLabels[updatedContract.status] || updatedContract.status}`,
+              `💳 Status Pagamento: ${paymentStatusLabels[updatedContract.payment_status] || updatedContract.payment_status}`, ``,
+              `🆔 ID Contrato: ${updatedContract.id}`, ``, `— Criado automaticamente pelo CRM Lamoniê`,
+            ].join("\n");
+
+            const PAYMENT_COLOR_IDS: Record<string, string> = { pending: "5", deposit_paid: "2", paid_full: "10", cancelled: "8" };
+            const colorId = PAYMENT_COLOR_IDS[updatedContract.payment_status] || "5";
+            const baseEndDate = updatedContract.event_date_end || updatedContract.event_date;
+            const endDate = new Date(baseEndDate + "T12:00:00");
+            endDate.setDate(endDate.getDate() + 1);
+
+            const eventBody = {
+              summary: `Lamoniê — ${client.name} — ${updatedContract.event_type}`,
+              description,
+              location: "Espaço Lamoniê — Endereço do espaço",
+              start: { date: updatedContract.event_date },
+              end: { date: endDate.toISOString().split("T")[0] },
+              colorId,
+              extendedProperties: { private: { contract_id: updatedContract.id, crm: "lamonie" } },
+            };
+
+            await fetch(
+              `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${updatedContract.google_event_id}`,
+              { method: "PUT", headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" }, body: JSON.stringify(eventBody) }
+            );
+          }
+        }
+      }
+    } catch (syncErr) {
+      console.error("Google Calendar sync after signature failed:", syncErr);
+    }
+
     // Create audit log entry (immutable legal record)
     const uaString = user_agent || req.headers.get("user-agent") || "";
     const { deviceType, os, browser } = parseUserAgent(uaString);

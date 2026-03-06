@@ -23,13 +23,16 @@ export async function triggerGoogleSync(contractId: string): Promise<void> {
   try {
     const ctx = await getSessionHeaders();
     if (!ctx) return;
-    fetch(EDGE_URL, {
+    const res = await fetch(EDGE_URL, {
       method: "POST",
       headers: ctx.headers,
       body: JSON.stringify({ action: "sync-contract", contract_id: contractId }),
-    }).catch(() => {/* silent */});
-  } catch {
-    // silent fail
+    });
+    if (!res.ok) {
+      console.warn("triggerGoogleSync failed:", await res.text().catch(() => ""));
+    }
+  } catch (e) {
+    console.warn("triggerGoogleSync error:", e);
   }
 }
 
@@ -41,13 +44,15 @@ export async function deleteGoogleEvent(contractId: string): Promise<void> {
   try {
     const ctx = await getSessionHeaders();
     if (!ctx) return;
-    // Always attempt delete (edge function handles "not connected" gracefully)
-    fetch(EDGE_URL, {
+    const res = await fetch(EDGE_URL, {
       method: "POST",
       headers: ctx.headers,
       body: JSON.stringify({ action: "delete-event", contract_id: contractId }),
-    }).catch(() => {/* silent */});
-  } catch {
-    // silent fail
+    });
+    if (!res.ok) {
+      console.warn("deleteGoogleEvent failed:", await res.text().catch(() => ""));
+    }
+  } catch (e) {
+    console.warn("deleteGoogleEvent error:", e);
   }
 }
