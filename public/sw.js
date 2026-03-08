@@ -29,10 +29,33 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Handle notification click — open the app on the contracts page
+// ─── Web Push: handle incoming push notifications ───
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+
+  try {
+    const data = event.data.json();
+    const options = {
+      body: data.body || '',
+      icon: data.icon || '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      tag: data.tag || 'default',
+      data: { url: data.url || '/' },
+      vibrate: [200, 100, 200],
+    };
+
+    event.waitUntil(
+      self.registration.showNotification(data.title || 'Lamoniê CRM', options)
+    );
+  } catch (e) {
+    console.error('[SW] Push event error:', e);
+  }
+});
+
+// ─── Handle notification click ───
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const url = event.notification.data?.url || '/contracts';
+  const url = event.notification.data?.url || '/';
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
       for (const client of clients) {
