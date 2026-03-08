@@ -178,7 +178,7 @@ Deno.serve(async (req) => {
       }
 
       const hour = parseInt(visitTime.split(':')[0], 10);
-      if (hour < 9 || hour > 19) {
+      if (hour < 9 || hour > 20) {
         return new Response(JSON.stringify({ error: 'Horário fora do permitido' }), { status: 400, headers: corsHeaders });
       }
 
