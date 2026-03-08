@@ -1,0 +1,1 @@
+ALTER TABLE public.visits ADD COLUMN IF NOT EXISTS guest_count integer NOT NULL DEFAULT 0;

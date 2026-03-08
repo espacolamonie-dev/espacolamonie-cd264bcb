@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { Plus, Search, Phone, CalendarDays, Clock, Filter, Eye, Check, RotateCcw, X as XIcon, AlertTriangle, Pencil, Users, Megaphone, TrendingUp } from "lucide-react";
+import { Plus, Search, Phone, CalendarDays, Clock, Filter, Eye, Check, RotateCcw, X as XIcon, AlertTriangle, Pencil, Users, Megaphone, TrendingUp, Link2, ExternalLink } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,7 +56,7 @@ export default function Visits() {
   const [editSaving, setEditSaving] = useState(false);
   const [editForm, setEditForm] = useState({
     clientName: "", clientPhone: "", visitDate: "", visitTime: "",
-    interestEventDate: "", notes: "", status: "" as string, leadSource: "Orgânico" as LeadSource,
+    interestEventDate: "", notes: "", status: "" as string, leadSource: "Orgânico" as string,
   });
   const isMobile = useIsMobile();
 
@@ -246,9 +246,29 @@ export default function Visits() {
           )}
         </div>
         {!isMobile && (
-          <Button onClick={() => { resetForm(); setModalOpen(true); }} className="gap-2">
-            <Plus size={16} /> Nova visita
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                const url = `${window.location.origin}/agendar-visita`;
+                navigator.clipboard.writeText(url);
+                toast.success("Link copiado!");
+              }}
+              className="gap-2"
+            >
+              <Link2 size={16} /> Copiar link
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => window.open("/agendar-visita", "_blank")}
+              className="gap-2"
+            >
+              <ExternalLink size={16} /> Abrir página
+            </Button>
+            <Button onClick={() => { resetForm(); setModalOpen(true); }} className="gap-2">
+              <Plus size={16} /> Nova visita
+            </Button>
+          </div>
         )}
       </div>
 

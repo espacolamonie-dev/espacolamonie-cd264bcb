@@ -14,6 +14,7 @@ import Settings from "@/pages/Settings";
 import Visits from "@/pages/Visits";
 import LeadsWhatsApp from "@/pages/LeadsWhatsApp";
 import SignContract from "@/pages/SignContract";
+import BookVisit from "@/pages/BookVisit";
 import Auth from "@/pages/Auth";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "@/hooks/useAuth";
@@ -66,6 +67,7 @@ const App = () => (
           <Route path="/auth" element={<AuthRoute />} />
           <Route path="/sign" element={<SignContract />} />
           <Route path="/assinar/:slug" element={<SignContract />} />
+          <Route path="/agendar-visita" element={<BookVisit />} />
           <Route
             path="/*"
             element={

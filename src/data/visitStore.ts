@@ -17,7 +17,8 @@ export interface Visit {
   visitTime: string;
   notes: string;
   status: string;
-  leadSource: LeadSource;
+  leadSource: LeadSource | string;
+  guestCount: number;
   googleEventId: string | null;
   createdAt: string;
   updatedAt: string;
@@ -34,6 +35,7 @@ function mapVisit(row: any): Visit {
     notes: row.notes || "",
     status: row.status,
     leadSource: row.lead_source || "Orgânico",
+    guestCount: row.guest_count || 0,
     googleEventId: row.google_event_id,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

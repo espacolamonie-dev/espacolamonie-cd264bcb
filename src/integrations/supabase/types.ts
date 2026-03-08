@@ -796,6 +796,7 @@ export type Database = {
           client_phone: string
           created_at: string
           google_event_id: string | null
+          guest_count: number
           id: string
           interest_event_date: string | null
           lead_source: string
@@ -811,6 +812,7 @@ export type Database = {
           client_phone: string
           created_at?: string
           google_event_id?: string | null
+          guest_count?: number
           id?: string
           interest_event_date?: string | null
           lead_source?: string
@@ -826,6 +828,7 @@ export type Database = {
           client_phone?: string
           created_at?: string
           google_event_id?: string | null
+          guest_count?: number
           id?: string
           interest_event_date?: string | null
           lead_source?: string
