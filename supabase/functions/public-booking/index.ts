@@ -113,10 +113,10 @@ Deno.serve(async (req) => {
           const token = await getValidToken(supabase, settings.user_id, settings);
           const calendarId = settings.calendar_id || 'primary';
           const timeMin = `${date}T09:00:00-03:00`;
-          const timeMax = `${date}T20:00:00-03:00`;
+          const timeMax = `${date}T21:00:00-03:00`;
           
           const eventsRes = await fetch(
-            `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}&singleEvents=true&orderBy=startTime`,
+            `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}&singleEvents=true&orderBy=startTime&timeZone=America/Sao_Paulo`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
           const eventsData = await eventsRes.json();
@@ -128,8 +128,12 @@ Deno.serve(async (req) => {
             if (event.start?.date && !event.start?.dateTime) continue;
             
             if (event.start?.dateTime) {
-              const startHour = new Date(event.start.dateTime).getHours();
-              const endHour = new Date(event.end?.dateTime || event.start.dateTime).getHours();
+              // Extract hour from the dateTime string directly to avoid UTC conversion
+              // Google returns format like "2026-03-10T14:00:00-03:00"
+              const startMatch = event.start.dateTime.match(/T(\d{2}):/);
+              const endMatch = (event.end?.dateTime || event.start.dateTime).match(/T(\d{2}):/);
+              const startHour = startMatch ? parseInt(startMatch[1], 10) : 0;
+              const endHour = endMatch ? parseInt(endMatch[1], 10) : startHour + 1;
               // Block all hours the event spans
               for (let h = startHour; h < Math.max(endHour, startHour + 1); h++) {
                 if (h >= 9 && h <= 19) googleBusyHours.add(h);
