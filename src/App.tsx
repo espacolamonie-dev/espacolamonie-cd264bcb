@@ -69,6 +69,7 @@ const App = () => (
           <Route path="/sign" element={<SignContract />} />
           <Route path="/assinar/:slug" element={<SignContract />} />
           <Route path="/agendar-visita" element={<BookVisit />} />
+          <Route path="/datas-eventos" element={<EventDates />} />
           <Route
             path="/*"
             element={
