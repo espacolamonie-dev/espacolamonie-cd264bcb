@@ -168,13 +168,22 @@ export default function BookVisit() {
               </div>
             </div>
             <a
-              href="https://wa.me/5500000000000"
+              href="https://wa.me/5531997111502"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 w-full bg-[#25D366] text-white py-3.5 rounded-2xl font-semibold text-sm shadow-lg shadow-emerald-500/20 hover:brightness-105 transition-all active:scale-[0.98]"
             >
               Falar pelo WhatsApp
             </a>
+
+            {/* Reschedule / Cancel notice */}
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4 text-center space-y-1.5">
+              <p className="text-xs font-semibold text-amber-800">Precisa remarcar ou cancelar?</p>
+              <p className="text-[11px] text-amber-700 leading-relaxed">
+                Entre em contato pelo WhatsApp:{" "}
+                <a href="https://wa.me/5531997111502?text=Olá! Preciso remarcar/cancelar minha visita agendada." target="_blank" rel="noopener noreferrer" className="font-bold underline">(31) 99711-1502</a>
+              </p>
+            </div>
           </div>
         )}
 
