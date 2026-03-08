@@ -136,7 +136,7 @@ Deno.serve(async (req) => {
               const endHour = endMatch ? parseInt(endMatch[1], 10) : startHour + 1;
               // Block all hours the event spans
               for (let h = startHour; h < Math.max(endHour, startHour + 1); h++) {
-                if (h >= 9 && h <= 19) googleBusyHours.add(h);
+                if (h >= 9 && h <= 20) googleBusyHours.add(h);
               }
             }
           }
