@@ -359,19 +359,19 @@ export default function BookVisit() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-3 items-start">
                     <div>
                       <Label htmlFor="interestDate" className="text-xs font-semibold text-stone-600">Data do evento</Label>
                       <div className="relative mt-1.5">
-                        <CalendarDays className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-300" />
-                        <Input id="interestDate" type="date" value={interestDate} onChange={e => setInterestDate(e.target.value)} className="pl-10 h-11 rounded-xl bg-stone-50/50 border-stone-200 focus:bg-white text-sm" />
+                        <CalendarDays className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-300 pointer-events-none" />
+                        <Input id="interestDate" type="date" value={interestDate} onChange={e => setInterestDate(e.target.value)} className="pl-10 h-11 rounded-xl bg-stone-50/50 border-stone-200 focus:bg-white text-sm w-full" />
                       </div>
                     </div>
                     <div>
                       <Label htmlFor="guests" className="text-xs font-semibold text-stone-600">Nº de pessoas</Label>
                       <div className="relative mt-1.5">
-                        <Users className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-300" />
-                        <Input id="guests" type="number" min="1" value={guestCount} onChange={e => setGuestCount(e.target.value)} placeholder="Ex: 100" className="pl-10 h-11 rounded-xl bg-stone-50/50 border-stone-200 focus:bg-white" />
+                        <Users className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-300 pointer-events-none" />
+                        <Input id="guests" type="number" min="1" value={guestCount} onChange={e => setGuestCount(e.target.value)} placeholder="Ex: 100" className="pl-10 h-11 rounded-xl bg-stone-50/50 border-stone-200 focus:bg-white w-full" />
                       </div>
                     </div>
                   </div>
