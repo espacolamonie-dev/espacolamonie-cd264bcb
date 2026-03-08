@@ -319,7 +319,31 @@ export default function Visits() {
         );
       })()}
 
-      {/* Filters */}
+      {/* Link de agendamento */}
+      <div className="flex items-center gap-2 rounded-xl border border-border bg-card p-3">
+        <Link2 size={16} className="text-muted-foreground shrink-0" />
+        <span className="text-sm text-muted-foreground truncate flex-1">{window.location.origin}/agendar-visita</span>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            navigator.clipboard.writeText(`${window.location.origin}/agendar-visita`);
+            toast.success("Link copiado!");
+          }}
+          className="gap-1.5 shrink-0"
+        >
+          <Link2 size={14} /> Copiar
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => window.open("/agendar-visita", "_blank")}
+          className="gap-1.5 shrink-0"
+        >
+          <ExternalLink size={14} /> Abrir
+        </Button>
+      </div>
+
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 max-w-xs">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
