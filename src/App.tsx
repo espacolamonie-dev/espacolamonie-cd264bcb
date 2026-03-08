@@ -15,6 +15,7 @@ import Visits from "@/pages/Visits";
 import LeadsWhatsApp from "@/pages/LeadsWhatsApp";
 import SignContract from "@/pages/SignContract";
 import BookVisit from "@/pages/BookVisit";
+import EventDates from "@/pages/EventDates";
 import Auth from "@/pages/Auth";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "@/hooks/useAuth";
