@@ -50,7 +50,7 @@ async function getValidToken(supabase: ReturnType<typeof createClient>, userId: 
 }
 
 // Available hours: 09:00 to 19:00 (last slot starts at 19, ends at 20)
-const AVAILABLE_HOURS = Array.from({ length: 11 }, (_, i) => i + 9); // 9,10,...,19
+const AVAILABLE_HOURS = Array.from({ length: 12 }, (_, i) => i + 9); // 9,10,...,20
 
 function isAllowedDay(dateStr: string): boolean {
   const d = new Date(dateStr + 'T12:00:00');
@@ -136,7 +136,7 @@ Deno.serve(async (req) => {
               const endHour = endMatch ? parseInt(endMatch[1], 10) : startHour + 1;
               // Block all hours the event spans
               for (let h = startHour; h < Math.max(endHour, startHour + 1); h++) {
-                if (h >= 9 && h <= 19) googleBusyHours.add(h);
+                if (h >= 9 && h <= 20) googleBusyHours.add(h);
               }
             }
           }
@@ -178,7 +178,7 @@ Deno.serve(async (req) => {
       }
 
       const hour = parseInt(visitTime.split(':')[0], 10);
-      if (hour < 9 || hour > 19) {
+      if (hour < 9 || hour > 20) {
         return new Response(JSON.stringify({ error: 'Horário fora do permitido' }), { status: 400, headers: corsHeaders });
       }
 
