@@ -15,6 +15,7 @@ import Visits from "@/pages/Visits";
 import LeadsWhatsApp from "@/pages/LeadsWhatsApp";
 import SignContract from "@/pages/SignContract";
 import BookVisit from "@/pages/BookVisit";
+import EventDates from "@/pages/EventDates";
 import Auth from "@/pages/Auth";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "@/hooks/useAuth";
@@ -68,6 +69,7 @@ const App = () => (
           <Route path="/sign" element={<SignContract />} />
           <Route path="/assinar/:slug" element={<SignContract />} />
           <Route path="/agendar-visita" element={<BookVisit />} />
+          <Route path="/datas-eventos" element={<EventDates />} />
           <Route
             path="/*"
             element={

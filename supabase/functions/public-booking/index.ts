@@ -69,6 +69,88 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const action = body.action as string;
 
+    // Get busy event dates for a month range (for /datas-eventos page)
+    if (action === 'get-busy-event-dates') {
+      const { start_date, end_date } = body;
+      if (!start_date || !end_date) {
+        return new Response(JSON.stringify({ error: 'start_date and end_date required' }), { status: 400, headers: corsHeaders });
+      }
+
+      const busyDates: string[] = [];
+      const settings = await getOwnerSettings(supabase);
+      if (settings?.is_connected) {
+        try {
+          const token = await getValidToken(supabase, settings.user_id, settings);
+          const calendarId = settings.calendar_id || 'primary';
+          const timeMin = `${start_date}T00:00:00-03:00`;
+          const timeMax = `${end_date}T23:59:59-03:00`;
+
+          const eventsRes = await fetch(
+            `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}&singleEvents=true&orderBy=startTime&timeZone=America/Sao_Paulo&maxResults=250`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          const eventsData = await eventsRes.json();
+
+          for (const event of (eventsData.items || [])) {
+            if (event.status === 'cancelled') continue;
+
+            // All-day events: block the date(s)
+            if (event.start?.date && !event.start?.dateTime) {
+              const startStr = event.start.date; // "YYYY-MM-DD"
+              const endStr = event.end?.date || startStr;
+              // Google all-day events: end date is exclusive
+              const startD = new Date(startStr + 'T12:00:00');
+              const endD = new Date(endStr + 'T12:00:00');
+              for (let d = new Date(startD); d < endD; d.setDate(d.getDate() + 1)) {
+                const ds = d.toISOString().split('T')[0];
+                if (!busyDates.includes(ds)) busyDates.push(ds);
+              }
+              continue;
+            }
+
+            // Timed events that span significant hours also block the date
+            if (event.start?.dateTime) {
+              const startMatch = event.start.dateTime.match(/(\d{4}-\d{2}-\d{2})T(\d{2}):/);
+              const endMatch = (event.end?.dateTime || event.start.dateTime).match(/(\d{4}-\d{2}-\d{2})T(\d{2}):/);
+              if (startMatch && endMatch) {
+                const startHour = parseInt(startMatch[2], 10);
+                const endHour = parseInt(endMatch[2], 10);
+                const duration = endHour - startHour;
+                // If event is 4+ hours, consider the day busy (it's likely a real event)
+                if (duration >= 4) {
+                  const ds = startMatch[1];
+                  if (!busyDates.includes(ds)) busyDates.push(ds);
+                }
+              }
+            }
+          }
+        } catch (e) {
+          console.error('Error fetching Google Calendar for event dates:', e);
+        }
+      }
+
+      // Also check contracts table for event dates
+      const { data: contracts } = await supabase
+        .from('contracts')
+        .select('event_date, event_date_end')
+        .gte('event_date', start_date)
+        .lte('event_date', end_date)
+        .neq('status', 'cancelled');
+
+      for (const c of (contracts || [])) {
+        if (c.event_date && !busyDates.includes(c.event_date)) {
+          busyDates.push(c.event_date);
+        }
+        if (c.event_date_end && !busyDates.includes(c.event_date_end)) {
+          busyDates.push(c.event_date_end);
+        }
+      }
+
+      return new Response(JSON.stringify({ busy_dates: busyDates }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     if (action === 'get-available-slots') {
       // Get available time slots for a specific date
       const { date } = body; // "YYYY-MM-DD"
