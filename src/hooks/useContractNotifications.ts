@@ -69,7 +69,7 @@ export function useNotificationPermission() {
       // 4. Subscribe to push
       const subscription = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidData.publicKey),
+        applicationServerKey: urlBase64ToUint8Array(vapidData.publicKey) as BufferSource,
       });
 
       console.log("[Push] Push subscription created");
