@@ -50,7 +50,7 @@ async function getValidToken(supabase: ReturnType<typeof createClient>, userId: 
 }
 
 // Available hours: 09:00 to 19:00 (last slot starts at 19, ends at 20)
-const AVAILABLE_HOURS = Array.from({ length: 11 }, (_, i) => i + 9); // 9,10,...,19
+const AVAILABLE_HOURS = Array.from({ length: 12 }, (_, i) => i + 9); // 9,10,...,20
 
 function isAllowedDay(dateStr: string): boolean {
   const d = new Date(dateStr + 'T12:00:00');
