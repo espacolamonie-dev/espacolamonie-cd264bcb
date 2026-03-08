@@ -56,7 +56,7 @@ export default function Visits() {
   const [editSaving, setEditSaving] = useState(false);
   const [editForm, setEditForm] = useState({
     clientName: "", clientPhone: "", visitDate: "", visitTime: "",
-    interestEventDate: "", notes: "", status: "" as string, leadSource: "Orgânico" as LeadSource,
+    interestEventDate: "", notes: "", status: "" as string, leadSource: "Orgânico" as string,
   });
   const isMobile = useIsMobile();
 
