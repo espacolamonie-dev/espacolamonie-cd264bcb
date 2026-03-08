@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { parseLocalDate, formatDateBR } from "@/lib/dateUtils";
 import { useSearchParams } from "react-router-dom";
-import { Plus, Search, Eye, Pencil, Upload, Trash2, CalendarDays } from "lucide-react";
+import { Plus, Search, Eye, Pencil, Upload, Trash2, CalendarDays, Link2, ExternalLink } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 import { Badge } from "@/components/ui/badge";
@@ -159,6 +159,31 @@ export default function Contracts() {
             </Button>
           </div>
         )}
+      </div>
+
+      {/* Link de datas para eventos */}
+      <div className="flex items-center gap-2 rounded-xl border border-border bg-card p-3">
+        <Link2 size={16} className="text-muted-foreground shrink-0" />
+        <span className="text-sm text-muted-foreground truncate flex-1">{window.location.origin}/datas-eventos</span>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            navigator.clipboard.writeText(`${window.location.origin}/datas-eventos`);
+            toast.success("Link copiado!");
+          }}
+          className="gap-1.5 shrink-0"
+        >
+          <Link2 size={14} /> Copiar
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => window.open("/datas-eventos", "_blank")}
+          className="gap-1.5 shrink-0"
+        >
+          <ExternalLink size={14} /> Abrir
+        </Button>
       </div>
 
       <div className="flex flex-wrap gap-3">
