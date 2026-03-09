@@ -549,7 +549,7 @@ export default function EventDates() {
                     className="flex-1 rounded-xl h-12 bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-lg shadow-emerald-500/20 text-sm font-semibold"
                   >
                     <MessageCircle className="w-4 h-4 mr-1.5" />
-                    Solicitar reserva
+                    Consultar disponibilidade
                   </Button>
                 </div>
               </div>
