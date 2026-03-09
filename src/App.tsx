@@ -19,11 +19,16 @@ import EventDates from "@/pages/EventDates";
 import Auth from "@/pages/Auth";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "@/hooks/useAuth";
+import { useContractNotifications } from "@/hooks/useContractNotifications";
+import { PushNotificationPrompt } from "@/components/PushNotificationPrompt";
 
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  
+  // Hook for push notifications when user is authenticated
+  useContractNotifications();
 
   if (loading) {
     return (
@@ -88,6 +93,7 @@ const App = () => (
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Layout>
+                <PushNotificationPrompt />
               </ProtectedRoute>
             }
           />

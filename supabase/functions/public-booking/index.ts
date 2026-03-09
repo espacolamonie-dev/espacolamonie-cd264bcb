@@ -374,6 +374,32 @@ Deno.serve(async (req) => {
         }
       }
 
+      // 🔔 Send push notification for new visit
+      try {
+        const notificationPayload = {
+          action: 'send-notification',
+          title: '📅 Nova Visita Agendada!',
+          body: `${clientName} agendou visita para ${visitDate} às ${visitTime}h.`,
+          url: '/visits',
+          tag: `visit-booked-${visit.id}`
+        };
+
+        const pushResponse = await fetch(`${SUPABASE_URL}/functions/v1/manage-push`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
+          },
+          body: JSON.stringify(notificationPayload)
+        });
+
+        if (!pushResponse.ok) {
+          console.error("Failed to send push notification:", await pushResponse.text());
+        }
+      } catch (pushErr) {
+        console.error("Error sending push notification:", pushErr);
+      }
+
       return new Response(JSON.stringify({
         success: true,
         visit: {
