@@ -23,6 +23,9 @@ import {
   Home,
   Flame,
   Refrigerator,
+  Star,
+  Instagram,
+  ExternalLink,
 } from "lucide-react";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -254,6 +257,48 @@ export default function EventDates() {
                   Escolha uma data disponível e solicite sua reserva pelo WhatsApp.
                 </p>
               </div>
+            </div>
+
+            {/* Social Proof */}
+            <div className="bg-white rounded-2xl border border-stone-100 px-4 py-3.5 flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-5 h-5 text-[#1F4D3A]" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-stone-800">+120 eventos realizados</p>
+                <div className="flex items-center gap-1 mt-0.5">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />
+                  ))}
+                  <span className="text-[11px] text-stone-400 ml-1">Avaliações no Google</span>
+                </div>
+                <p className="text-[11px] text-stone-400 mt-0.5">Casamentos, aniversários e confraternizações</p>
+              </div>
+            </div>
+
+            {/* Instagram */}
+            <div className="bg-white rounded-2xl border border-stone-100 px-4 py-3.5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 flex items-center justify-center shrink-0">
+                  <Instagram className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-stone-800">Espaço Lamoniê</p>
+                  <p className="text-[11px] text-stone-400">@espacolamonie</p>
+                  <div className="flex items-center gap-3 mt-0.5">
+                    <span className="text-[11px] text-stone-500 font-medium">3.200 seguidores</span>
+                    <span className="text-[11px] text-stone-500 font-medium">120 publicações</span>
+                  </div>
+                </div>
+              </div>
+              <a
+                href="https://www.instagram.com/espacolamonie"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-[11px] font-semibold text-[#1F4D3A] hover:underline shrink-0"
+              >
+                Ver <ExternalLink className="w-3 h-3" />
+              </a>
             </div>
 
             {/* Progress */}
@@ -504,7 +549,7 @@ export default function EventDates() {
                     className="flex-1 rounded-xl h-12 bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-lg shadow-emerald-500/20 text-sm font-semibold"
                   >
                     <MessageCircle className="w-4 h-4 mr-1.5" />
-                    Solicitar reserva
+                    Consultar disponibilidade
                   </Button>
                 </div>
               </div>
