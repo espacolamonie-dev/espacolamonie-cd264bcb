@@ -23,6 +23,9 @@ import {
   Home,
   Flame,
   Refrigerator,
+  Star,
+  Instagram,
+  ExternalLink,
 } from "lucide-react";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
