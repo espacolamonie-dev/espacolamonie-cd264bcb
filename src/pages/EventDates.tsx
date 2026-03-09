@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { format, startOfDay, isBefore, addMonths } from "date-fns";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { format, startOfDay, isBefore, addMonths, endOfMonth, eachDayOfInterval, startOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,12 @@ import {
   PartyPopper,
   MessageCircle,
   CalendarHeart,
+  AlertTriangle,
+  Waves,
+  TreePine,
+  Home,
+  Flame,
+  Refrigerator,
 } from "lucide-react";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -42,6 +48,14 @@ const EVENT_HOURS = [
 
 const STEPS = ["date", "time", "form"] as const;
 const STEP_LABELS = ["Data", "Horário", "Dados"];
+
+const AMENITIES = [
+  { icon: Waves, label: "Piscina" },
+  { icon: TreePine, label: "Área verde gramada" },
+  { icon: Home, label: "150m² de área coberta" },
+  { icon: Flame, label: "Churrasqueira" },
+  { icon: Refrigerator, label: "Geladeira e freezer" },
+];
 
 export default function EventDates() {
   const [step, setStep] = useState<"date" | "time" | "form" | "success">("date");
@@ -76,14 +90,32 @@ export default function EventDates() {
     fetchBusyDates(currentMonth);
   }, [currentMonth, fetchBusyDates]);
 
+  // Calculate available dates count for current month
+  const availableDatesCount = useMemo(() => {
+    if (loadingDates) return null;
+    const today = startOfDay(new Date());
+    const monthStart = startOfMonth(currentMonth);
+    const monthEnd = endOfMonth(currentMonth);
+    const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
+    let count = 0;
+    for (const day of days) {
+      if (isBefore(day, today)) continue;
+      const dow = day.getDay();
+      if (dow !== 5 && dow !== 6 && dow !== 0) continue;
+      const dateStr = format(day, "yyyy-MM-dd");
+      if (!busyDates.has(dateStr)) count++;
+    }
+    return count;
+  }, [currentMonth, busyDates, loadingDates]);
+
+  const monthName = format(currentMonth, "MMMM", { locale: ptBR });
+
   const isDateDisabled = useCallback(
     (date: Date) => {
       const today = startOfDay(new Date());
       if (isBefore(date, today)) return true;
       const day = date.getDay();
-      // Only Fri(5), Sat(6), Sun(0)
       if (day !== 5 && day !== 6 && day !== 0) return true;
-      // Check if busy
       const dateStr = format(date, "yyyy-MM-dd");
       return busyDates.has(dateStr);
     },
@@ -108,7 +140,6 @@ export default function EventDates() {
 
   const currentStepIdx = STEPS.indexOf(step as any);
 
-  // Custom day styling: show busy dates with a red dot
   const modifiers = {
     busy: (date: Date) => {
       const day = date.getDay();
@@ -201,7 +232,7 @@ export default function EventDates() {
 
         {step !== "success" && (
           <>
-            {/* Hero banner */}
+            {/* Hero banner with pricing & capacity */}
             <div className="bg-gradient-to-br from-[#1F4D3A] to-[#2a6b50] rounded-3xl p-5 text-white relative overflow-hidden">
               <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/5 rounded-full" />
               <div className="absolute -right-2 -bottom-8 w-20 h-20 bg-white/5 rounded-full" />
@@ -214,7 +245,13 @@ export default function EventDates() {
                   Verifique a disponibilidade para seu evento
                 </h2>
                 <p className="text-emerald-100/80 text-xs mt-1.5 leading-relaxed">
-                  Eventos às sextas, sábados e domingos. Escolha uma data disponível e solicite sua reserva pelo WhatsApp.
+                  Eventos às sextas, sábados e domingos.
+                </p>
+                <p className="text-white text-sm font-semibold mt-2">
+                  A partir de <span className="text-emerald-300">R$650</span> para até <span className="text-emerald-300">150 pessoas</span>
+                </p>
+                <p className="text-emerald-100/80 text-xs mt-1.5 leading-relaxed">
+                  Escolha uma data disponível e solicite sua reserva pelo WhatsApp.
                 </p>
               </div>
             </div>
@@ -251,40 +288,94 @@ export default function EventDates() {
 
             {/* Step 1: Date */}
             {step === "date" && (
-              <div className="bg-white rounded-3xl shadow-sm border border-stone-100 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div className="px-5 pt-5 pb-2 text-center">
-                  <h2 className="text-base font-bold text-stone-800">Qual data para o evento?</h2>
-                  <p className="text-xs text-stone-400 mt-0.5">
-                    Selecione uma sexta, sábado ou domingo
-                  </p>
+              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                {/* What's included */}
+                <div className="bg-white rounded-2xl border border-stone-100 p-4">
+                  <h3 className="text-xs font-bold text-stone-700 uppercase tracking-wide mb-3 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#1F4D3A]" />
+                    O que está incluso no espaço
+                  </h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {AMENITIES.map((a) => (
+                      <div key={a.label} className="flex items-center gap-2 text-xs text-stone-600">
+                        <a.icon className="w-3.5 h-3.5 text-[#1F4D3A] shrink-0" />
+                        {a.label}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-stone-50 flex items-center gap-1.5 text-xs text-[#1F4D3A] font-semibold">
+                    <Users className="w-3.5 h-3.5" />
+                    Ideal para eventos de até 150 pessoas
+                  </div>
                 </div>
-                {loadingDates && (
-                  <div className="flex items-center justify-center gap-2 py-2">
-                    <Loader2 className="w-4 h-4 animate-spin text-[#1F4D3A]" />
-                    <span className="text-xs text-stone-400">Verificando agenda...</span>
+
+                {/* Scarcity warning */}
+                <div className="bg-amber-50 border border-amber-200/60 rounded-2xl px-4 py-3 flex items-start gap-2.5">
+                  <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs text-amber-800 font-semibold leading-snug">
+                      Datas de final de semana costumam esgotar rapidamente.
+                    </p>
+                    <p className="text-[11px] text-amber-600 mt-0.5 leading-snug">
+                      Recomendamos reservar com antecedência para garantir sua data.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Available dates counter */}
+                {availableDatesCount !== null && availableDatesCount <= 5 && (
+                  <div className="bg-red-50 border border-red-200/60 rounded-2xl px-4 py-3 flex items-center gap-2.5">
+                    <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />
+                    <p className="text-xs text-red-700 font-semibold">
+                      Restam apenas {availableDatesCount} {availableDatesCount === 1 ? "data disponível" : "datas disponíveis"} para{" "}
+                      <span className="capitalize">{monthName}</span>
+                    </p>
                   </div>
                 )}
-                <div className="flex justify-center px-2 pb-2">
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={handleDateSelect}
-                    disabled={isDateDisabled}
-                    locale={ptBR}
-                    className="p-3 pointer-events-auto"
-                    fromDate={new Date()}
-                    onMonthChange={setCurrentMonth}
-                    modifiers={modifiers}
-                    modifiersStyles={modifiersStyles}
-                  />
-                </div>
-                <div className="flex items-center gap-4 px-5 pb-4">
-                  <div className="flex items-center gap-1.5 text-[10px] text-stone-400">
-                    <span className="w-2.5 h-2.5 rounded-full bg-white border-2 border-stone-200" />{" "}
-                    Disponível
+
+                {/* Calendar card */}
+                <div className="bg-white rounded-3xl shadow-sm border border-stone-100 overflow-hidden">
+                  <div className="px-5 pt-5 pb-2 text-center">
+                    <h2 className="text-base font-bold text-stone-800">Qual data para o evento?</h2>
+                    <p className="text-xs text-stone-400 mt-0.5">
+                      Selecione uma sexta, sábado ou domingo
+                    </p>
                   </div>
-                  <div className="flex items-center gap-1.5 text-[10px] text-stone-400">
-                    <span className="w-2.5 h-2.5 rounded-full bg-stone-200" /> Indisponível
+                  {loadingDates && (
+                    <div className="flex items-center justify-center gap-2 py-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-[#1F4D3A]" />
+                      <span className="text-xs text-stone-400">Verificando agenda...</span>
+                    </div>
+                  )}
+                  <div className="flex justify-center px-2 pb-2">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={handleDateSelect}
+                      disabled={isDateDisabled}
+                      locale={ptBR}
+                      className="p-3 pointer-events-auto"
+                      fromDate={new Date()}
+                      onMonthChange={setCurrentMonth}
+                      modifiers={modifiers}
+                      modifiersStyles={modifiersStyles}
+                      components={{
+                        DayContent: ({ date, activeModifiers }) => (
+                          <span title={activeModifiers?.disabled ? "Data já reservada" : undefined}>
+                            {date.getDate()}
+                          </span>
+                        ),
+                      }}
+                    />
+                  </div>
+                  <div className="flex items-center gap-4 px-5 pb-4">
+                    <div className="flex items-center gap-1.5 text-[10px] text-stone-400">
+                      <span className="w-2.5 h-2.5 rounded-full bg-white border-2 border-stone-200" />{" "}
+                      Disponível
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[10px] text-stone-400">
+                      <span className="w-2.5 h-2.5 rounded-full bg-stone-200" /> Indisponível
+                    </div>
                   </div>
                 </div>
               </div>
@@ -436,6 +527,19 @@ export default function EventDates() {
           </>
         )}
       </div>
+
+      {/* Floating WhatsApp button */}
+      {step !== "success" && (
+        <a
+          href="https://wa.me/5531997111502?text=Ol%C3%A1!%20Gostaria%20de%20tirar%20uma%20d%C3%BAvida%20sobre%20o%20Espa%C3%A7o%20Lamoni%C3%AA."
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fixed bottom-5 right-5 z-30 flex items-center gap-2 bg-[#25D366] hover:bg-[#20bd5a] text-white px-4 py-3 rounded-full shadow-lg shadow-emerald-500/30 transition-all hover:scale-105 active:scale-95 text-sm font-semibold"
+        >
+          <MessageCircle className="w-5 h-5" />
+          <span className="hidden sm:inline">Tirar dúvidas</span>
+        </a>
+      )}
     </div>
   );
 }
