@@ -333,6 +333,34 @@ serve(async (req) => {
       console.error("Error creating audit log:", auditErr);
     }
 
+    // 🔔 Send push notification for contract signed
+    try {
+      const notificationPayload = {
+        action: 'send-notification',
+        title: '✅ Contrato Assinado!',
+        body: `${sig.client_name} assinou o contrato para ${sig.event_date}.`,
+        url: '/contracts',
+        tag: `contract-signed-${sig.contract_id}`
+      };
+
+      const pushResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/manage-push`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`
+        },
+        body: JSON.stringify(notificationPayload)
+      });
+
+      if (!pushResponse.ok) {
+        console.error("Failed to send push notification:", await pushResponse.text());
+      } else {
+        console.log("✅ Push notification sent for contract signature");
+      }
+    } catch (pushErr) {
+      console.error("Error sending push notification:", pushErr);
+    }
+
     return new Response(JSON.stringify({ success: true, signed_at: now }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
