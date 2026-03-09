@@ -24,7 +24,7 @@ export default function MobileTopBar({ onMenuOpen }: Props) {
   const title = PAGE_TITLES[pathname] || "Lamoniê CRM";
   const isHome = pathname === "/";
   const isMainTab = ["/visits", "/contracts", "/clients"].includes(pathname);
-  const { permission, requestPermission } = useNotificationPermission();
+  const { permission, subscribeToPush } = useNotificationPermission();
 
   const notifSupported = "Notification" in window;
 
@@ -69,7 +69,7 @@ export default function MobileTopBar({ onMenuOpen }: Props) {
           <button
             onClick={async () => {
               if (permission !== "granted") {
-                await requestPermission();
+                await subscribeToPush();
               }
             }}
             className={`flex items-center justify-center w-10 h-10 -mr-1 rounded-xl transition-colors ${
