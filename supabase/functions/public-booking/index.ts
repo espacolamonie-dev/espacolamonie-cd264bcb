@@ -175,20 +175,19 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'get-available-slots') {
-      // Get available time slots for a specific date
-      const { date } = body; // "YYYY-MM-DD"
+      const { date } = body;
       if (!date) {
         return new Response(JSON.stringify({ error: 'date required' }), { status: 400, headers: corsHeaders });
       }
 
-      // Validate it's a Tuesday or Thursday
-      if (!isAllowedDay(date)) {
-        return new Response(JSON.stringify({ slots: [], message: 'Visitas apenas às terças e quintas-feiras' }), {
+      const schedule = await getScheduleSettings(supabase);
+
+      if (!isAllowedDay(date, schedule.allowed_days)) {
+        return new Response(JSON.stringify({ slots: [], message: 'Este dia da semana não está disponível para visitas' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
-      // Validate not in the past
       const today = new Date().toISOString().split('T')[0];
       if (date < today) {
         return new Response(JSON.stringify({ slots: [], message: 'Não é possível agendar em datas passadas' }), {
