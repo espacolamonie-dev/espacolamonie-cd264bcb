@@ -277,8 +277,10 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ error: 'Campos obrigatórios não preenchidos' }), { status: 400, headers: corsHeaders });
       }
 
-      if (!isAllowedDay(visitDate)) {
-        return new Response(JSON.stringify({ error: 'Visitas apenas às terças e quintas-feiras' }), { status: 400, headers: corsHeaders });
+      const schedule = await getScheduleSettings(supabase);
+
+      if (!isAllowedDay(visitDate, schedule.allowed_days)) {
+        return new Response(JSON.stringify({ error: 'Este dia da semana não está disponível para visitas' }), { status: 400, headers: corsHeaders });
       }
 
       const today = new Date().toISOString().split('T')[0];
@@ -287,8 +289,12 @@ Deno.serve(async (req) => {
       }
 
       const hour = parseInt(visitTime.split(':')[0], 10);
-      if (hour < 9 || hour > 20) {
+      if (hour < schedule.start_hour || hour > schedule.end_hour) {
         return new Response(JSON.stringify({ error: 'Horário fora do permitido' }), { status: 400, headers: corsHeaders });
+      }
+
+      if (schedule.blocked_hours.includes(hour)) {
+        return new Response(JSON.stringify({ error: 'Este horário está bloqueado' }), { status: 400, headers: corsHeaders });
       }
 
       // Double-booking check
