@@ -301,16 +301,28 @@ export default function Financial() {
               <p className="text-2xl font-display font-bold text-danger tracking-tight">{fmt(pendingDepositTotal)}</p>
               <p className="text-[11px] text-muted-foreground mt-1">{pending.length} contrato(s) sem pagamento</p>
             </div>
-            <div className="stat-card !border-primary/20">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="rounded-full bg-primary/10 p-2">
-                  <Landmark size={14} className="text-primary" />
+            {(() => {
+              const now = new Date();
+              const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+              const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+              const monthContracts = activeContracts.filter(c => {
+                const d = new Date(c.eventDate);
+                return d >= monthStart && d <= monthEnd;
+              });
+              const monthRemaining = monthContracts.reduce((s, c) => s + c.remainingValue, 0);
+              return (
+                <div className="stat-card !border-primary/20">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="rounded-full bg-primary/10 p-2">
+                      <Landmark size={14} className="text-primary" />
+                    </div>
+                    <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider">A receber no mês</p>
+                  </div>
+                  <p className="text-2xl font-display font-bold text-primary tracking-tight">{fmt(monthRemaining)}</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">{monthContracts.length} evento(s) este mês</p>
                 </div>
-                <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider">Total a receber</p>
-              </div>
-              <p className="text-2xl font-display font-bold text-primary tracking-tight">{fmt(totalReceivable)}</p>
-              <p className="text-[11px] text-muted-foreground mt-1">De todos os contratos ativos</p>
-            </div>
+              );
+            })()}
           </div>
         );
       })()}
