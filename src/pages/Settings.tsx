@@ -315,6 +315,9 @@ export default function Settings() {
           <TabsTrigger value="pipeline" className="gap-1.5 text-xs">
             <GitBranch size={14} /> Pipeline
           </TabsTrigger>
+          <TabsTrigger value="catalog" className="gap-1.5 text-xs">
+            <Package size={14} /> Catálogo
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="general">
