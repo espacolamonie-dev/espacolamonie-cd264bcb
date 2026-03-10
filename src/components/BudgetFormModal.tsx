@@ -73,6 +73,7 @@ export default function BudgetFormModal({ budgetId, open, onClose, onSaved }: Pr
   const [items, setItems] = useState<ItemLocal[]>([]);
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
   const [showCatalog, setShowCatalog] = useState(false);
+  const [catalogSearch, setCatalogSearch] = useState("");
 
   useEffect(() => {
     const init = async () => {
