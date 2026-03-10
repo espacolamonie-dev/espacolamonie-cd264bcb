@@ -379,7 +379,7 @@ Deno.serve(async (req) => {
         const notificationPayload = {
           action: 'send-notification',
           title: '📅 Nova Visita Agendada!',
-          body: `${clientName} agendou visita para ${visitDate} às ${visitTime}h.`,
+          body: `${clientName} agendou visita para ${visitDate.split('-').reverse().join('/')} às ${visitTime}h.`,
           url: '/visits',
           tag: `visit-booked-${visit.id}`
         };

@@ -338,7 +338,7 @@ serve(async (req) => {
       const notificationPayload = {
         action: 'send-notification',
         title: '✅ Contrato Assinado!',
-        body: `${sig.client_name} assinou o contrato para ${sig.event_date}.`,
+        body: `${sig.client_name} assinou o contrato para ${sig.event_date.split('-').reverse().join('/')}.`,
         url: '/contracts',
         tag: `contract-signed-${sig.contract_id}`
       };

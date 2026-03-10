@@ -73,6 +73,7 @@ export default function BudgetFormModal({ budgetId, open, onClose, onSaved }: Pr
   const [items, setItems] = useState<ItemLocal[]>([]);
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
   const [showCatalog, setShowCatalog] = useState(false);
+  const [catalogSearch, setCatalogSearch] = useState("");
 
   useEffect(() => {
     const init = async () => {
@@ -271,7 +272,13 @@ export default function BudgetFormModal({ budgetId, open, onClose, onSaved }: Pr
               </div>
               <div>
                 <Label className="text-xs">Telefone</Label>
-                <Input value={clientPhone} onChange={e => setClientPhone(e.target.value)} />
+                <Input value={clientPhone} onChange={e => {
+                  let v = e.target.value.replace(/\D/g, "").slice(0, 11);
+                  if (v.length > 6) v = `(${v.slice(0,2)}) ${v.slice(2,7)}-${v.slice(7)}`;
+                  else if (v.length > 2) v = `(${v.slice(0,2)}) ${v.slice(2)}`;
+                  else if (v.length > 0) v = `(${v}`;
+                  setClientPhone(v);
+                }} placeholder="(31) 99999-9999" />
               </div>
               <div>
                 <Label className="text-xs">Tipo do evento</Label>
@@ -327,16 +334,37 @@ export default function BudgetFormModal({ budgetId, open, onClose, onSaved }: Pr
 
             {/* Catalog picker */}
             {showCatalog && (
-              <div className="rounded-lg border border-border bg-muted/30 p-3 max-h-48 overflow-y-auto space-y-1">
-                {catalog.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-4">Catálogo vazio. Adicione itens em Configurações.</p>
-                ) : catalog.map(c => (
-                  <button key={c.id} onClick={() => addItemFromCatalog(c)}
-                    className="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-card transition-colors flex justify-between">
-                    <span>{c.name} <span className="text-muted-foreground text-xs">({c.category})</span></span>
-                    <span className="text-primary font-medium">{fmt(c.defaultUnitPrice)}</span>
-                  </button>
-                ))}
+              <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+                <div className="relative">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar no catálogo..."
+                    value={catalogSearch}
+                    onChange={e => setCatalogSearch(e.target.value)}
+                    className="pl-9 h-9 text-sm"
+                    autoFocus
+                  />
+                </div>
+                <div className="max-h-48 overflow-y-auto space-y-1">
+                  {catalog.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-4">Catálogo vazio. Adicione itens em Configurações.</p>
+                  ) : (() => {
+                    const q = catalogSearch.toLowerCase().trim();
+                    const filtered = q ? catalog.filter(c => c.name.toLowerCase().includes(q) || c.supplier.toLowerCase().includes(q) || c.category.toLowerCase().includes(q)) : catalog;
+                    return filtered.length === 0 ? (
+                      <p className="text-xs text-muted-foreground text-center py-4">Nenhum item encontrado</p>
+                    ) : filtered.map(c => (
+                      <button key={c.id} onClick={() => { addItemFromCatalog(c); setCatalogSearch(""); }}
+                        className="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-card transition-colors flex justify-between items-center">
+                        <div>
+                          <span className="font-medium">{c.name}</span>
+                          {c.supplier && <span className="text-muted-foreground text-xs ml-2">• {c.supplier}</span>}
+                        </div>
+                        <span className="text-primary font-medium shrink-0 ml-2">{fmt(c.defaultUnitPrice)}</span>
+                      </button>
+                    ));
+                  })()}
+                </div>
               </div>
             )}
 
@@ -350,8 +378,9 @@ export default function BudgetFormModal({ budgetId, open, onClose, onSaved }: Pr
                 {items.map((item, idx) => (
                   <div key={idx} className="rounded-xl border border-border bg-card p-4 space-y-3">
                     <div className="flex items-start gap-2">
-                      <div className="flex-1">
+                      <div className="flex-1 space-y-1">
                         <Input placeholder="Nome do item" value={item.name} onChange={e => updateItemField(idx, "name", e.target.value)} className="text-sm font-medium" />
+                        {item.supplier && <p className="text-[11px] text-muted-foreground px-1">Fornecedor: {item.supplier}</p>}
                       </div>
                       <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive shrink-0" onClick={() => removeItem(idx)}>
                         <Trash2 size={14} />
