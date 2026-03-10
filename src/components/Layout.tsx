@@ -30,6 +30,7 @@ const navGroups = [
       { to: "/", label: "Dashboard", icon: LayoutDashboard },
       { to: "/clients", label: "Clientes", icon: Users },
       { to: "/contracts", label: "Contratos", icon: FileText },
+      { to: "/budgets", label: "Orçamentos", icon: Calculator },
     ],
   },
   {
