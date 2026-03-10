@@ -249,6 +249,11 @@ Deno.serve(async (req) => {
         }
       }
 
+      const AVAILABLE_HOURS = Array.from(
+        { length: schedule.end_hour - schedule.start_hour + 1 },
+        (_, i) => i + schedule.start_hour
+      ).filter(h => !schedule.blocked_hours.includes(h));
+
       const slots = AVAILABLE_HOURS.map(hour => {
         const timeStr = `${hour.toString().padStart(2, '0')}:00`;
         const isBooked = bookedTimes.has(hour);
