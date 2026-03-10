@@ -671,6 +671,10 @@ export default function Settings() {
         <TabsContent value="catalog">
           <CatalogSettingsTab />
         </TabsContent>
+
+        <TabsContent value="schedule">
+          <ScheduleSettingsTab />
+        </TabsContent>
       </Tabs>
     </div>
   );
