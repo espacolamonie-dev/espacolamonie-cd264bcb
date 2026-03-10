@@ -133,9 +133,24 @@ export default function Visits() {
     checkConflicts();
   }, [formInterestDate]);
 
+  // Stats computed from visits state — reactive to any change
+  const stats = useMemo(() => {
+    const now = new Date();
+    const spFormatter = new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" });
+    const today = spFormatter.format(now);
+    const spDayMonth = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit" }).format(now);
+    const toLocalDate = (isoStr: string) => spFormatter.format(new Date(isoStr));
+    const activeVisits = visits.filter(v => v.status !== "Cancelada");
+    const visitsToday = activeVisits.filter(v => v.visitDate === today).length;
+    const scheduledToday = visits.filter(v => toLocalDate(v.createdAt) === today).length;
+    const organicCount = activeVisits.filter(v => v.leadSource === "Orgânico").length;
+    const paidCount = activeVisits.filter(v => v.leadSource === "Tráfego Pago").length;
+    const totalLeads = organicCount + paidCount;
+    return { visitsToday, scheduledToday, organicCount, paidCount, totalLeads, spDayMonth };
+  }, [visits]);
+
   const filtered = useMemo(() => {
     let list = visits;
-    // By default hide cancelled visits unless explicitly filtering for them
     if (filterStatus === "all") {
       list = list.filter((v) => v.status !== "Cancelada");
     } else {
@@ -147,7 +162,6 @@ export default function Visits() {
         (v) => v.clientName.toLowerCase().includes(q) || v.clientPhone.includes(q)
       );
     }
-    // Sort by visit_date asc, then visit_time asc
     list = [...list].sort((a, b) => {
       const dateCompare = a.visitDate.localeCompare(b.visitDate);
       if (dateCompare !== 0) return dateCompare;
@@ -272,52 +286,36 @@ export default function Visits() {
         )}
       </div>
 
-      {/* Stats Cards */}
-      {(() => {
-        const now = new Date();
-        const spFormatter = new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" });
-        const today = spFormatter.format(now); // yyyy-MM-dd
-        const spDayMonth = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit" }).format(now);
-        const toLocalDate = (isoStr: string) => spFormatter.format(new Date(isoStr));
-        const activeVisits = visits.filter(v => v.status !== "Cancelada");
-        const visitsToday = activeVisits.filter(v => v.visitDate === today).length;
-        const scheduledToday = visits.filter(v => toLocalDate(v.createdAt) === today).length;
-        const organicCount = activeVisits.filter(v => v.leadSource === "Orgânico").length;
-        const paidCount = activeVisits.filter(v => v.leadSource === "Tráfego Pago").length;
-        const totalLeads = organicCount + paidCount;
-        return (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="rounded-xl border border-border bg-card p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                <CalendarDays size={14} />
-                <span className="text-xs font-medium">Visitas Hoje</span>
-              </div>
-              <p className="text-2xl font-bold">{visitsToday}</p>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                <Plus size={14} />
-                <span className="text-xs font-medium">Agendadas Hoje - {spDayMonth}</span>
-              </div>
-              <p className="text-2xl font-bold">{scheduledToday}</p>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                <Users size={14} />
-                <span className="text-xs font-medium">Orgânico</span>
-              </div>
-              <p className="text-2xl font-bold">{organicCount}<span className="text-sm font-normal text-muted-foreground ml-1">/ {totalLeads}</span></p>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                <Megaphone size={14} />
-                <span className="text-xs font-medium">Tráfego Pago</span>
-              </div>
-              <p className="text-2xl font-bold">{paidCount}<span className="text-sm font-normal text-muted-foreground ml-1">/ {totalLeads}</span></p>
-            </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center gap-2 text-muted-foreground mb-1">
+            <CalendarDays size={14} />
+            <span className="text-xs font-medium">Visitas Hoje</span>
           </div>
-        );
-      })()}
+          <p className="text-2xl font-bold">{stats.visitsToday}</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center gap-2 text-muted-foreground mb-1">
+            <Plus size={14} />
+            <span className="text-xs font-medium">Agendadas Hoje - {stats.spDayMonth}</span>
+          </div>
+          <p className="text-2xl font-bold">{stats.scheduledToday}</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center gap-2 text-muted-foreground mb-1">
+            <Users size={14} />
+            <span className="text-xs font-medium">Orgânico</span>
+          </div>
+          <p className="text-2xl font-bold">{stats.organicCount}<span className="text-sm font-normal text-muted-foreground ml-1">/ {stats.totalLeads}</span></p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center gap-2 text-muted-foreground mb-1">
+            <Megaphone size={14} />
+            <span className="text-xs font-medium">Tráfego Pago</span>
+          </div>
+          <p className="text-2xl font-bold">{stats.paidCount}<span className="text-sm font-normal text-muted-foreground ml-1">/ {stats.totalLeads}</span></p>
+        </div>
+      </div>
 
       {/* Link de agendamento */}
       <div className="flex items-center gap-2 rounded-xl border border-border bg-card p-3">
