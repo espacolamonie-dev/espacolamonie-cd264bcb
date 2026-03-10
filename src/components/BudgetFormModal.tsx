@@ -328,16 +328,37 @@ export default function BudgetFormModal({ budgetId, open, onClose, onSaved }: Pr
 
             {/* Catalog picker */}
             {showCatalog && (
-              <div className="rounded-lg border border-border bg-muted/30 p-3 max-h-48 overflow-y-auto space-y-1">
-                {catalog.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-4">Catálogo vazio. Adicione itens em Configurações.</p>
-                ) : catalog.map(c => (
-                  <button key={c.id} onClick={() => addItemFromCatalog(c)}
-                    className="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-card transition-colors flex justify-between">
-                    <span>{c.name} <span className="text-muted-foreground text-xs">({c.category})</span></span>
-                    <span className="text-primary font-medium">{fmt(c.defaultUnitPrice)}</span>
-                  </button>
-                ))}
+              <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+                <div className="relative">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar no catálogo..."
+                    value={catalogSearch}
+                    onChange={e => setCatalogSearch(e.target.value)}
+                    className="pl-9 h-9 text-sm"
+                    autoFocus
+                  />
+                </div>
+                <div className="max-h-48 overflow-y-auto space-y-1">
+                  {catalog.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-4">Catálogo vazio. Adicione itens em Configurações.</p>
+                  ) : (() => {
+                    const q = catalogSearch.toLowerCase().trim();
+                    const filtered = q ? catalog.filter(c => c.name.toLowerCase().includes(q) || c.supplier.toLowerCase().includes(q) || c.category.toLowerCase().includes(q)) : catalog;
+                    return filtered.length === 0 ? (
+                      <p className="text-xs text-muted-foreground text-center py-4">Nenhum item encontrado</p>
+                    ) : filtered.map(c => (
+                      <button key={c.id} onClick={() => { addItemFromCatalog(c); setCatalogSearch(""); }}
+                        className="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-card transition-colors flex justify-between items-center">
+                        <div>
+                          <span className="font-medium">{c.name}</span>
+                          {c.supplier && <span className="text-muted-foreground text-xs ml-2">• {c.supplier}</span>}
+                        </div>
+                        <span className="text-primary font-medium shrink-0 ml-2">{fmt(c.defaultUnitPrice)}</span>
+                      </button>
+                    ));
+                  })()}
+                </div>
               </div>
             )}
 
