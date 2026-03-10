@@ -663,6 +663,10 @@ export default function Settings() {
         <TabsContent value="pipeline">
           <PipelineSettingsTab />
         </TabsContent>
+
+        <TabsContent value="catalog">
+          <CatalogSettingsTab />
+        </TabsContent>
       </Tabs>
     </div>
   );
