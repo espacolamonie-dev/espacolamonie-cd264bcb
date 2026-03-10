@@ -67,14 +67,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         />
       )}
 
-      {/* Sidebar — hidden on mobile, shown on desktop */}
+      {/* Sidebar — hidden on mobile, sticky on desktop */}
       <aside
-        className={`sidebar-gradient fixed inset-y-0 left-0 z-50 flex w-[260px] flex-col transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${
-          mobileOpen ? "translate-x-0 animate-slide-in-left" : "-translate-x-full"
+        className={`sidebar-gradient z-50 flex w-[260px] shrink-0 flex-col md:sticky md:top-0 md:h-screen ${
+          isMobile
+            ? `fixed inset-y-0 left-0 transition-transform duration-300 ease-in-out ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`
+            : ""
         }`}
       >
         {/* Logo */}
-        <div className="flex items-center justify-center px-6 pt-7 pb-8 relative">
+        <div className="flex items-center justify-center px-6 pt-7 pb-8 relative shrink-0">
           <img
             src={logo}
             alt="Lamoniê"
@@ -89,7 +91,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Nav groups */}
-        <nav className="flex-1 px-4 overflow-y-auto space-y-6">
+        <nav className="flex-1 min-h-0 px-4 overflow-y-auto space-y-6">
           {navGroups.map((group) => (
             <div key={group.label}>
               <p className="px-4 mb-2 text-[9px] font-semibold uppercase tracking-[0.18em] text-white/25" style={{ fontFamily: "var(--font-body)" }}>
@@ -124,7 +126,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </nav>
 
         {/* Footer */}
-        <div className="px-4 pb-6 pt-4">
+        <div className="shrink-0 px-4 pb-6 pt-4 mt-auto">
           <div className="border-t border-white/8 mb-3" />
           <Link
             to="/settings"
