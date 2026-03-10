@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {
   CheckCircle2, XCircle, RefreshCw, Calendar, ExternalLink,
   AlertCircle, Loader2, Building2, CreditCard, Bell, Shield,
-  Save, Upload, GitBranch,
+  Save, Upload, GitBranch, Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
