@@ -126,7 +126,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </nav>
 
         {/* Footer */}
-        <div className="px-4 pb-6 pt-4">
+        <div className="shrink-0 px-4 pb-6 pt-4 mt-auto">
           <div className="border-t border-white/8 mb-3" />
           <Link
             to="/settings"
