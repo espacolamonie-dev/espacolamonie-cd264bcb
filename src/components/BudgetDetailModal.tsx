@@ -106,11 +106,12 @@ export default function BudgetDetailModal({ budgetId, open, onClose, onUpdated }
               ))}
             </SelectContent>
           </Select>
-          <div className="flex gap-1 ml-auto">
-            <Button size="sm" variant="outline" onClick={copyLink} className="gap-1 text-xs"><LinkIcon size={14} /> Link</Button>
+          <div className="flex flex-wrap gap-1.5 ml-auto">
+            <Button size="sm" variant="outline" onClick={copyLink} className="gap-1 text-xs"><Copy size={14} /> Copiar link</Button>
+            <Button size="sm" variant="outline" onClick={openPublicView} className="gap-1 text-xs"><ExternalLink size={14} /> Abrir</Button>
             <Button size="sm" variant="outline" onClick={handlePdf} className="gap-1 text-xs"><FileDown size={14} /> PDF</Button>
             {budget.clientPhone && (
-              <Button size="sm" variant="outline" onClick={shareWhatsApp} className="gap-1 text-xs"><MessageCircle size={14} /> WhatsApp</Button>
+              <Button size="sm" variant="outline" onClick={shareWhatsApp} className="gap-1 text-xs"><MessageCircle size={14} /> Enviar</Button>
             )}
           </div>
         </div>
