@@ -345,23 +345,31 @@ export default function BudgetFormModal({ budgetId, open, onClose, onSaved }: Pr
                     autoFocus
                   />
                 </div>
-                <div className="max-h-48 overflow-y-auto space-y-1">
+                <div className="max-h-60 overflow-y-auto">
                   {catalog.length === 0 ? (
                     <p className="text-xs text-muted-foreground text-center py-4">Catálogo vazio. Adicione itens em Configurações.</p>
                   ) : (() => {
                     const q = catalogSearch.toLowerCase().trim();
                     const filtered = q ? catalog.filter(c => c.name.toLowerCase().includes(q) || c.supplier.toLowerCase().includes(q) || c.category.toLowerCase().includes(q)) : catalog;
-                    return filtered.length === 0 ? (
-                      <p className="text-xs text-muted-foreground text-center py-4">Nenhum item encontrado</p>
-                    ) : filtered.map(c => (
-                      <button key={c.id} onClick={() => { addItemFromCatalog(c); setCatalogSearch(""); }}
-                        className="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-card transition-colors flex justify-between items-center">
-                        <div>
-                          <span className="font-medium">{c.name}</span>
-                          {c.supplier && <span className="text-muted-foreground text-xs ml-2">• {c.supplier}</span>}
-                        </div>
-                        <span className="text-primary font-medium shrink-0 ml-2">{fmt(c.defaultUnitPrice)}</span>
-                      </button>
+                    if (filtered.length === 0) return <p className="text-xs text-muted-foreground text-center py-4">Nenhum item encontrado</p>;
+                    // Group by supplier, sorted alphabetically
+                    const grouped: Record<string, typeof filtered> = {};
+                    for (const c of [...filtered].sort((a, b) => (a.supplier || "").localeCompare(b.supplier || "") || a.name.localeCompare(b.name))) {
+                      const key = c.supplier || "Sem fornecedor";
+                      if (!grouped[key]) grouped[key] = [];
+                      grouped[key].push(c);
+                    }
+                    return Object.entries(grouped).map(([supplier, items]) => (
+                      <div key={supplier} className="mb-2">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-3 py-1.5 sticky top-0 bg-muted/30">{supplier}</p>
+                        {items.map(c => (
+                          <button key={c.id} onClick={() => { addItemFromCatalog(c); setCatalogSearch(""); }}
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-card transition-colors flex justify-between items-center">
+                            <span className="font-medium">{c.name}</span>
+                            <span className="text-primary font-medium shrink-0 ml-2">{fmt(c.defaultUnitPrice)}</span>
+                          </button>
+                        ))}
+                      </div>
                     ));
                   })()}
                 </div>
