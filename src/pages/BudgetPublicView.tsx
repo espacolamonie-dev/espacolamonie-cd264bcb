@@ -170,12 +170,6 @@ export default function BudgetPublicView() {
               <p style={{ fontFamily: "'Poppins', sans-serif", fontSize: "13px", color: "rgba(255,255,255,0.7)" }}>Subtotal</p>
               <p style={{ fontFamily: "'Poppins', sans-serif", fontSize: "15px", fontWeight: 500, color: "rgba(255,255,255,0.9)" }}>{fmt(budget.subtotal)}</p>
             </div>
-            {budget.additionalTotal > 0 && (
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                <p style={{ fontFamily: "'Poppins', sans-serif", fontSize: "13px", color: "rgba(255,255,255,0.7)" }}>Adicional</p>
-                <p style={{ fontFamily: "'Poppins', sans-serif", fontSize: "15px", fontWeight: 500, color: "rgba(255,255,255,0.9)" }}>{fmt(budget.additionalTotal)}</p>
-              </div>
-            )}
             <div style={{ borderTop: "1px solid rgba(255,255,255,0.15)", paddingTop: "16px", marginTop: "4px", display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
               <p style={{ fontFamily: "'Playfair Display', serif", fontSize: "16px", fontWeight: 600, color: "rgba(255,255,255,0.9)" }}>Total Final</p>
               <p style={{ fontFamily: "'Playfair Display', serif", fontSize: "28px", fontWeight: 700, color: "#FFFFFF" }}>{fmt(budget.finalTotal)}</p>

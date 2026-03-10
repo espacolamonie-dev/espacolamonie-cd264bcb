@@ -272,7 +272,13 @@ export default function BudgetFormModal({ budgetId, open, onClose, onSaved }: Pr
               </div>
               <div>
                 <Label className="text-xs">Telefone</Label>
-                <Input value={clientPhone} onChange={e => setClientPhone(e.target.value)} />
+                <Input value={clientPhone} onChange={e => {
+                  let v = e.target.value.replace(/\D/g, "").slice(0, 11);
+                  if (v.length > 6) v = `(${v.slice(0,2)}) ${v.slice(2,7)}-${v.slice(7)}`;
+                  else if (v.length > 2) v = `(${v.slice(0,2)}) ${v.slice(2)}`;
+                  else if (v.length > 0) v = `(${v}`;
+                  setClientPhone(v);
+                }} placeholder="(31) 99999-9999" />
               </div>
               <div>
                 <Label className="text-xs">Tipo do evento</Label>
