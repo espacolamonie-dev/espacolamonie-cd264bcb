@@ -77,6 +77,7 @@ const App = () => (
           <Route path="/assinar/:slug" element={<SignContract />} />
           <Route path="/agendar-visita" element={<BookVisit />} />
           <Route path="/datas-eventos" element={<EventDates />} />
+          <Route path="/orcamento/:token" element={<BudgetPublicView />} />
           <Route
             path="/*"
             element={
