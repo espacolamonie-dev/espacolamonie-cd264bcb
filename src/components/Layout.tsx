@@ -12,6 +12,7 @@ import {
   Settings,
   ClipboardCheck,
   MessageCircle,
+  Calculator,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useContractNotifications } from "@/hooks/useContractNotifications";
@@ -29,6 +30,7 @@ const navGroups = [
       { to: "/", label: "Dashboard", icon: LayoutDashboard },
       { to: "/clients", label: "Clientes", icon: Users },
       { to: "/contracts", label: "Contratos", icon: FileText },
+      { to: "/budgets", label: "Orçamentos", icon: Calculator },
     ],
   },
   {

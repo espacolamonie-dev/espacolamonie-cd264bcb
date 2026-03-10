@@ -16,6 +16,8 @@ import LeadsWhatsApp from "@/pages/LeadsWhatsApp";
 import SignContract from "@/pages/SignContract";
 import BookVisit from "@/pages/BookVisit";
 import EventDates from "@/pages/EventDates";
+import Budgets from "@/pages/Budgets";
+import BudgetPublicView from "@/pages/BudgetPublicView";
 import Auth from "@/pages/Auth";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "@/hooks/useAuth";
@@ -75,6 +77,7 @@ const App = () => (
           <Route path="/assinar/:slug" element={<SignContract />} />
           <Route path="/agendar-visita" element={<BookVisit />} />
           <Route path="/datas-eventos" element={<EventDates />} />
+          <Route path="/orcamento/:token" element={<BudgetPublicView />} />
           <Route
             path="/*"
             element={
@@ -87,6 +90,7 @@ const App = () => (
                     <Route path="/financial" element={<Financial />} />
                     <Route path="/agenda" element={<Agenda />} />
                     <Route path="/reports" element={<Reports />} />
+                    <Route path="/budgets" element={<Budgets />} />
                     <Route path="/visits" element={<Visits />} />
                     <Route path="/leads" element={<LeadsWhatsApp />} />
                     <Route path="/settings" element={<Settings />} />
