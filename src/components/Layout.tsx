@@ -91,7 +91,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Nav groups */}
-        <nav className="flex-1 px-4 overflow-y-auto space-y-6">
+        <nav className="flex-1 min-h-0 px-4 overflow-y-auto space-y-6">
           {navGroups.map((group) => (
             <div key={group.label}>
               <p className="px-4 mb-2 text-[9px] font-semibold uppercase tracking-[0.18em] text-white/25" style={{ fontFamily: "var(--font-body)" }}>
