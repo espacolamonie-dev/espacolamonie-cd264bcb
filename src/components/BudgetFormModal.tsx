@@ -372,8 +372,9 @@ export default function BudgetFormModal({ budgetId, open, onClose, onSaved }: Pr
                 {items.map((item, idx) => (
                   <div key={idx} className="rounded-xl border border-border bg-card p-4 space-y-3">
                     <div className="flex items-start gap-2">
-                      <div className="flex-1">
+                      <div className="flex-1 space-y-1">
                         <Input placeholder="Nome do item" value={item.name} onChange={e => updateItemField(idx, "name", e.target.value)} className="text-sm font-medium" />
+                        {item.supplier && <p className="text-[11px] text-muted-foreground px-1">Fornecedor: {item.supplier}</p>}
                       </div>
                       <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive shrink-0" onClick={() => removeItem(idx)}>
                         <Trash2 size={14} />
