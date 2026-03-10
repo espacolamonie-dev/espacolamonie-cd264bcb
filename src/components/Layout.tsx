@@ -12,6 +12,7 @@ import {
   Settings,
   ClipboardCheck,
   MessageCircle,
+  Calculator,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useContractNotifications } from "@/hooks/useContractNotifications";
