@@ -106,65 +106,80 @@ export default function CatalogSettingsTab() {
     try {
       const buffer = await file.arrayBuffer();
       const wb = XLSX.read(buffer, { type: "array" });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows: any[] = XLSX.utils.sheet_to_json(ws, { defval: "" });
+      const allParsed: PreviewRow[] = [];
 
-      if (rows.length === 0) { toast.error("Planilha vazia"); return; }
+      for (const sheetName of wb.SheetNames) {
+        const ws = wb.Sheets[sheetName];
+        const rawRows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+        if (rawRows.length === 0) continue;
 
-      // Try to map columns intelligently
-      const colKeys = Object.keys(rows[0]);
+        let currentSupplier = "";
 
-      const findCol = (keywords: string[]) =>
-        colKeys.find(k => keywords.some(kw => k.toLowerCase().includes(kw))) || "";
+        for (const row of rawRows) {
+          const col0 = String(row[0] || "").trim();
+          const col1 = row[1];
+          const col1Str = String(col1 || "").trim();
 
-      const nameCol = findCol(["nome", "item", "descrição", "descricao", "produto", "name"]);
-      const categoryCol = findCol(["categoria", "category", "tipo"]);
-      const supplierCol = findCol(["fornecedor", "supplier", "empresa"]);
-      const priceCol = findCol(["valor", "preço", "preco", "price", "custo", "unitário", "unitario"]);
-      const unitCol = findCol(["unidade", "unit", "medida"]);
-      const pctCol = findCol(["percentual", "porcentagem", "%", "margem", "adicional"]);
+          if (!col0) continue;
 
-      const parsed: PreviewRow[] = rows.map((row) => {
-        let price = 0;
-        const rawPrice = row[priceCol];
-        if (typeof rawPrice === "number") {
-          price = rawPrice;
-        } else if (typeof rawPrice === "string") {
-          price = parseFloat(rawPrice.replace(/[^\d,.-]/g, "").replace(",", ".")) || 0;
+          // Skip totals and headers
+          const lowerCol0 = col0.toLowerCase();
+          if (lowerCol0.includes("subtotal") || lowerCol0.includes("total geral") || lowerCol0 === "orçamentos" || lowerCol0 === "utensilios") continue;
+
+          // Detect supplier row: has text in col0 but NO valid price in col1
+          const priceVal = parsePrice(col1);
+          if (priceVal === 0 && !col1Str) {
+            // This is a supplier/section header
+            currentSupplier = col0;
+            continue;
+          }
+
+          // It's an item row if it has a name and a price
+          if (col0 && priceVal > 0) {
+            allParsed.push({
+              name: col0,
+              category: "",
+              supplier: currentSupplier,
+              unitPrice: priceVal,
+              unitLabel: "unidade",
+              percentage: 0,
+              selected: true,
+            });
+          }
         }
+      }
 
-        let pct = 0;
-        const rawPct = row[pctCol];
-        if (typeof rawPct === "number") {
-          pct = rawPct;
-        } else if (typeof rawPct === "string") {
-          pct = parseFloat(rawPct.replace(/[^\d,.-]/g, "").replace(",", ".")) || 0;
-        }
+      // Deduplicate by name+supplier (keep first occurrence)
+      const seen = new Set<string>();
+      const deduped = allParsed.filter(r => {
+        const key = `${r.name.toLowerCase()}|${r.supplier.toLowerCase()}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
 
-        return {
-          name: String(row[nameCol] || "").trim(),
-          category: String(row[categoryCol] || "").trim(),
-          supplier: String(row[supplierCol] || "").trim(),
-          unitPrice: price,
-          unitLabel: String(row[unitCol] || "unidade").trim(),
-          percentage: pct,
-          selected: true,
-        };
-      }).filter(r => r.name.length > 0);
-
-      if (parsed.length === 0) {
-        toast.error("Nenhum item válido encontrado. Verifique se a planilha tem uma coluna de nome.");
+      if (deduped.length === 0) {
+        toast.error("Nenhum item válido encontrado na planilha.");
         return;
       }
 
-      setPreview(parsed);
-      toast.success(`${parsed.length} itens encontrados`);
+      setPreview(deduped);
+      toast.success(`${deduped.length} itens encontrados`);
     } catch (err: any) {
       toast.error("Erro ao ler planilha: " + err.message);
     }
 
-    // Reset input
     e.target.value = "";
+  };
+
+  const parsePrice = (val: any): number => {
+    if (typeof val === "number") return val;
+    if (typeof val === "string") {
+      const cleaned = val.replace(/[R$\s]/g, "").replace(/\./g, "").replace(",", ".");
+      const num = parseFloat(cleaned);
+      return isNaN(num) ? 0 : num;
+    }
+    return 0;
   };
 
   const togglePreviewItem = (idx: number) => {
