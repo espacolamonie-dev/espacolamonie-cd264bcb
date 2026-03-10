@@ -76,7 +76,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         }`}
       >
         {/* Logo */}
-        <div className="flex items-center justify-center px-6 pt-7 pb-8 relative">
+        <div className="flex items-center justify-center px-6 pt-7 pb-8 relative shrink-0">
           <img
             src={logo}
             alt="Lamoniê"
