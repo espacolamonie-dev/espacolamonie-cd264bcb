@@ -49,13 +49,36 @@ async function getValidToken(supabase: ReturnType<typeof createClient>, userId: 
   return settings.access_token as string;
 }
 
-// Available hours: 09:00 to 19:00 (last slot starts at 19, ends at 20)
-const AVAILABLE_HOURS = Array.from({ length: 12 }, (_, i) => i + 9); // 9,10,...,20
+// Default available hours: 09:00 to 20:00
+const DEFAULT_AVAILABLE_HOURS = Array.from({ length: 12 }, (_, i) => i + 9);
+const DEFAULT_ALLOWED_DAYS = [2, 4]; // Tuesday, Thursday
 
-function isAllowedDay(dateStr: string): boolean {
+async function getScheduleSettings(supabase: ReturnType<typeof createClient>) {
+  const { data } = await supabase
+    .from('booking_schedule_settings')
+    .select('*')
+    .limit(1)
+    .single();
+  if (data) {
+    return {
+      allowed_days: data.allowed_days || DEFAULT_ALLOWED_DAYS,
+      start_hour: data.start_hour ?? 9,
+      end_hour: data.end_hour ?? 20,
+      blocked_hours: data.blocked_hours || [],
+    };
+  }
+  return {
+    allowed_days: DEFAULT_ALLOWED_DAYS,
+    start_hour: 9,
+    end_hour: 20,
+    blocked_hours: [] as number[],
+  };
+}
+
+function isAllowedDay(dateStr: string, allowedDays: number[]): boolean {
   const d = new Date(dateStr + 'T12:00:00');
-  const day = d.getDay(); // 0=Sun,1=Mon,2=Tue,3=Wed,4=Thu,5=Fri,6=Sat
-  return day === 2 || day === 4; // Tuesday or Thursday
+  const day = d.getDay();
+  return allowedDays.includes(day);
 }
 
 Deno.serve(async (req) => {
