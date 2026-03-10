@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {
   CheckCircle2, XCircle, RefreshCw, Calendar, ExternalLink,
   AlertCircle, Loader2, Building2, CreditCard, Bell, Shield,
-  Save, Upload, GitBranch,
+  Save, Upload, GitBranch, Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,6 +17,7 @@ import { useGoogleCalendar, GoogleCalendarItem, GoogleSettings } from "@/hooks/u
 import { useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import PipelineSettingsTab from "@/components/PipelineSettingsTab";
+import CatalogSettingsTab from "@/components/CatalogSettingsTab";
 import { supabase } from "@/integrations/supabase/client";
 
 // ─── Masks ───
@@ -313,6 +314,9 @@ export default function Settings() {
           </TabsTrigger>
           <TabsTrigger value="pipeline" className="gap-1.5 text-xs">
             <GitBranch size={14} /> Pipeline
+          </TabsTrigger>
+          <TabsTrigger value="catalog" className="gap-1.5 text-xs">
+            <Package size={14} /> Catálogo
           </TabsTrigger>
         </TabsList>
 
@@ -658,6 +662,10 @@ export default function Settings() {
 
         <TabsContent value="pipeline">
           <PipelineSettingsTab />
+        </TabsContent>
+
+        <TabsContent value="catalog">
+          <CatalogSettingsTab />
         </TabsContent>
       </Tabs>
     </div>
