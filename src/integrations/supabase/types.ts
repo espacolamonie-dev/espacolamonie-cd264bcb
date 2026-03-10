@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      booking_schedule_settings: {
+        Row: {
+          allowed_days: number[]
+          blocked_hours: number[]
+          created_at: string
+          end_hour: number
+          id: string
+          start_hour: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          allowed_days?: number[]
+          blocked_hours?: number[]
+          created_at?: string
+          end_hour?: number
+          id?: string
+          start_hour?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          allowed_days?: number[]
+          blocked_hours?: number[]
+          created_at?: string
+          end_hour?: number
+          id?: string
+          start_hour?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       budget_items: {
         Row: {
           additional_value: number
