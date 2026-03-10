@@ -149,7 +149,7 @@ export default function BudgetPublicView() {
                     {item.name}
                   </p>
                   <p style={{ fontFamily: "'Poppins', sans-serif", fontSize: "12px", color: "#9CA3AF", marginTop: "2px" }}>
-                    {item.quantity} {item.unitLabel} × {fmt(item.unitPrice)}
+                    {item.quantity} {item.unitLabel}
                   </p>
                 </div>
                 <p style={{ fontFamily: "'Poppins', sans-serif", fontSize: "15px", fontWeight: 600, color: "#1F4D3A", marginLeft: "16px", whiteSpace: "nowrap" }}>
