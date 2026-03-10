@@ -17,6 +17,7 @@ import { useGoogleCalendar, GoogleCalendarItem, GoogleSettings } from "@/hooks/u
 import { useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import PipelineSettingsTab from "@/components/PipelineSettingsTab";
+import CatalogSettingsTab from "@/components/CatalogSettingsTab";
 import { supabase } from "@/integrations/supabase/client";
 
 // ─── Masks ───
