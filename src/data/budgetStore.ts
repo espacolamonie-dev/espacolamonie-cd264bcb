@@ -152,6 +152,25 @@ function mapLog(row: any): BudgetLog {
   };
 }
 
+// ── Slug helper ──
+function generateSlug(name: string): string {
+  return name
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // remove accents
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+async function uniqueSlug(baseName: string): Promise<string> {
+  const base = generateSlug(baseName);
+  // Check if slug exists
+  const { data } = await supabase.from("budgets").select("id").eq("public_token", base).maybeSingle();
+  if (!data) return base;
+  // Add short random suffix
+  const suffix = Math.random().toString(36).substring(2, 6);
+  return `${base}-${suffix}`;
+}
+
 // ── BUDGETS CRUD ──
 export const getBudgets = async (): Promise<Budget[]> => {
   const { data, error } = await supabase.from("budgets").select("*").order("created_at", { ascending: false });
