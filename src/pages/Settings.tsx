@@ -18,6 +18,7 @@ import { useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import PipelineSettingsTab from "@/components/PipelineSettingsTab";
 import CatalogSettingsTab from "@/components/CatalogSettingsTab";
+import ScheduleSettingsTab from "@/components/ScheduleSettingsTab";
 import { supabase } from "@/integrations/supabase/client";
 
 // ─── Masks ───
