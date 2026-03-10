@@ -18,6 +18,7 @@ import { useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import PipelineSettingsTab from "@/components/PipelineSettingsTab";
 import CatalogSettingsTab from "@/components/CatalogSettingsTab";
+import ScheduleSettingsTab from "@/components/ScheduleSettingsTab";
 import { supabase } from "@/integrations/supabase/client";
 
 // ─── Masks ───
@@ -317,6 +318,9 @@ export default function Settings() {
           </TabsTrigger>
           <TabsTrigger value="catalog" className="gap-1.5 text-xs">
             <Package size={14} /> Catálogo
+          </TabsTrigger>
+          <TabsTrigger value="schedule" className="gap-1.5 text-xs">
+            <Calendar size={14} /> Horários
           </TabsTrigger>
         </TabsList>
 
@@ -666,6 +670,10 @@ export default function Settings() {
 
         <TabsContent value="catalog">
           <CatalogSettingsTab />
+        </TabsContent>
+
+        <TabsContent value="schedule">
+          <ScheduleSettingsTab />
         </TabsContent>
       </Tabs>
     </div>

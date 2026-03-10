@@ -52,15 +52,31 @@ export default function BookVisit() {
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [allowedDays, setAllowedDays] = useState<number[]>([2, 4]);
 
   const [confirmData, setConfirmData] = useState<{ clientName: string; visitDate: string; visitTime: string } | null>(null);
+
+  // Fetch schedule settings on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/booking_schedule_settings?select=allowed_days&limit=1`, {
+          headers: { apikey: SUPABASE_KEY },
+        });
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0 && data[0].allowed_days) {
+          setAllowedDays(data[0].allowed_days);
+        }
+      } catch {}
+    })();
+  }, []);
 
   const isDateDisabled = useCallback((date: Date) => {
     const today = startOfDay(new Date());
     if (isBefore(date, today)) return true;
     const day = date.getDay();
-    return day !== 2 && day !== 4;
-  }, []);
+    return !allowedDays.includes(day);
+  }, [allowedDays]);
 
   const fetchSlots = useCallback(async (date: Date) => {
     setLoadingSlots(true);

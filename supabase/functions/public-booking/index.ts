@@ -49,13 +49,36 @@ async function getValidToken(supabase: ReturnType<typeof createClient>, userId: 
   return settings.access_token as string;
 }
 
-// Available hours: 09:00 to 19:00 (last slot starts at 19, ends at 20)
-const AVAILABLE_HOURS = Array.from({ length: 12 }, (_, i) => i + 9); // 9,10,...,20
+// Default available hours: 09:00 to 20:00
+const DEFAULT_AVAILABLE_HOURS = Array.from({ length: 12 }, (_, i) => i + 9);
+const DEFAULT_ALLOWED_DAYS = [2, 4]; // Tuesday, Thursday
 
-function isAllowedDay(dateStr: string): boolean {
+async function getScheduleSettings(supabase: ReturnType<typeof createClient>) {
+  const { data } = await supabase
+    .from('booking_schedule_settings')
+    .select('*')
+    .limit(1)
+    .single();
+  if (data) {
+    return {
+      allowed_days: data.allowed_days || DEFAULT_ALLOWED_DAYS,
+      start_hour: data.start_hour ?? 9,
+      end_hour: data.end_hour ?? 20,
+      blocked_hours: data.blocked_hours || [],
+    };
+  }
+  return {
+    allowed_days: DEFAULT_ALLOWED_DAYS,
+    start_hour: 9,
+    end_hour: 20,
+    blocked_hours: [] as number[],
+  };
+}
+
+function isAllowedDay(dateStr: string, allowedDays: number[]): boolean {
   const d = new Date(dateStr + 'T12:00:00');
-  const day = d.getDay(); // 0=Sun,1=Mon,2=Tue,3=Wed,4=Thu,5=Fri,6=Sat
-  return day === 2 || day === 4; // Tuesday or Thursday
+  const day = d.getDay();
+  return allowedDays.includes(day);
 }
 
 Deno.serve(async (req) => {
@@ -152,20 +175,19 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'get-available-slots') {
-      // Get available time slots for a specific date
-      const { date } = body; // "YYYY-MM-DD"
+      const { date } = body;
       if (!date) {
         return new Response(JSON.stringify({ error: 'date required' }), { status: 400, headers: corsHeaders });
       }
 
-      // Validate it's a Tuesday or Thursday
-      if (!isAllowedDay(date)) {
-        return new Response(JSON.stringify({ slots: [], message: 'Visitas apenas às terças e quintas-feiras' }), {
+      const schedule = await getScheduleSettings(supabase);
+
+      if (!isAllowedDay(date, schedule.allowed_days)) {
+        return new Response(JSON.stringify({ slots: [], message: 'Este dia da semana não está disponível para visitas' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
-      // Validate not in the past
       const today = new Date().toISOString().split('T')[0];
       if (date < today) {
         return new Response(JSON.stringify({ slots: [], message: 'Não é possível agendar em datas passadas' }), {
@@ -227,6 +249,11 @@ Deno.serve(async (req) => {
         }
       }
 
+      const AVAILABLE_HOURS = Array.from(
+        { length: schedule.end_hour - schedule.start_hour + 1 },
+        (_, i) => i + schedule.start_hour
+      ).filter(h => !schedule.blocked_hours.includes(h));
+
       const slots = AVAILABLE_HOURS.map(hour => {
         const timeStr = `${hour.toString().padStart(2, '0')}:00`;
         const isBooked = bookedTimes.has(hour);
@@ -250,8 +277,10 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ error: 'Campos obrigatórios não preenchidos' }), { status: 400, headers: corsHeaders });
       }
 
-      if (!isAllowedDay(visitDate)) {
-        return new Response(JSON.stringify({ error: 'Visitas apenas às terças e quintas-feiras' }), { status: 400, headers: corsHeaders });
+      const schedule = await getScheduleSettings(supabase);
+
+      if (!isAllowedDay(visitDate, schedule.allowed_days)) {
+        return new Response(JSON.stringify({ error: 'Este dia da semana não está disponível para visitas' }), { status: 400, headers: corsHeaders });
       }
 
       const today = new Date().toISOString().split('T')[0];
@@ -260,8 +289,12 @@ Deno.serve(async (req) => {
       }
 
       const hour = parseInt(visitTime.split(':')[0], 10);
-      if (hour < 9 || hour > 20) {
+      if (hour < schedule.start_hour || hour > schedule.end_hour) {
         return new Response(JSON.stringify({ error: 'Horário fora do permitido' }), { status: 400, headers: corsHeaders });
+      }
+
+      if (schedule.blocked_hours.includes(hour)) {
+        return new Response(JSON.stringify({ error: 'Este horário está bloqueado' }), { status: 400, headers: corsHeaders });
       }
 
       // Double-booking check
