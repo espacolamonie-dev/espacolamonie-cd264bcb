@@ -55,11 +55,16 @@ export default function BudgetDetailModal({ budgetId, open, onClose, onUpdated }
     } catch (e: any) { toast.error(e.message); }
   };
 
+  const getPublicUrl = () => `${window.location.origin}/orcamento/${budget?.publicToken}`;
+
   const copyLink = () => {
     if (!budget) return;
-    const url = `${window.location.origin}/orcamento/${budget.publicToken}`;
-    navigator.clipboard.writeText(url);
-    toast.success("Link copiado");
+    navigator.clipboard.writeText(getPublicUrl());
+    toast.success("Link copiado para a área de transferência");
+  };
+
+  const openPublicView = () => {
+    window.open(getPublicUrl(), "_blank");
   };
 
   const handlePdf = () => {
@@ -68,8 +73,8 @@ export default function BudgetDetailModal({ budgetId, open, onClose, onUpdated }
 
   const shareWhatsApp = () => {
     if (!budget) return;
-    const url = `${window.location.origin}/orcamento/${budget.publicToken}`;
-    const msg = encodeURIComponent(`Olá ${budget.clientName}! Segue o orçamento do seu evento:\n${url}`);
+    const url = getPublicUrl();
+    const msg = encodeURIComponent(`Olá ${budget.clientName}! Segue o orçamento do seu evento no Espaço Lamoniê:\n\n${url}`);
     const phone = budget.clientPhone.replace(/\D/g, "");
     window.open(`https://wa.me/${phone.startsWith("55") ? phone : "55" + phone}?text=${msg}`, "_blank");
   };
