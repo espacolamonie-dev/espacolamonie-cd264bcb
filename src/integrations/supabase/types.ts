@@ -14,6 +14,245 @@ export type Database = {
   }
   public: {
     Tables: {
+      budget_items: {
+        Row: {
+          additional_value: number
+          budget_id: string
+          catalog_item_id: string | null
+          category: string
+          created_at: string
+          final_value: number
+          id: string
+          line_total: number
+          name: string
+          percentage_applied: number
+          quantity: number
+          sort_order: number
+          supplier: string
+          unit_label: string
+          unit_price: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          additional_value?: number
+          budget_id: string
+          catalog_item_id?: string | null
+          category?: string
+          created_at?: string
+          final_value?: number
+          id?: string
+          line_total?: number
+          name: string
+          percentage_applied?: number
+          quantity?: number
+          sort_order?: number
+          supplier?: string
+          unit_label?: string
+          unit_price?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          additional_value?: number
+          budget_id?: string
+          catalog_item_id?: string | null
+          category?: string
+          created_at?: string
+          final_value?: number
+          id?: string
+          line_total?: number
+          name?: string
+          percentage_applied?: number
+          quantity?: number
+          sort_order?: number
+          supplier?: string
+          unit_label?: string
+          unit_price?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budget_items_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "budgets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budget_items_catalog_item_id_fkey"
+            columns: ["catalog_item_id"]
+            isOneToOne: false
+            referencedRelation: "budget_items_catalog"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      budget_items_catalog: {
+        Row: {
+          category: string
+          created_at: string
+          default_percentage: number
+          default_unit_price: number
+          id: string
+          is_active: boolean
+          name: string
+          supplier: string
+          unit_label: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          default_percentage?: number
+          default_unit_price?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          supplier?: string
+          unit_label?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          default_percentage?: number
+          default_unit_price?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          supplier?: string
+          unit_label?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      budget_logs: {
+        Row: {
+          action: string
+          budget_id: string
+          created_at: string
+          id: string
+          new_status: string | null
+          notes: string
+          old_status: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          budget_id: string
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          notes?: string
+          old_status?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          budget_id?: string
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          notes?: string
+          old_status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budget_logs_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "budgets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      budgets: {
+        Row: {
+          additional_total: number
+          client_id: string | null
+          client_name: string
+          client_phone: string
+          contract_id: string | null
+          created_at: string
+          event_date: string | null
+          event_type: string
+          final_total: number
+          global_percentage: number
+          guest_count: number
+          id: string
+          notes: string
+          pdf_url: string | null
+          public_token: string
+          status: string
+          subtotal: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          additional_total?: number
+          client_id?: string | null
+          client_name: string
+          client_phone?: string
+          contract_id?: string | null
+          created_at?: string
+          event_date?: string | null
+          event_type?: string
+          final_total?: number
+          global_percentage?: number
+          guest_count?: number
+          id?: string
+          notes?: string
+          pdf_url?: string | null
+          public_token?: string
+          status?: string
+          subtotal?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          additional_total?: number
+          client_id?: string | null
+          client_name?: string
+          client_phone?: string
+          contract_id?: string | null
+          created_at?: string
+          event_date?: string | null
+          event_type?: string
+          final_total?: number
+          global_percentage?: number
+          guest_count?: number
+          id?: string
+          notes?: string
+          pdf_url?: string | null
+          public_token?: string
+          status?: string
+          subtotal?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budgets_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budgets_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           address: string
