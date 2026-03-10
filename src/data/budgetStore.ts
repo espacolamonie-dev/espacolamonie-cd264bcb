@@ -202,6 +202,7 @@ export const addBudget = async (b: {
   globalPercentage?: number;
 }): Promise<Budget> => {
   const userId = await getUserId();
+  const slug = await uniqueSlug(b.clientName);
   const { data, error } = await supabase.from("budgets").insert({
     user_id: userId,
     client_id: b.clientId || null,
@@ -213,6 +214,7 @@ export const addBudget = async (b: {
     notes: b.notes || "",
     status: b.status || "draft",
     global_percentage: b.globalPercentage || 0,
+    public_token: slug,
   }).select().single();
   if (error) throw error;
 
