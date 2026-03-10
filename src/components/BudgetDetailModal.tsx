@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileDown, Link as LinkIcon, Copy, MessageCircle } from "lucide-react";
+import { FileDown, Link as LinkIcon, Copy, MessageCircle, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import {
   getBudgetById, getBudgetItems, getBudgetLogs, updateBudgetStatus,
@@ -55,11 +55,16 @@ export default function BudgetDetailModal({ budgetId, open, onClose, onUpdated }
     } catch (e: any) { toast.error(e.message); }
   };
 
+  const getPublicUrl = () => `${window.location.origin}/orcamento/${budget?.publicToken}`;
+
   const copyLink = () => {
     if (!budget) return;
-    const url = `${window.location.origin}/orcamento/${budget.publicToken}`;
-    navigator.clipboard.writeText(url);
-    toast.success("Link copiado");
+    navigator.clipboard.writeText(getPublicUrl());
+    toast.success("Link copiado para a área de transferência");
+  };
+
+  const openPublicView = () => {
+    window.open(getPublicUrl(), "_blank");
   };
 
   const handlePdf = () => {
@@ -68,8 +73,8 @@ export default function BudgetDetailModal({ budgetId, open, onClose, onUpdated }
 
   const shareWhatsApp = () => {
     if (!budget) return;
-    const url = `${window.location.origin}/orcamento/${budget.publicToken}`;
-    const msg = encodeURIComponent(`Olá ${budget.clientName}! Segue o orçamento do seu evento:\n${url}`);
+    const url = getPublicUrl();
+    const msg = encodeURIComponent(`Olá ${budget.clientName}! Segue o orçamento do seu evento no Espaço Lamoniê:\n\n${url}`);
     const phone = budget.clientPhone.replace(/\D/g, "");
     window.open(`https://wa.me/${phone.startsWith("55") ? phone : "55" + phone}?text=${msg}`, "_blank");
   };
@@ -101,11 +106,12 @@ export default function BudgetDetailModal({ budgetId, open, onClose, onUpdated }
               ))}
             </SelectContent>
           </Select>
-          <div className="flex gap-1 ml-auto">
-            <Button size="sm" variant="outline" onClick={copyLink} className="gap-1 text-xs"><LinkIcon size={14} /> Link</Button>
+          <div className="flex flex-wrap gap-1.5 ml-auto">
+            <Button size="sm" variant="outline" onClick={copyLink} className="gap-1 text-xs"><Copy size={14} /> Copiar link</Button>
+            <Button size="sm" variant="outline" onClick={openPublicView} className="gap-1 text-xs"><ExternalLink size={14} /> Abrir</Button>
             <Button size="sm" variant="outline" onClick={handlePdf} className="gap-1 text-xs"><FileDown size={14} /> PDF</Button>
             {budget.clientPhone && (
-              <Button size="sm" variant="outline" onClick={shareWhatsApp} className="gap-1 text-xs"><MessageCircle size={14} /> WhatsApp</Button>
+              <Button size="sm" variant="outline" onClick={shareWhatsApp} className="gap-1 text-xs"><MessageCircle size={14} /> Enviar</Button>
             )}
           </div>
         </div>
