@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileDown, Link as LinkIcon, Copy, MessageCircle } from "lucide-react";
+import { FileDown, Link as LinkIcon, Copy, MessageCircle, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import {
   getBudgetById, getBudgetItems, getBudgetLogs, updateBudgetStatus,
