@@ -286,10 +286,10 @@ export default function Financial() {
                 <div className="rounded-full bg-warning/10 p-2">
                   <HandCoins size={14} className="text-warning" />
                 </div>
-                <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider">Restante (sinal pago)</p>
+                <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider">Total a receber</p>
               </div>
-              <p className="text-2xl font-display font-bold text-warning tracking-tight">{fmt(remainingFromDeposit)}</p>
-              <p className="text-[11px] text-muted-foreground mt-1">{depositPaid.length} contrato(s) com sinal pago</p>
+              <p className="text-2xl font-display font-bold text-warning tracking-tight">{fmt(totalReceivable)}</p>
+              <p className="text-[11px] text-muted-foreground mt-1">{activeContracts.filter(c => c.remainingValue > 0).length} contrato(s) com saldo pendente</p>
             </div>
             <div className="stat-card !border-danger/20">
               <div className="flex items-center gap-2 mb-3">
