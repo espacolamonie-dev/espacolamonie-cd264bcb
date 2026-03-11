@@ -93,12 +93,28 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
 
   const handleAddPayment = async () => {
     if (payForm.amount <= 0) { toast.error("Informe o valor do pagamento"); return; }
+    const desc = payForm.tag === "sinal"
+      ? (payForm.description || "Sinal pago manualmente")
+      : payForm.tag === "restante"
+        ? (payForm.description || "Pagamento do restante")
+        : payForm.description;
     try {
-      await addPayment({ ...payForm, contractId });
+      await addPayment({ ...payForm, description: desc, contractId });
       toast.success("Pagamento registrado com sucesso");
       setPayForm({ amount: 0, date: new Date().toISOString().split("T")[0], description: "", tag: "none" });
       await load();
     } catch (e: any) { toast.error(e.message); }
+  };
+
+  const handleTagChange = (tag: string) => {
+    const t = tag as "none" | "sinal" | "restante";
+    if (t === "sinal" && contract) {
+      setPayForm((p) => ({ ...p, tag: t, amount: contract.depositValue, description: "Sinal pago manualmente" }));
+    } else if (t === "restante" && contract) {
+      setPayForm((p) => ({ ...p, tag: t, amount: contract.remainingValue, description: "Pagamento do restante" }));
+    } else {
+      setPayForm((p) => ({ ...p, tag: t }));
+    }
   };
 
   // Payment selection helpers
