@@ -96,7 +96,7 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
     try {
       await addPayment({ ...payForm, contractId });
       toast.success("Pagamento registrado com sucesso");
-      setPayForm({ amount: 0, date: new Date().toISOString().split("T")[0], description: "" });
+      setPayForm({ amount: 0, date: new Date().toISOString().split("T")[0], description: "", tag: "none" });
       await load();
     } catch (e: any) { toast.error(e.message); }
   };
