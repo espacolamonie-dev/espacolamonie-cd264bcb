@@ -551,6 +551,33 @@ export type Database = {
           },
         ]
       }
+      daily_whatsapp_contacts: {
+        Row: {
+          contact_count: number
+          contact_date: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          contact_count?: number
+          contact_date: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          contact_count?: number
+          contact_date?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       documents: {
         Row: {
           contract_id: string

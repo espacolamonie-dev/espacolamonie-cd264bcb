@@ -141,15 +141,20 @@ export default function Contracts() {
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
-  const todayStr = now.toISOString().split("T")[0];
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+  const getLocalDateStr = (isoStr: string) => {
+    const d = new Date(isoStr);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
 
   const contractsThisMonth = contracts.filter((c) => {
-    const d = parseLocalDate(c.createdAt?.split("T")[0] || c.eventDate);
+    const d = new Date(c.createdAt || c.eventDate);
     return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
   }).length;
 
   const contractsToday = contracts.filter((c) => {
-    return (c.createdAt?.split("T")[0] || "") === todayStr;
+    return getLocalDateStr(c.createdAt || "") === todayStr;
   }).length;
 
   const activeContracts = contracts.filter((c) => c.status !== "cancelled").length;
