@@ -423,6 +423,19 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
               {contract.status !== "cancelled" && (
                 <div className="rounded-md border border-border/60 bg-muted/20 p-4 space-y-3">
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Registrar Pagamento</p>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Tipo</Label>
+                    <Select value={payForm.tag} onValueChange={handleTagChange}>
+                      <SelectTrigger className={isMobile ? "h-12" : ""}>
+                        <SelectValue placeholder="Selecione o tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Pagamento avulso</SelectItem>
+                        <SelectItem value="sinal">Sinal ({fmt(contract.depositValue)})</SelectItem>
+                        <SelectItem value="restante">Restante ({fmt(contract.remainingValue)})</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className={isMobile ? "space-y-3" : "grid grid-cols-3 gap-3"}>
                     <div>
                       <Label className="text-xs text-muted-foreground">Valor (R$)</Label>
