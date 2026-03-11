@@ -50,7 +50,7 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
   const [client, setClient] = useState<Client | null>(null);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [docs, setDocs] = useState<Document[]>([]);
-  const [payForm, setPayForm] = useState({ amount: 0, date: new Date().toISOString().split("T")[0], description: "" });
+  const [payForm, setPayForm] = useState({ amount: 0, date: new Date().toISOString().split("T")[0], description: "", tag: "none" as "none" | "sinal" | "restante" });
   const [uploading, setUploading] = useState(false);
   const [docType, setDocType] = useState<string>("outro");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -93,12 +93,28 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
 
   const handleAddPayment = async () => {
     if (payForm.amount <= 0) { toast.error("Informe o valor do pagamento"); return; }
+    const desc = payForm.tag === "sinal"
+      ? (payForm.description || "Sinal pago manualmente")
+      : payForm.tag === "restante"
+        ? (payForm.description || "Pagamento do restante")
+        : payForm.description;
     try {
-      await addPayment({ ...payForm, contractId });
+      await addPayment({ ...payForm, description: desc, contractId });
       toast.success("Pagamento registrado com sucesso");
-      setPayForm({ amount: 0, date: new Date().toISOString().split("T")[0], description: "" });
+      setPayForm({ amount: 0, date: new Date().toISOString().split("T")[0], description: "", tag: "none" });
       await load();
     } catch (e: any) { toast.error(e.message); }
+  };
+
+  const handleTagChange = (tag: string) => {
+    const t = tag as "none" | "sinal" | "restante";
+    if (t === "sinal" && contract) {
+      setPayForm((p) => ({ ...p, tag: t, amount: contract.depositValue, description: "Sinal pago manualmente" }));
+    } else if (t === "restante" && contract) {
+      setPayForm((p) => ({ ...p, tag: t, amount: contract.remainingValue, description: "Pagamento do restante" }));
+    } else {
+      setPayForm((p) => ({ ...p, tag: t }));
+    }
   };
 
   // Payment selection helpers
@@ -407,6 +423,19 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
               {contract.status !== "cancelled" && (
                 <div className="rounded-md border border-border/60 bg-muted/20 p-4 space-y-3">
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Registrar Pagamento</p>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Tipo</Label>
+                    <Select value={payForm.tag} onValueChange={handleTagChange}>
+                      <SelectTrigger className={isMobile ? "h-12" : ""}>
+                        <SelectValue placeholder="Selecione o tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Pagamento avulso</SelectItem>
+                        <SelectItem value="sinal">Sinal ({fmt(contract.depositValue)})</SelectItem>
+                        <SelectItem value="restante">Restante ({fmt(contract.remainingValue)})</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className={isMobile ? "space-y-3" : "grid grid-cols-3 gap-3"}>
                     <div>
                       <Label className="text-xs text-muted-foreground">Valor (R$)</Label>
