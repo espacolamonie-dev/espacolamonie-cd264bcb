@@ -117,17 +117,46 @@ export default function Dashboard() {
         );
 
         // --- Conversion: Visit → Contract ---
-        const confirmedVisits = visits.filter((v) => v.status === "Confirmada" || v.status === "Agendada");
+        const allVisits = visits; // all statuses
+        const normalize = (s: string) => s.replace(/\D/g, "");
         const getFirstName = (name: string) => name.trim().split(/\s+/)[0].toLowerCase();
-        const contractFirstNames = new Set(
-          active.map((c) => getFirstName(clientMap[c.clientId] || ""))
-        );
-        const convertedVisits = confirmedVisits.filter((v) =>
-          contractFirstNames.has(getFirstName(v.clientName))
-        ).length;
-        if (confirmedVisits.length > 0) {
-          setVisitToContractRate(Math.round((convertedVisits / confirmedVisits.length) * 100));
-          setVisitToContractDetail({ visits: confirmedVisits.length, converted: convertedVisits });
+        const normalizeFullName = (name: string) => name.trim().toLowerCase();
+
+        // Build contract lookup sets from clients
+        const contractClients = active.map((c) => {
+          const cl = clients.find((cl) => cl.id === c.clientId);
+          return {
+            phone: normalize(cl?.phone || ""),
+            firstName: getFirstName(cl?.name || ""),
+            fullName: normalizeFullName(cl?.name || ""),
+            eventDate: c.eventDate,
+          };
+        });
+
+        const contractPhones = new Set(contractClients.map((c) => c.phone).filter(Boolean));
+        const contractFullNames = new Set(contractClients.map((c) => c.fullName).filter(Boolean));
+        const contractEventDates = new Set(contractClients.map((c) => c.eventDate).filter(Boolean));
+
+        const convertedVisits = allVisits.filter((v) => {
+          const vPhone = normalize(v.clientPhone || "");
+          const vFirstName = getFirstName(v.clientName || "");
+          const vFullName = normalizeFullName(v.clientName || "");
+          const vInterestDate = v.interestEventDate || "";
+
+          // Match by phone number
+          const phoneMatch = vPhone && contractPhones.has(vPhone);
+          // Match by full name
+          const fullNameMatch = vFullName && contractFullNames.has(vFullName);
+          // Match by first name + interest date matching contract event date
+          const firstNameDateMatch = vFirstName && vInterestDate &&
+            contractClients.some((cc) => cc.firstName === vFirstName && cc.eventDate === vInterestDate);
+
+          return phoneMatch || fullNameMatch || firstNameDateMatch;
+        }).length;
+
+        if (allVisits.length > 0) {
+          setVisitToContractRate(Math.round((convertedVisits / allVisits.length) * 100));
+          setVisitToContractDetail({ visits: allVisits.length, converted: convertedVisits });
         }
 
         // --- Conversion: WhatsApp → Visit (today by default) ---
