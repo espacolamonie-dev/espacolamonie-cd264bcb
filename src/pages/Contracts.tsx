@@ -304,6 +304,9 @@ export default function Contracts() {
                         <Pencil size={16} /> Editar
                       </Button>
                     )}
+                    <Button size="sm" variant="outline" className="h-11 px-3 text-destructive hover:text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setDeleteTarget(c)}>
+                      <Trash2 size={16} />
+                    </Button>
                   </div>
                 </div>
               );
