@@ -117,7 +117,7 @@ export default function Dashboard() {
         );
 
         // --- Conversion: Visit → Contract ---
-        const allVisits = visits; // all statuses
+        const allVisits = visits.filter((v) => v.status === "Confirmada");
         const normalize = (s: string) => s.replace(/\D/g, "");
         const getFirstName = (name: string) => name.trim().split(/\s+/)[0].toLowerCase();
         const normalizeFullName = (name: string) => name.trim().toLowerCase();
