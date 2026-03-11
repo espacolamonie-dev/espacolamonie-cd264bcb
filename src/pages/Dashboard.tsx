@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { parseLocalDate, formatDateBR } from "@/lib/dateUtils";
 import {
   FileText, CheckCircle, Clock, CalendarDays, TrendingUp, TrendingDown, Wallet,
-  Plus, DollarSign, AlertTriangle, ArrowRight, Receipt,
+  Plus, DollarSign, AlertTriangle, ArrowRight, Receipt, Users, MessageCircle, Save,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getContracts, getClients, getTotalEntries, getTotalExpenses, getBalance, getActivePayments, getManualEntries, getExpenses } from "@/data/store";
+import { getVisits } from "@/data/visitStore";
 import type { Contract } from "@/types";
 import { PAYMENT_STATUS_LABELS, PAYMENT_STATUS_COLORS } from "@/types";
 import {
@@ -15,6 +17,8 @@ import {
 import { format, parseISO, startOfMonth, subMonths, isBefore, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -48,12 +52,26 @@ export default function Dashboard() {
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [alerts, setAlerts] = useState<{ unsignedCount: number; urgentPayments: number }>({ unsignedCount: 0, urgentPayments: 0 });
 
+  // Conversion metrics
+  const [visitToContractRate, setVisitToContractRate] = useState<number | null>(null);
+  const [visitToContractDetail, setVisitToContractDetail] = useState({ visits: 0, converted: 0 });
+  const [whatsappToVisitRate, setWhatsappToVisitRate] = useState<number | null>(null);
+  const [whatsappToVisitDetail, setWhatsappToVisitDetail] = useState({ whatsapp: 0, visits: 0 });
+
+  // Manual WhatsApp input
+  const [waDate, setWaDate] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  });
+  const [waCount, setWaCount] = useState("");
+  const [waSaving, setWaSaving] = useState(false);
+
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [allContracts, clients, totalIn, totalOut, balance, activePayments, manualEntries, expenses] = await Promise.all([
+        const [allContracts, clients, totalIn, totalOut, balance, activePayments, manualEntries, expenses, visits] = await Promise.all([
           getContracts(), getClients(), getTotalEntries(), getTotalExpenses(), getBalance(),
-          getActivePayments(), getManualEntries(), getExpenses(),
+          getActivePayments(), getManualEntries(), getExpenses(), getVisits(),
         ]);
 
         const active = allContracts.filter((c) => c.status !== "cancelled");
@@ -98,6 +116,24 @@ export default function Dashboard() {
             .map((c) => ({ ...c, clientName: clientMap[c.clientId] || "—" }))
         );
 
+        // --- Conversion: Visit → Contract ---
+        const confirmedVisits = visits.filter((v) => v.status === "Confirmada" || v.status === "Agendada");
+        const getFirstName = (name: string) => name.trim().split(/\s+/)[0].toLowerCase();
+        const contractFirstNames = new Set(
+          active.map((c) => getFirstName(clientMap[c.clientId] || ""))
+        );
+        const convertedVisits = confirmedVisits.filter((v) =>
+          contractFirstNames.has(getFirstName(v.clientName))
+        ).length;
+        if (confirmedVisits.length > 0) {
+          setVisitToContractRate(Math.round((convertedVisits / confirmedVisits.length) * 100));
+          setVisitToContractDetail({ visits: confirmedVisits.length, converted: convertedVisits });
+        }
+
+        // --- Conversion: WhatsApp → Visit (today by default) ---
+        await loadWhatsAppConversion(waDate, visits);
+
+        // Monthly chart data
         const now = new Date();
         const months: MonthlyData[] = [];
         for (let i = 5; i >= 0; i--) {
@@ -136,6 +172,83 @@ export default function Dashboard() {
     };
     loadData();
   }, []);
+
+  const loadWhatsAppConversion = async (date: string, visitsData?: any[]) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await (supabase.from("daily_whatsapp_contacts" as any) as any)
+        .select("contact_count")
+        .eq("user_id", user.id)
+        .eq("contact_date", date)
+        .maybeSingle();
+
+      const contactCount = data?.contact_count || 0;
+
+      // Count visits scheduled for this date
+      let dayVisits: any[];
+      if (visitsData) {
+        dayVisits = visitsData;
+      } else {
+        dayVisits = await getVisits();
+      }
+      const visitsOnDate = dayVisits.filter((v) => {
+        const created = new Date(v.createdAt);
+        const createdStr = `${created.getFullYear()}-${String(created.getMonth() + 1).padStart(2, "0")}-${String(created.getDate()).padStart(2, "0")}`;
+        return createdStr === date;
+      }).length;
+
+      if (contactCount > 0) {
+        setWhatsappToVisitRate(Math.round((visitsOnDate / contactCount) * 100));
+      } else {
+        setWhatsappToVisitRate(null);
+      }
+      setWhatsappToVisitDetail({ whatsapp: contactCount, visits: visitsOnDate });
+
+      if (contactCount > 0) {
+        setWaCount(String(contactCount));
+      } else {
+        setWaCount("");
+      }
+    } catch {}
+  };
+
+  const handleSaveWhatsAppCount = async () => {
+    if (!waDate || !waCount) { toast.error("Preencha a data e a quantidade"); return; }
+    setWaSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Não autenticado");
+
+      const { data: existing } = await (supabase.from("daily_whatsapp_contacts" as any) as any)
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("contact_date", waDate)
+        .maybeSingle();
+
+      if (existing) {
+        await (supabase.from("daily_whatsapp_contacts" as any) as any)
+          .update({ contact_count: parseInt(waCount) })
+          .eq("id", existing.id);
+      } else {
+        await (supabase.from("daily_whatsapp_contacts" as any) as any)
+          .insert({ user_id: user.id, contact_date: waDate, contact_count: parseInt(waCount) });
+      }
+
+      toast.success("Contatos WhatsApp salvos!");
+      await loadWhatsAppConversion(waDate);
+    } catch {
+      toast.error("Erro ao salvar");
+    } finally {
+      setWaSaving(false);
+    }
+  };
+
+  const handleWaDateChange = async (newDate: string) => {
+    setWaDate(newDate);
+    await loadWhatsAppConversion(newDate);
+  };
 
   const tooltipFormatter = (value: number) => fmt(value);
 
@@ -252,7 +365,97 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Charts - Row 3 */}
+      {/* Conversion metrics - Row 3 */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Visit → Contract */}
+        <div className="card-premium p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="rounded-xl bg-primary/10 p-2.5">
+              <Users size={20} className="text-primary" />
+            </div>
+            <div>
+              <h2 className="font-display text-lg font-semibold">Visita → Contrato</h2>
+              <p className="text-xs text-muted-foreground">Taxa de conversão por primeiro nome</p>
+            </div>
+          </div>
+          <div className="flex items-end gap-6">
+            <div>
+              <p className="text-4xl font-display font-bold tracking-tight text-primary">
+                {visitToContractRate !== null ? `${visitToContractRate}%` : "—"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {visitToContractDetail.converted} de {visitToContractDetail.visits} visitas geraram contrato
+              </p>
+            </div>
+            {visitToContractRate !== null && (
+              <div className="flex-1 h-3 rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-primary transition-all duration-500"
+                  style={{ width: `${Math.min(visitToContractRate, 100)}%` }}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* WhatsApp → Visit */}
+        <div className="card-premium p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="rounded-xl bg-success/10 p-2.5">
+              <MessageCircle size={20} className="text-success" />
+            </div>
+            <div>
+              <h2 className="font-display text-lg font-semibold">WhatsApp → Visita</h2>
+              <p className="text-xs text-muted-foreground">Contatos do dia vs agendamentos</p>
+            </div>
+          </div>
+
+          <div className="flex items-end gap-4 mb-4">
+            <div>
+              <p className="text-4xl font-display font-bold tracking-tight text-success">
+                {whatsappToVisitRate !== null ? `${whatsappToVisitRate}%` : "—"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {whatsappToVisitDetail.visits} agendamento{whatsappToVisitDetail.visits !== 1 ? "s" : ""} de {whatsappToVisitDetail.whatsapp} contato{whatsappToVisitDetail.whatsapp !== 1 ? "s" : ""}
+              </p>
+            </div>
+            {whatsappToVisitRate !== null && (
+              <div className="flex-1 h-3 rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-success transition-all duration-500"
+                  style={{ width: `${Math.min(whatsappToVisitRate, 100)}%` }}
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="border-t border-border pt-4">
+            <p className="text-xs text-muted-foreground font-medium mb-2.5 uppercase tracking-wider">Registrar contatos do dia</p>
+            <div className="flex gap-2">
+              <Input
+                type="date"
+                value={waDate}
+                onChange={(e) => handleWaDateChange(e.target.value)}
+                className="w-40 h-9 text-sm"
+              />
+              <Input
+                type="number"
+                min="0"
+                placeholder="Qtd contatos"
+                value={waCount}
+                onChange={(e) => setWaCount(e.target.value)}
+                className="w-32 h-9 text-sm"
+              />
+              <Button size="sm" onClick={handleSaveWhatsAppCount} disabled={waSaving} className="h-9 gap-1.5">
+                <Save size={14} />
+                Salvar
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Charts - Row 4 */}
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="card-premium p-6">
           <h2 className="font-display text-lg font-semibold mb-1">Receita vs Despesas</h2>
@@ -303,7 +506,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Bottom grid - Row 4 */}
+      {/* Bottom grid - Row 5 */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Upcoming events */}
         <div className="card-premium">
