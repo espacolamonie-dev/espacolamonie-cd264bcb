@@ -138,6 +138,22 @@ export default function Contracts() {
 
   const depositValue = (form.totalValue * form.depositPercent) / 100;
 
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+  const todayStr = now.toISOString().split("T")[0];
+
+  const contractsThisMonth = contracts.filter((c) => {
+    const d = parseLocalDate(c.createdAt?.split("T")[0] || c.eventDate);
+    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+  }).length;
+
+  const contractsToday = contracts.filter((c) => {
+    return (c.createdAt?.split("T")[0] || "") === todayStr;
+  }).length;
+
+  const activeContracts = contracts.filter((c) => c.status !== "cancelled").length;
+
   return (
     <div className="animate-fade-in space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -159,6 +175,37 @@ export default function Contracts() {
             </Button>
           </div>
         )}
+      </div>
+
+      {/* Stats cards */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="rounded-xl border border-border bg-card p-4 flex items-center gap-3">
+          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+            <CalendarCheck size={20} className="text-primary" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold tabular-nums">{contractsToday}</p>
+            <p className="text-xs text-muted-foreground">Hoje</p>
+          </div>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4 flex items-center gap-3">
+          <div className="h-10 w-10 rounded-lg bg-accent/50 flex items-center justify-center shrink-0">
+            <FileText size={20} className="text-foreground" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold tabular-nums">{contractsThisMonth}</p>
+            <p className="text-xs text-muted-foreground">Este mês</p>
+          </div>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4 flex items-center gap-3">
+          <div className="h-10 w-10 rounded-lg bg-green-500/10 flex items-center justify-center shrink-0">
+            <Activity size={20} className="text-green-600" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold tabular-nums">{activeContracts}</p>
+            <p className="text-xs text-muted-foreground">Ativos</p>
+          </div>
+        </div>
       </div>
 
       {/* Link de datas para eventos */}
