@@ -47,10 +47,10 @@ export default function BudgetDetailModal({ budgetId, open, onClose, onUpdated }
       setLogs(lg);
 
       // Check for existing signature
-      const { data: sig } = await supabase
+      const { data: sig } = await (supabase
         .from("contract_signatures")
-        .select("slug, status, signed_at")
-        .eq("budget_id" as any, budgetId)
+        .select("slug, status, signed_at") as any)
+        .eq("budget_id", budgetId)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
