@@ -399,11 +399,12 @@ export type Database = {
       }
       contract_signatures: {
         Row: {
+          budget_id: string | null
           client_address: string | null
           client_cpf: string | null
           client_name: string
           client_phone: string | null
-          contract_id: string
+          contract_id: string | null
           created_at: string
           deposit_percent: number
           event_date: string
@@ -422,11 +423,12 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          budget_id?: string | null
           client_address?: string | null
           client_cpf?: string | null
           client_name: string
           client_phone?: string | null
-          contract_id: string
+          contract_id?: string | null
           created_at?: string
           deposit_percent?: number
           event_date: string
@@ -445,11 +447,12 @@ export type Database = {
           user_id: string
         }
         Update: {
+          budget_id?: string | null
           client_address?: string | null
           client_cpf?: string | null
           client_name?: string
           client_phone?: string | null
-          contract_id?: string
+          contract_id?: string | null
           created_at?: string
           deposit_percent?: number
           event_date?: string
@@ -468,6 +471,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "contract_signatures_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "budgets"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "contract_signatures_contract_id_fkey"
             columns: ["contract_id"]
