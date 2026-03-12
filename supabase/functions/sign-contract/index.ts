@@ -74,18 +74,20 @@ serve(async (req) => {
       });
     }
 
-    // Check if contract is cancelled
-    const { data: contract } = await supabase
-      .from("contracts")
-      .select("status")
-      .eq("id", data.contract_id)
-      .maybeSingle();
-    
-    if (contract && contract.status === "cancelled") {
-      return new Response(JSON.stringify({ error: "Este contrato foi cancelado" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Check if contract is cancelled (only if there's a contract_id)
+    if (data.contract_id) {
+      const { data: contract } = await supabase
+        .from("contracts")
+        .select("status")
+        .eq("id", data.contract_id)
+        .maybeSingle();
+      
+      if (contract && contract.status === "cancelled") {
+        return new Response(JSON.stringify({ error: "Este contrato foi cancelado" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     return new Response(JSON.stringify(data), {
@@ -130,8 +132,11 @@ serve(async (req) => {
     }
 
     const now = new Date().toISOString();
-    const signedFileName = `Contrato Lamoniê – ${sig.client_name} – Assinado.pdf`;
-    const storagePath = `${sig.user_id}/${sig.contract_id}/${Date.now()}.pdf`;
+    const isBudget = !sig.contract_id && sig.budget_id;
+    const docLabel = isBudget ? "Orçamento" : "Contrato";
+    const signedFileName = `${docLabel} Lamoniê – ${sig.client_name} – Assinado.pdf`;
+    const refId = sig.contract_id || sig.budget_id || "unknown";
+    const storagePath = `${sig.user_id}/${refId}/${Date.now()}.pdf`;
 
     let pdfUploaded = false;
     let pdfHash: string | null = null;
@@ -156,20 +161,28 @@ serve(async (req) => {
         if (uploadErr) {
           console.error("Error uploading signed PDF:", uploadErr);
         } else {
-          // Save document record
-          const { error: docErr } = await supabase
-            .from("documents")
-            .insert({
-              user_id: sig.user_id,
-              contract_id: sig.contract_id,
-              name: signedFileName,
-              type: "contrato",
-              file_name: storagePath,
-            });
+          // Save document record (only if contract_id exists)
+          if (sig.contract_id) {
+            const { error: docErr } = await supabase
+              .from("documents")
+              .insert({
+                user_id: sig.user_id,
+                contract_id: sig.contract_id,
+                name: signedFileName,
+                type: "contrato",
+                file_name: storagePath,
+              });
 
-          if (docErr) {
-            console.error("Error saving signed document record:", docErr);
+            if (docErr) {
+              console.error("Error saving signed document record:", docErr);
+            } else {
+              pdfUploaded = true;
+            }
           } else {
+            // Budget signature - update budget with pdf_url
+            if (sig.budget_id) {
+              await supabase.from("budgets").update({ pdf_url: storagePath }).eq("id", sig.budget_id);
+            }
             pdfUploaded = true;
           }
         }
@@ -203,144 +216,153 @@ serve(async (req) => {
       });
     }
 
-    // Update contract status to "signed"
-    await supabase
-      .from("contracts")
-      .update({ status: "signed" })
-      .eq("id", sig.contract_id);
+    // Update contract/budget status
+    if (sig.contract_id) {
+      await supabase
+        .from("contracts")
+        .update({ status: "signed" })
+        .eq("id", sig.contract_id);
 
-    // Trigger Google Calendar sync to update status in the event description
-    try {
-      const { data: gSettings } = await supabase
-        .from("google_settings")
-        .select("*")
-        .eq("user_id", sig.user_id)
-        .single();
+      // Trigger Google Calendar sync to update status in the event description
+      try {
+        const { data: gSettings } = await supabase
+          .from("google_settings")
+          .select("*")
+          .eq("user_id", sig.user_id)
+          .single();
 
-      if (gSettings?.is_connected) {
-        const GOOGLE_CLIENT_ID = Deno.env.get("GOOGLE_CLIENT_ID")!;
-        const GOOGLE_CLIENT_SECRET = Deno.env.get("GOOGLE_CLIENT_SECRET")!;
+        if (gSettings?.is_connected) {
+          const GOOGLE_CLIENT_ID = Deno.env.get("GOOGLE_CLIENT_ID")!;
+          const GOOGLE_CLIENT_SECRET = Deno.env.get("GOOGLE_CLIENT_SECRET")!;
 
-        // Get valid token (refresh if needed)
-        let accessToken = gSettings.access_token;
-        const expiresAt = gSettings.token_expires_at ? new Date(gSettings.token_expires_at) : null;
-        if (!expiresAt || expiresAt.getTime() - Date.now() < 5 * 60 * 1000) {
-          if (gSettings.refresh_token) {
-            const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
-              method: "POST",
-              headers: { "Content-Type": "application/x-www-form-urlencoded" },
-              body: new URLSearchParams({
-                client_id: GOOGLE_CLIENT_ID,
-                client_secret: GOOGLE_CLIENT_SECRET,
-                refresh_token: gSettings.refresh_token,
-                grant_type: "refresh_token",
-              }),
-            });
-            const tokens = await tokenRes.json();
-            if (tokenRes.ok && tokens.access_token) {
-              accessToken = tokens.access_token;
-              await supabase.from("google_settings").update({
-                access_token: tokens.access_token,
-                token_expires_at: new Date(Date.now() + (tokens.expires_in || 3600) * 1000).toISOString(),
-              }).eq("user_id", sig.user_id);
+          let accessToken = gSettings.access_token;
+          const expiresAt = gSettings.token_expires_at ? new Date(gSettings.token_expires_at) : null;
+          if (!expiresAt || expiresAt.getTime() - Date.now() < 5 * 60 * 1000) {
+            if (gSettings.refresh_token) {
+              const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({
+                  client_id: GOOGLE_CLIENT_ID,
+                  client_secret: GOOGLE_CLIENT_SECRET,
+                  refresh_token: gSettings.refresh_token,
+                  grant_type: "refresh_token",
+                }),
+              });
+              const tokens = await tokenRes.json();
+              if (tokenRes.ok && tokens.access_token) {
+                accessToken = tokens.access_token;
+                await supabase.from("google_settings").update({
+                  access_token: tokens.access_token,
+                  token_expires_at: new Date(Date.now() + (tokens.expires_in || 3600) * 1000).toISOString(),
+                }).eq("user_id", sig.user_id);
+              }
+            }
+          }
+
+          if (accessToken) {
+            const { data: updatedContract } = await supabase.from("contracts").select("*").eq("id", sig.contract_id).single();
+            const { data: client } = await supabase.from("clients").select("*").eq("id", updatedContract.client_id).single();
+
+            if (updatedContract && client && updatedContract.google_event_id) {
+              const calendarId = gSettings.calendar_id || "primary";
+              const fmtCurrency = (v: number) => `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+              const contractStatusLabels: Record<string, string> = {
+                awaiting_documents: "Aguardando Documentos", awaiting_signature: "Aguardando Assinatura",
+                signed: "Assinado", confirmed: "Confirmado", cancelled: "Cancelado",
+              };
+              const paymentStatusLabels: Record<string, string> = {
+                pending: "Pendente", deposit_paid: "Sinal Pago", paid_full: "Pago Total",
+              };
+              const rentalType = updatedContract.rental_type || "Locação (1 dia)";
+              const dateInfo = updatedContract.event_date_end
+                ? `📅 Datas: ${updatedContract.event_date} a ${updatedContract.event_date_end}`
+                : `📅 Data: ${updatedContract.event_date}`;
+              const description = [
+                `🎉 ${updatedContract.event_type}`, ``,
+                `👤 Cliente: ${client.name}`, `📄 CPF: ${client.cpf || "—"}`, `📞 Telefone: ${client.phone || "—"}`, ``,
+                `🏠 Modalidade: ${rentalType}`, dateInfo, ``,
+                `💰 Valor Total: ${fmtCurrency(Number(updatedContract.total_value))}`,
+                `💵 Sinal (${updatedContract.deposit_percent}%): ${fmtCurrency(Number(updatedContract.deposit_value))}`,
+                `📋 Restante: ${fmtCurrency(Number(updatedContract.remaining_value))}`, ``,
+                `📊 Status Contrato: ${contractStatusLabels[updatedContract.status] || updatedContract.status}`,
+                `💳 Status Pagamento: ${paymentStatusLabels[updatedContract.payment_status] || updatedContract.payment_status}`, ``,
+                `🆔 ID Contrato: ${updatedContract.id}`, ``, `— Criado automaticamente pelo CRM Lamoniê`,
+              ].join("\n");
+
+              const PAYMENT_COLOR_IDS: Record<string, string> = { pending: "5", deposit_paid: "2", paid_full: "10", cancelled: "8" };
+              const colorId = PAYMENT_COLOR_IDS[updatedContract.payment_status] || "5";
+              const baseEndDate = updatedContract.event_date_end || updatedContract.event_date;
+              const endDate = new Date(baseEndDate + "T12:00:00");
+              endDate.setDate(endDate.getDate() + 1);
+
+              const eventBody = {
+                summary: `Lamoniê — ${client.name} — ${updatedContract.event_type}`,
+                description,
+                location: "Espaço Lamoniê — Endereço do espaço",
+                start: { date: updatedContract.event_date },
+                end: { date: endDate.toISOString().split("T")[0] },
+                colorId,
+                extendedProperties: { private: { contract_id: updatedContract.id, crm: "lamonie" } },
+              };
+
+              await fetch(
+                `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${updatedContract.google_event_id}`,
+                { method: "PUT", headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" }, body: JSON.stringify(eventBody) }
+              );
             }
           }
         }
-
-        if (accessToken) {
-          // Re-fetch contract with updated status
-          const { data: updatedContract } = await supabase.from("contracts").select("*").eq("id", sig.contract_id).single();
-          const { data: client } = await supabase.from("clients").select("*").eq("id", updatedContract.client_id).single();
-
-          if (updatedContract && client && updatedContract.google_event_id) {
-            const calendarId = gSettings.calendar_id || "primary";
-            const fmtCurrency = (v: number) => `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
-            const contractStatusLabels: Record<string, string> = {
-              awaiting_documents: "Aguardando Documentos", awaiting_signature: "Aguardando Assinatura",
-              signed: "Assinado", confirmed: "Confirmado", cancelled: "Cancelado",
-            };
-            const paymentStatusLabels: Record<string, string> = {
-              pending: "Pendente", deposit_paid: "Sinal Pago", paid_full: "Pago Total",
-            };
-            const rentalType = updatedContract.rental_type || "Locação (1 dia)";
-            const dateInfo = updatedContract.event_date_end
-              ? `📅 Datas: ${updatedContract.event_date} a ${updatedContract.event_date_end}`
-              : `📅 Data: ${updatedContract.event_date}`;
-            const description = [
-              `🎉 ${updatedContract.event_type}`, ``,
-              `👤 Cliente: ${client.name}`, `📄 CPF: ${client.cpf || "—"}`, `📞 Telefone: ${client.phone || "—"}`, ``,
-              `🏠 Modalidade: ${rentalType}`, dateInfo, ``,
-              `💰 Valor Total: ${fmtCurrency(Number(updatedContract.total_value))}`,
-              `💵 Sinal (${updatedContract.deposit_percent}%): ${fmtCurrency(Number(updatedContract.deposit_value))}`,
-              `📋 Restante: ${fmtCurrency(Number(updatedContract.remaining_value))}`, ``,
-              `📊 Status Contrato: ${contractStatusLabels[updatedContract.status] || updatedContract.status}`,
-              `💳 Status Pagamento: ${paymentStatusLabels[updatedContract.payment_status] || updatedContract.payment_status}`, ``,
-              `🆔 ID Contrato: ${updatedContract.id}`, ``, `— Criado automaticamente pelo CRM Lamoniê`,
-            ].join("\n");
-
-            const PAYMENT_COLOR_IDS: Record<string, string> = { pending: "5", deposit_paid: "2", paid_full: "10", cancelled: "8" };
-            const colorId = PAYMENT_COLOR_IDS[updatedContract.payment_status] || "5";
-            const baseEndDate = updatedContract.event_date_end || updatedContract.event_date;
-            const endDate = new Date(baseEndDate + "T12:00:00");
-            endDate.setDate(endDate.getDate() + 1);
-
-            const eventBody = {
-              summary: `Lamoniê — ${client.name} — ${updatedContract.event_type}`,
-              description,
-              location: "Espaço Lamoniê — Endereço do espaço",
-              start: { date: updatedContract.event_date },
-              end: { date: endDate.toISOString().split("T")[0] },
-              colorId,
-              extendedProperties: { private: { contract_id: updatedContract.id, crm: "lamonie" } },
-            };
-
-            await fetch(
-              `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${updatedContract.google_event_id}`,
-              { method: "PUT", headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" }, body: JSON.stringify(eventBody) }
-            );
-          }
-        }
+      } catch (syncErr) {
+        console.error("Google Calendar sync after signature failed:", syncErr);
       }
-    } catch (syncErr) {
-      console.error("Google Calendar sync after signature failed:", syncErr);
+    } else if (sig.budget_id) {
+      // Update budget status to "converted" when signed
+      await supabase
+        .from("budgets")
+        .update({ status: "converted" })
+        .eq("id", sig.budget_id);
     }
 
-    // Create audit log entry (immutable legal record)
-    const uaString = user_agent || req.headers.get("user-agent") || "";
-    const { deviceType, os, browser } = parseUserAgent(uaString);
+    // Create audit log entry (only for contracts)
+    if (sig.contract_id) {
+      const uaString = user_agent || req.headers.get("user-agent") || "";
+      const { deviceType, os, browser } = parseUserAgent(uaString);
 
-    const { error: auditErr } = await supabase
-      .from("signature_audit_logs")
-      .insert({
-        contract_id: sig.contract_id,
-        client_name: sig.client_name,
-        client_cpf: sig.client_cpf,
-        signed_file_name: signedFileName,
-        signature_type: "rubrica_manual",
-        signed_at: now,
-        read_confirmed: true,
-        signer_ip: clientIp,
-        device_type: deviceType,
-        operating_system: os,
-        browser: browser,
-        user_agent: uaString,
-        pdf_hash: pdfHash,
-        contract_version: 1,
-        user_id: sig.user_id,
-      });
+      const { error: auditErr } = await supabase
+        .from("signature_audit_logs")
+        .insert({
+          contract_id: sig.contract_id,
+          client_name: sig.client_name,
+          client_cpf: sig.client_cpf,
+          signed_file_name: signedFileName,
+          signature_type: "rubrica_manual",
+          signed_at: now,
+          read_confirmed: true,
+          signer_ip: clientIp,
+          device_type: deviceType,
+          operating_system: os,
+          browser: browser,
+          user_agent: uaString,
+          pdf_hash: pdfHash,
+          contract_version: 1,
+          user_id: sig.user_id,
+        });
 
-    if (auditErr) {
-      console.error("Error creating audit log:", auditErr);
+      if (auditErr) {
+        console.error("Error creating audit log:", auditErr);
+      }
     }
 
-    // 🔔 Send push notification for contract signed
+    // 🔔 Send push notification
     try {
+      const label = isBudget ? "orçamento" : "contrato";
       const notificationPayload = {
         action: 'send-notification',
-        title: '✅ Contrato Assinado!',
-        body: `${sig.client_name} assinou o contrato para ${sig.event_date.split('-').reverse().join('/')}.`,
-        url: '/contracts',
-        tag: `contract-signed-${sig.contract_id}`
+        title: isBudget ? '✅ Orçamento Assinado!' : '✅ Contrato Assinado!',
+        body: `${sig.client_name} assinou o ${label} para ${sig.event_date.split('-').reverse().join('/')}.`,
+        url: isBudget ? '/budgets' : '/contracts',
+        tag: `signature-${refId}`
       };
 
       const pushResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/manage-push`, {
@@ -355,7 +377,7 @@ serve(async (req) => {
       if (!pushResponse.ok) {
         console.error("Failed to send push notification:", await pushResponse.text());
       } else {
-        console.log("✅ Push notification sent for contract signature");
+        console.log(`✅ Push notification sent for ${label} signature`);
       }
     } catch (pushErr) {
       console.error("Error sending push notification:", pushErr);
