@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { Plus, Search, Phone, CalendarDays, Clock, Filter, Eye, Check, RotateCcw, X as XIcon, AlertTriangle, Pencil, Users, Megaphone, TrendingUp, Link2, ExternalLink } from "lucide-react";
+import { Plus, Search, Phone, CalendarDays, Clock, Filter, Eye, Check, RotateCcw, X as XIcon, AlertTriangle, Pencil, Users, Megaphone, TrendingUp, Link2, ExternalLink, MessageCircle, DollarSign } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,14 @@ import { getVisits, addVisit, updateVisit, deleteVisit, type Visit, type LeadSou
 import { syncVisitToGoogle, deleteVisitGoogleEvent } from "@/lib/visitGoogleSync";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
+import { CurrencyInput } from "@/components/CurrencyInput";
+import { NumericInput } from "@/components/NumericInput";
+
+const EVENT_TYPES_OPTIONS = [
+  "Aniversário Adulto", "Aniversário Infantil", "Casamento", "Confraternização", "Evento Corporativo",
+];
+
+const NOTIFICATION_PHONE = "5531998595155";
 
 type VisitStatus = "Agendada" | "Confirmada" | "Remarcada" | "Cancelada";
 
@@ -44,6 +52,10 @@ function phoneMask(v: string): string {
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
 }
 
+function formatCurrency(v: number): string {
+  return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
 export default function Visits() {
   const [visits, setVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,8 +69,12 @@ export default function Visits() {
   const [editForm, setEditForm] = useState({
     clientName: "", clientPhone: "", visitDate: "", visitTime: "",
     interestEventDate: "", notes: "", status: "" as string, leadSource: "Orgânico" as string,
+    eventTypeDesired: "", eventValue: 0, guestCount: 0,
   });
   const isMobile = useIsMobile();
+
+  // Confirmation WhatsApp modal
+  const [confirmMsgVisit, setConfirmMsgVisit] = useState<Visit | null>(null);
 
   const [formName, setFormName] = useState("");
   const [formPhone, setFormPhone] = useState("");
@@ -67,7 +83,11 @@ export default function Visits() {
   const [formVisitTime, setFormVisitTime] = useState("");
   const [formNotes, setFormNotes] = useState("");
   const [formLeadSource, setFormLeadSource] = useState<LeadSource>("Orgânico");
+  const [formEventType, setFormEventType] = useState("");
+  const [formEventValue, setFormEventValue] = useState(0);
+  const [formGuestCount, setFormGuestCount] = useState(0);
   const [dateConflicts, setDateConflicts] = useState<{ name: string; phone: string; stage: string; type: string }[]>([]);
+  
   const loadVisits = useCallback(async () => {
     setLoading(true);
     try {
@@ -87,7 +107,6 @@ export default function Visits() {
     }
     const checkConflicts = async () => {
       const conflicts: { name: string; phone: string; stage: string; type: string }[] = [];
-      // Check other visits with same interest date
       const { data: otherVisits } = await supabase
         .from("visits")
         .select("client_name, client_phone, status, interest_event_date")
@@ -98,7 +117,6 @@ export default function Visits() {
           conflicts.push({ name: v.client_name, phone: v.client_phone, stage: v.status, type: "Visita" });
         }
       }
-      // Check leads with same interest date
       const { data: leads } = await supabase
         .from("leads")
         .select("name, phone, stage, interest_date")
@@ -110,7 +128,6 @@ export default function Visits() {
           }
         }
       }
-      // Check contracts with same event date (not cancelled)
       const { data: contracts } = await supabase
         .from("contracts")
         .select("id, client_id, event_date, status")
@@ -133,7 +150,6 @@ export default function Visits() {
     checkConflicts();
   }, [formInterestDate]);
 
-  // Stats computed from visits state — reactive to any change
   const stats = useMemo(() => {
     const now = new Date();
     const spFormatter = new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" });
@@ -173,7 +189,8 @@ export default function Visits() {
   const resetForm = () => {
     setFormName(""); setFormPhone(""); setFormInterestDate("");
     setFormVisitDate(""); setFormVisitTime(""); setFormNotes("");
-    setFormLeadSource("Orgânico");
+    setFormLeadSource("Orgânico"); setFormEventType(""); setFormEventValue(0);
+    setFormGuestCount(0);
     setDateConflicts([]);
   };
 
@@ -192,8 +209,11 @@ export default function Visits() {
         visitTime: formVisitTime,
         notes: formNotes.trim(),
         leadSource: formLeadSource,
+        eventTypeDesired: formEventType,
+        eventValue: formEventValue,
+        guestCount: formGuestCount,
       });
-      toast.success("Visita agendada com sucesso!");
+      toast.success("Visita agendada e cliente criado automaticamente!");
       syncVisitToGoogle(visit.id);
       setModalOpen(false);
       resetForm();
@@ -205,14 +225,26 @@ export default function Visits() {
     }
   };
 
+  const buildWhatsAppMessage = (v: Visit) => {
+    const visitDateFmt = format(new Date(v.visitDate + "T12:00:00"), "dd/MM/yyyy");
+    const timeFmt = v.visitTime.slice(0, 5);
+    let msg = `*Visita Confirmada!* ✅\n\n`;
+    msg += `*Cliente:* ${v.clientName}\n`;
+    msg += `*Data da visita:* ${visitDateFmt}\n`;
+    msg += `*Horário:* ${timeFmt}\n`;
+    if (v.eventTypeDesired) msg += `*Evento de interesse:* ${v.eventTypeDesired}\n`;
+    if (v.guestCount > 0) msg += `*Quantidade de pessoas:* ${v.guestCount}\n`;
+    if (v.eventValue > 0) msg += `*Valor informado:* ${formatCurrency(v.eventValue)}\n`;
+    msg += `\nInformações da visita que será realizada em breve!`;
+    return msg;
+  };
+
   const handleStatusChange = async (visit: Visit, newStatus: VisitStatus) => {
     try {
       if (newStatus === "Cancelada") {
-        // Optimistic removal from list
         setVisits((prev) => prev.filter((v) => v.id !== visit.id));
         setDetailVisit(null);
         await updateVisit(visit.id, { status: newStatus });
-        // Try to delete Google Calendar event
         if (visit.googleEventId) {
           try {
             await deleteVisitGoogleEvent(visit.id);
@@ -224,6 +256,15 @@ export default function Visits() {
           toast.success("Visita cancelada e removida da lista.");
         }
         loadVisits();
+      } else if (newStatus === "Confirmada") {
+        await updateVisit(visit.id, { status: newStatus });
+        syncVisitToGoogle(visit.id);
+        toast.success(`Status alterado para "Confirmada"`);
+        setDetailVisit(null);
+        // Show WhatsApp message modal
+        const updatedVisit = { ...visit, status: "Confirmada" };
+        setConfirmMsgVisit(updatedVisit);
+        loadVisits();
       } else {
         await updateVisit(visit.id, { status: newStatus });
         syncVisitToGoogle(visit.id);
@@ -233,9 +274,228 @@ export default function Visits() {
       }
     } catch (e: any) {
       toast.error(e.message || "Erro ao alterar status");
-      loadVisits(); // Revert optimistic update on error
+      loadVisits();
     }
   };
+
+  const renderFormFields = (mobile: boolean) => {
+    const inputH = mobile ? "h-12" : "h-12";
+    return (
+      <>
+        <div>
+          <Label>Nome do cliente *</Label>
+          <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Nome completo" className={inputH} autoFocus={mobile} />
+        </div>
+        <div>
+          <Label>Telefone *</Label>
+          <Input type="tel" value={formPhone} onChange={(e) => setFormPhone(phoneMask(e.target.value))} placeholder="(00) 00000-0000" className={inputH} />
+        </div>
+        <div>
+          <Label>Data de interesse do evento (opcional)</Label>
+          <Input type="date" value={formInterestDate} onChange={(e) => setFormInterestDate(e.target.value)} className={inputH} />
+        </div>
+        {dateConflicts.length > 0 && (
+          <Alert variant="default" className="border-warning/50 bg-warning/10">
+            <AlertTriangle className="h-4 w-4 text-warning" />
+            <AlertTitle className="text-warning font-semibold text-sm">Atenção: já existe interesse nesta data</AlertTitle>
+            <AlertDescription className="text-xs space-y-1 mt-1">
+              {dateConflicts.map((c, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="font-medium">{c.name}</span>
+                  <span className="text-muted-foreground">({c.phone})</span>
+                  <Badge variant="outline" className="text-[9px] px-1.5 py-0">{c.type} — {c.stage}</Badge>
+                </div>
+              ))}
+              <p className="text-muted-foreground mt-1">Você ainda pode salvar normalmente.</p>
+            </AlertDescription>
+          </Alert>
+        )}
+        <div>
+          <Label>Evento que deseja</Label>
+          <Select value={formEventType} onValueChange={setFormEventType}>
+            <SelectTrigger className={inputH}><SelectValue placeholder="Selecione o tipo" /></SelectTrigger>
+            <SelectContent>
+              {EVENT_TYPES_OPTIONS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label>Valor do evento</Label>
+            <CurrencyInput value={formEventValue} onChange={setFormEventValue} placeholder="R$ 0,00" />
+          </div>
+          <div>
+            <Label>Qtd. de pessoas</Label>
+            <NumericInput value={formGuestCount} onChange={setFormGuestCount} placeholder="0" />
+          </div>
+        </div>
+        <div>
+          <Label>Data da visita *</Label>
+          <Input type="date" value={formVisitDate} onChange={(e) => setFormVisitDate(e.target.value)} className={inputH} />
+        </div>
+        <div>
+          <Label>Horário *</Label>
+          <Input type="time" value={formVisitTime} onChange={(e) => setFormVisitTime(e.target.value)} className={inputH} />
+        </div>
+        <div>
+          <Label>Fonte do Lead *</Label>
+          <Select value={formLeadSource} onValueChange={(v) => setFormLeadSource(v as LeadSource)}>
+            <SelectTrigger className={inputH}><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Orgânico">Orgânico</SelectItem>
+              <SelectItem value="Tráfego Pago">Tráfego Pago</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label>Observações</Label>
+          <Textarea value={formNotes} onChange={(e) => setFormNotes(e.target.value)} placeholder="Anotações..." rows={3} />
+        </div>
+      </>
+    );
+  };
+
+  const renderEditFormFields = (mobile: boolean) => {
+    const inputH = mobile ? "h-12" : "h-12";
+    return (
+      <>
+        <div><Label>Nome do cliente *</Label><Input className={inputH} value={editForm.clientName} onChange={(e) => setEditForm(p => ({ ...p, clientName: e.target.value }))} /></div>
+        <div><Label>Telefone *</Label><Input className={inputH} type="tel" value={editForm.clientPhone} onChange={(e) => setEditForm(p => ({ ...p, clientPhone: phoneMask(e.target.value) }))} /></div>
+        <div><Label>Data da visita *</Label><Input className={inputH} type="date" value={editForm.visitDate} onChange={(e) => setEditForm(p => ({ ...p, visitDate: e.target.value }))} /></div>
+        <div><Label>Horário *</Label><Input className={inputH} type="time" value={editForm.visitTime} onChange={(e) => setEditForm(p => ({ ...p, visitTime: e.target.value }))} /></div>
+        <div><Label>Data de interesse (opcional)</Label><Input className={inputH} type="date" value={editForm.interestEventDate} onChange={(e) => setEditForm(p => ({ ...p, interestEventDate: e.target.value }))} /></div>
+        <div>
+          <Label>Evento que deseja</Label>
+          <Select value={editForm.eventTypeDesired} onValueChange={(v) => setEditForm(p => ({ ...p, eventTypeDesired: v }))}>
+            <SelectTrigger className={inputH}><SelectValue placeholder="Selecione" /></SelectTrigger>
+            <SelectContent>
+              {EVENT_TYPES_OPTIONS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label>Valor do evento</Label>
+            <CurrencyInput value={editForm.eventValue} onChange={(v) => setEditForm(p => ({ ...p, eventValue: v }))} placeholder="R$ 0,00" />
+          </div>
+          <div>
+            <Label>Qtd. de pessoas</Label>
+            <NumericInput value={editForm.guestCount} onChange={(v) => setEditForm(p => ({ ...p, guestCount: v }))} placeholder="0" />
+          </div>
+        </div>
+        <div>
+          <Label>Status</Label>
+          <Select value={editForm.status} onValueChange={(v) => setEditForm(p => ({ ...p, status: v }))}>
+            <SelectTrigger className={inputH}><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Agendada">Agendada</SelectItem>
+              <SelectItem value="Confirmada">Confirmada</SelectItem>
+              <SelectItem value="Remarcada">Remarcada</SelectItem>
+              <SelectItem value="Cancelada">Cancelada</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label>Fonte do Lead</Label>
+          <Select value={editForm.leadSource} onValueChange={(v) => setEditForm(p => ({ ...p, leadSource: v as LeadSource }))}>
+            <SelectTrigger className={inputH}><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Orgânico">Orgânico</SelectItem>
+              <SelectItem value="Tráfego Pago">Tráfego Pago</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div><Label>Observações</Label><Textarea value={editForm.notes} onChange={(e) => setEditForm(p => ({ ...p, notes: e.target.value }))} rows={3} /></div>
+      </>
+    );
+  };
+
+  const handleEditSave = async () => {
+    if (!detailVisit) return;
+    if (!editForm.clientName.trim() || !editForm.visitDate || !editForm.visitTime) {
+      toast.error("Preencha os campos obrigatórios"); return;
+    }
+    setEditSaving(true);
+    try {
+      const updates: Record<string, any> = {
+        clientName: editForm.clientName.trim(),
+        clientPhone: editForm.clientPhone.trim(),
+        visitDate: editForm.visitDate,
+        visitTime: editForm.visitTime,
+        interestEventDate: editForm.interestEventDate || null,
+        notes: editForm.notes.trim(),
+        status: editForm.status,
+        leadSource: editForm.leadSource,
+        eventTypeDesired: editForm.eventTypeDesired,
+        eventValue: editForm.eventValue,
+        guestCount: editForm.guestCount,
+      };
+      await updateVisit(detailVisit.id, updates);
+      try {
+        await syncVisitToGoogle(detailVisit.id);
+        toast.success("Visita atualizada e sincronizada!");
+      } catch {
+        toast.warning("Salvo no CRM, mas falhou sincronizar com Google Agenda.");
+      }
+      if (editForm.status === "Cancelada" && detailVisit.googleEventId) {
+        try { await deleteVisitGoogleEvent(detailVisit.id); } catch {}
+      }
+      // If status changed to Confirmada, show WhatsApp message
+      if (editForm.status === "Confirmada" && detailVisit.status !== "Confirmada") {
+        const updatedVisit = { ...detailVisit, ...updates, status: "Confirmada" };
+        setConfirmMsgVisit(updatedVisit as Visit);
+      }
+      setEditing(false);
+      setDetailVisit(null);
+      loadVisits();
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao salvar");
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const openEditForm = (visit: Visit) => {
+    setEditForm({
+      clientName: visit.clientName,
+      clientPhone: visit.clientPhone,
+      visitDate: visit.visitDate,
+      visitTime: visit.visitTime.slice(0, 5),
+      interestEventDate: visit.interestEventDate || "",
+      notes: visit.notes || "",
+      status: visit.status,
+      leadSource: visit.leadSource || "Orgânico",
+      eventTypeDesired: visit.eventTypeDesired || "",
+      eventValue: visit.eventValue || 0,
+      guestCount: visit.guestCount || 0,
+    });
+    setEditing(true);
+  };
+
+  const renderDetailView = (visit: Visit) => (
+    <div className="space-y-3 text-sm">
+      <div className="flex justify-between"><span className="text-muted-foreground">Cliente</span><span className="font-medium">{visit.clientName}</span></div>
+      <div className="flex justify-between"><span className="text-muted-foreground">Telefone</span><a href={`tel:${visit.clientPhone.replace(/\D/g, "")}`} className="text-primary">{visit.clientPhone}</a></div>
+      <div className="flex justify-between"><span className="text-muted-foreground">Data de interesse</span><span>{visit.interestEventDate ? format(new Date(visit.interestEventDate + "T12:00:00"), "dd/MM/yyyy") : "—"}</span></div>
+      {visit.eventTypeDesired && (
+        <div className="flex justify-between"><span className="text-muted-foreground">Evento desejado</span><span className="font-medium">{visit.eventTypeDesired}</span></div>
+      )}
+      {visit.eventValue > 0 && (
+        <div className="flex justify-between"><span className="text-muted-foreground">Valor do evento</span><span className="font-semibold">{formatCurrency(visit.eventValue)}</span></div>
+      )}
+      {visit.guestCount > 0 && (
+        <div className="flex justify-between"><span className="text-muted-foreground">Qtd. de pessoas</span><span>{visit.guestCount}</span></div>
+      )}
+      <div className="flex justify-between"><span className="text-muted-foreground">Data da visita</span><span className="font-medium">{format(new Date(visit.visitDate + "T12:00:00"), "dd/MM/yyyy")}</span></div>
+      <div className="flex justify-between"><span className="text-muted-foreground">Horário</span><span>{visit.visitTime.slice(0, 5)}</span></div>
+      <div className="flex justify-between"><span className="text-muted-foreground">Status</span><Badge className={`text-[10px] font-medium border rounded-full px-2.5 py-0.5 ${VISIT_STATUS_COLORS[visit.status as VisitStatus] || ""}`}>{visit.status}</Badge></div>
+      <div className="flex justify-between"><span className="text-muted-foreground">Fonte do Lead</span><Badge variant="outline" className="text-[10px] font-medium rounded-full px-2.5 py-0.5">{visit.leadSource || "Orgânico"}</Badge></div>
+      <div className="flex justify-between"><span className="text-muted-foreground">Data de cadastro</span><span className="text-sm">{format(new Date(visit.createdAt), "dd/MM/yyyy 'às' HH:mm")}</span></div>
+      {visit.notes && (
+        <div><span className="text-muted-foreground block mb-1">Observações</span><p className="text-sm bg-muted/50 rounded-lg p-3">{visit.notes}</p></div>
+      )}
+    </div>
+  );
 
   if (loading) {
     return (
@@ -397,7 +657,7 @@ export default function Visits() {
                   </Badge>
                 </div>
 
-                <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
+                <div className="flex items-center gap-4 text-sm text-muted-foreground mb-1">
                   <span className="flex items-center gap-1">
                     <CalendarDays size={13} />
                     {format(new Date(v.visitDate + "T12:00:00"), "dd/MM/yyyy")}
@@ -407,6 +667,10 @@ export default function Visits() {
                     {v.visitTime.slice(0, 5)}
                   </span>
                 </div>
+
+                {v.eventTypeDesired && (
+                  <p className="text-xs text-muted-foreground mb-1">{v.eventTypeDesired} {v.eventValue > 0 ? `• ${formatCurrency(v.eventValue)}` : ""} {v.guestCount > 0 ? `• ${v.guestCount} pessoas` : ""}</p>
+                )}
 
                 {v.notes && (
                   <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-2 mb-3 line-clamp-2">{v.notes}</p>
@@ -465,6 +729,7 @@ export default function Visits() {
               <tr>
                 <th>Cliente</th>
                 <th>Telefone</th>
+                <th>Evento</th>
                 <th>Data Evento (interesse)</th>
                 <th>Data da Visita</th>
                 <th>Horário</th>
@@ -475,7 +740,7 @@ export default function Visits() {
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center text-muted-foreground py-12">
+                  <td colSpan={8} className="text-center text-muted-foreground py-12">
                     Nenhuma visita encontrada
                   </td>
                 </tr>
@@ -488,6 +753,7 @@ export default function Visits() {
                         <Phone size={12} /> {v.clientPhone}
                       </span>
                     </td>
+                    <td className="text-sm text-muted-foreground">{v.eventTypeDesired || "—"}</td>
                     <td className="text-sm text-muted-foreground">
                       {v.interestEventDate
                         ? format(new Date(v.interestEventDate + "T12:00:00"), "dd/MM/yyyy")
@@ -540,74 +806,18 @@ export default function Visits() {
 
       {/* Create Modal */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent hideClose={isMobile} className={isMobile ? "max-w-[100vw] w-full h-[100dvh] max-h-[100dvh] rounded-none border-0 flex flex-col p-0" : "max-w-md"}>
+        <DialogContent hideClose={isMobile} className={isMobile ? "max-w-[100vw] w-full h-[100dvh] max-h-[100dvh] rounded-none border-0 flex flex-col p-0" : "max-w-md max-h-[90vh] overflow-y-auto"}>
           {isMobile ? (
             <>
-              {/* Fixed Header */}
               <div className="shrink-0 flex items-center justify-between border-b border-border px-4" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 12px)", paddingBottom: "12px" }}>
                 <h2 className="text-lg font-display font-semibold">Nova Visita</h2>
-                <button
-                  onClick={() => setModalOpen(false)}
-                  className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-muted"
-                  aria-label="Fechar"
-                >
+                <button onClick={() => setModalOpen(false)} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-muted" aria-label="Fechar">
                   <XIcon size={20} />
                 </button>
               </div>
-              {/* Scrollable Body */}
               <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
-                <div>
-                  <Label>Nome do cliente *</Label>
-                  <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Nome completo" className="h-12" autoFocus />
-                </div>
-                <div>
-                  <Label>Telefone *</Label>
-                  <Input type="tel" value={formPhone} onChange={(e) => setFormPhone(phoneMask(e.target.value))} placeholder="(00) 00000-0000" className="h-12" />
-                </div>
-                <div>
-                  <Label>Data de interesse do evento (opcional)</Label>
-                  <Input type="date" value={formInterestDate} onChange={(e) => setFormInterestDate(e.target.value)} className="h-12" />
-                </div>
-                {dateConflicts.length > 0 && (
-                  <Alert variant="default" className="border-warning/50 bg-warning/10">
-                    <AlertTriangle className="h-4 w-4 text-warning" />
-                    <AlertTitle className="text-warning font-semibold text-sm">Atenção: já existe interesse nesta data</AlertTitle>
-                    <AlertDescription className="text-xs space-y-1 mt-1">
-                      {dateConflicts.map((c, i) => (
-                        <div key={i} className="flex items-center gap-2">
-                          <span className="font-medium">{c.name}</span>
-                          <span className="text-muted-foreground">({c.phone})</span>
-                          <Badge variant="outline" className="text-[9px] px-1.5 py-0">{c.type} — {c.stage}</Badge>
-                        </div>
-                      ))}
-                      <p className="text-muted-foreground mt-1">Você ainda pode salvar normalmente.</p>
-                    </AlertDescription>
-                  </Alert>
-                )}
-                <div>
-                  <Label>Data da visita *</Label>
-                  <Input type="date" value={formVisitDate} onChange={(e) => setFormVisitDate(e.target.value)} className="h-12" />
-                </div>
-                <div>
-                  <Label>Horário *</Label>
-                  <Input type="time" value={formVisitTime} onChange={(e) => setFormVisitTime(e.target.value)} className="h-12" />
-                </div>
-                <div>
-                  <Label>Fonte do Lead *</Label>
-                  <Select value={formLeadSource} onValueChange={(v) => setFormLeadSource(v as LeadSource)}>
-                    <SelectTrigger className="h-12"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Orgânico">Orgânico</SelectItem>
-                      <SelectItem value="Tráfego Pago">Tráfego Pago</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Observações</Label>
-                  <Textarea value={formNotes} onChange={(e) => setFormNotes(e.target.value)} placeholder="Anotações..." rows={3} />
-                </div>
+                {renderFormFields(true)}
               </div>
-              {/* Fixed Footer */}
               <div className="shrink-0 flex flex-col gap-2 px-4 pt-3 border-t border-border bg-background" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 16px)" }}>
                 <Button onClick={handleCreate} disabled={saving} className="h-12 w-full font-semibold">
                   {saving ? "Agendando..." : "Salvar visita"}
@@ -621,56 +831,7 @@ export default function Visits() {
                 <DialogTitle className="font-display">Nova Visita</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
-                <div>
-                  <Label>Nome do cliente *</Label>
-                  <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Nome completo" className="h-12" />
-                </div>
-                <div>
-                  <Label>Telefone *</Label>
-                  <Input type="tel" value={formPhone} onChange={(e) => setFormPhone(phoneMask(e.target.value))} placeholder="(00) 00000-0000" className="h-12" />
-                </div>
-                <div>
-                  <Label>Data de interesse do evento (opcional)</Label>
-                  <Input type="date" value={formInterestDate} onChange={(e) => setFormInterestDate(e.target.value)} className="h-12" />
-                </div>
-                {dateConflicts.length > 0 && (
-                  <Alert variant="default" className="border-warning/50 bg-warning/10">
-                    <AlertTriangle className="h-4 w-4 text-warning" />
-                    <AlertTitle className="text-warning font-semibold text-sm">Atenção: já existe interesse nesta data</AlertTitle>
-                    <AlertDescription className="text-xs space-y-1 mt-1">
-                      {dateConflicts.map((c, i) => (
-                        <div key={i} className="flex items-center gap-2">
-                          <span className="font-medium">{c.name}</span>
-                          <span className="text-muted-foreground">({c.phone})</span>
-                          <Badge variant="outline" className="text-[9px] px-1.5 py-0">{c.type} — {c.stage}</Badge>
-                        </div>
-                      ))}
-                      <p className="text-muted-foreground mt-1">Você ainda pode salvar normalmente.</p>
-                    </AlertDescription>
-                  </Alert>
-                )}
-                <div>
-                  <Label>Data da visita *</Label>
-                  <Input type="date" value={formVisitDate} onChange={(e) => setFormVisitDate(e.target.value)} className="h-12" />
-                </div>
-                <div>
-                  <Label>Horário *</Label>
-                  <Input type="time" value={formVisitTime} onChange={(e) => setFormVisitTime(e.target.value)} className="h-12" />
-                </div>
-                <div>
-                  <Label>Fonte do Lead *</Label>
-                  <Select value={formLeadSource} onValueChange={(v) => setFormLeadSource(v as LeadSource)}>
-                    <SelectTrigger className="h-12"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Orgânico">Orgânico</SelectItem>
-                      <SelectItem value="Tráfego Pago">Tráfego Pago</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Observações</Label>
-                  <Textarea value={formNotes} onChange={(e) => setFormNotes(e.target.value)} placeholder="Anotações..." rows={3} />
-                </div>
+                {renderFormFields(false)}
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button>
@@ -685,153 +846,32 @@ export default function Visits() {
 
       {/* Detail Modal */}
       <Dialog open={!!detailVisit} onOpenChange={(open) => { if (!open) { setDetailVisit(null); setEditing(false); } }}>
-        <DialogContent hideClose={isMobile} className={isMobile ? "max-w-[100vw] w-full h-[100dvh] max-h-[100dvh] rounded-none border-0 flex flex-col p-0" : "max-w-md"}>
+        <DialogContent hideClose={isMobile} className={isMobile ? "max-w-[100vw] w-full h-[100dvh] max-h-[100dvh] rounded-none border-0 flex flex-col p-0" : "max-w-md max-h-[90vh] overflow-y-auto"}>
           {detailVisit && (
             isMobile ? (
               <>
-                {/* Mobile Header */}
                 <div className="shrink-0 flex items-center justify-between border-b border-border px-4" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 12px)", paddingBottom: "12px" }}>
                   <h2 className="text-lg font-display font-semibold">Detalhes da Visita</h2>
                   <div className="flex items-center gap-1">
                     {!editing && detailVisit.status !== "Cancelada" && (
-                      <button
-                        onClick={() => {
-                          setEditForm({
-                            clientName: detailVisit.clientName,
-                            clientPhone: detailVisit.clientPhone,
-                            visitDate: detailVisit.visitDate,
-                            visitTime: detailVisit.visitTime.slice(0, 5),
-                            interestEventDate: detailVisit.interestEventDate || "",
-                            notes: detailVisit.notes || "",
-                            status: detailVisit.status,
-                            leadSource: detailVisit.leadSource || "Orgânico",
-                          });
-                          setEditing(true);
-                        }}
-                        className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-muted"
-                      >
+                      <button onClick={() => openEditForm(detailVisit)} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-muted">
                         <Pencil size={18} />
                       </button>
                     )}
-                    <button
-                      onClick={() => { setDetailVisit(null); setEditing(false); }}
-                      className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-muted"
-                    >
+                    <button onClick={() => { setDetailVisit(null); setEditing(false); }} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-muted">
                       <XIcon size={20} />
                     </button>
                   </div>
                 </div>
 
-                {/* Body */}
                 <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
-                  {editing ? (
-                    <>
-                      <div>
-                        <Label>Nome do cliente *</Label>
-                        <Input className="h-12" value={editForm.clientName} onChange={(e) => setEditForm(p => ({ ...p, clientName: e.target.value }))} />
-                      </div>
-                      <div>
-                        <Label>Telefone *</Label>
-                        <Input className="h-12" type="tel" value={editForm.clientPhone} onChange={(e) => setEditForm(p => ({ ...p, clientPhone: phoneMask(e.target.value) }))} />
-                      </div>
-                      <div>
-                        <Label>Data da visita *</Label>
-                        <Input className="h-12" type="date" value={editForm.visitDate} onChange={(e) => setEditForm(p => ({ ...p, visitDate: e.target.value }))} />
-                      </div>
-                      <div>
-                        <Label>Horário *</Label>
-                        <Input className="h-12" type="time" value={editForm.visitTime} onChange={(e) => setEditForm(p => ({ ...p, visitTime: e.target.value }))} />
-                      </div>
-                      <div>
-                        <Label>Data de interesse (opcional)</Label>
-                        <Input className="h-12" type="date" value={editForm.interestEventDate} onChange={(e) => setEditForm(p => ({ ...p, interestEventDate: e.target.value }))} />
-                      </div>
-                      <div>
-                        <Label>Status</Label>
-                        <Select value={editForm.status} onValueChange={(v) => setEditForm(p => ({ ...p, status: v }))}>
-                          <SelectTrigger className="h-12"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Agendada">Agendada</SelectItem>
-                            <SelectItem value="Confirmada">Confirmada</SelectItem>
-                            <SelectItem value="Remarcada">Remarcada</SelectItem>
-                            <SelectItem value="Cancelada">Cancelada</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label>Fonte do Lead</Label>
-                        <Select value={editForm.leadSource} onValueChange={(v) => setEditForm(p => ({ ...p, leadSource: v as LeadSource }))}>
-                          <SelectTrigger className="h-12"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Orgânico">Orgânico</SelectItem>
-                            <SelectItem value="Tráfego Pago">Tráfego Pago</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label>Observações</Label>
-                        <Textarea value={editForm.notes} onChange={(e) => setEditForm(p => ({ ...p, notes: e.target.value }))} rows={3} />
-                      </div>
-                    </>
-                  ) : (
-                    <div className="space-y-3 text-sm">
-                      <div className="flex justify-between"><span className="text-muted-foreground">Cliente</span><span className="font-medium">{detailVisit.clientName}</span></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Telefone</span><a href={`tel:${detailVisit.clientPhone.replace(/\D/g, "")}`} className="text-primary">{detailVisit.clientPhone}</a></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Data de interesse</span><span>{detailVisit.interestEventDate ? format(new Date(detailVisit.interestEventDate + "T12:00:00"), "dd/MM/yyyy") : "—"}</span></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Data da visita</span><span className="font-medium">{format(new Date(detailVisit.visitDate + "T12:00:00"), "dd/MM/yyyy")}</span></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Horário</span><span>{detailVisit.visitTime.slice(0, 5)}</span></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Status</span><Badge className={`text-[10px] font-medium border rounded-full px-2.5 py-0.5 ${VISIT_STATUS_COLORS[detailVisit.status as VisitStatus] || ""}`}>{detailVisit.status}</Badge></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Fonte do Lead</span><Badge variant="outline" className="text-[10px] font-medium rounded-full px-2.5 py-0.5">{detailVisit.leadSource || "Orgânico"}</Badge></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Data de cadastro</span><span className="text-sm">{format(new Date(detailVisit.createdAt), "dd/MM/yyyy 'às' HH:mm")}</span></div>
-                      {detailVisit.notes && (
-                        <div><span className="text-muted-foreground block mb-1">Observações</span><p className="text-sm bg-muted/50 rounded-lg p-3">{detailVisit.notes}</p></div>
-                      )}
-                    </div>
-                  )}
+                  {editing ? renderEditFormFields(true) : renderDetailView(detailVisit)}
                 </div>
 
-                {/* Footer */}
                 <div className="shrink-0 flex flex-col gap-2 px-4 pt-3 border-t border-border bg-background" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 16px)" }}>
                   {editing ? (
                     <>
-                      <Button className="h-12 w-full font-semibold" disabled={editSaving} onClick={async () => {
-                        if (!editForm.clientName.trim() || !editForm.visitDate || !editForm.visitTime) {
-                          toast.error("Preencha os campos obrigatórios"); return;
-                        }
-                        setEditSaving(true);
-                        try {
-                          const updates: Record<string, any> = {
-                            clientName: editForm.clientName.trim(),
-                            clientPhone: editForm.clientPhone.trim(),
-                            visitDate: editForm.visitDate,
-                            visitTime: editForm.visitTime,
-                            interestEventDate: editForm.interestEventDate || null,
-                            notes: editForm.notes.trim(),
-                            status: editForm.status,
-                            leadSource: editForm.leadSource,
-                          };
-                          await updateVisit(detailVisit.id, updates);
-                          // Sync to Google Calendar
-                          try {
-                            await syncVisitToGoogle(detailVisit.id);
-                            toast.success("Visita atualizada e sincronizada!");
-                          } catch {
-                            toast.warning("Salvo no CRM, mas falhou sincronizar com Google Agenda.");
-                          }
-                          if (editForm.status === "Cancelada") {
-                            if (detailVisit.googleEventId) {
-                              try { await deleteVisitGoogleEvent(detailVisit.id); } catch {}
-                            }
-                          }
-                          setEditing(false);
-                          setDetailVisit(null);
-                          loadVisits();
-                        } catch (e: any) {
-                          toast.error(e.message || "Erro ao salvar");
-                        } finally {
-                          setEditSaving(false);
-                        }
-                      }}>
+                      <Button className="h-12 w-full font-semibold" disabled={editSaving} onClick={handleEditSave}>
                         {editSaving ? "Salvando..." : "Salvar alterações"}
                       </Button>
                       <Button variant="outline" className="h-12 w-full" onClick={() => setEditing(false)}>Cancelar edição</Button>
@@ -851,25 +891,12 @@ export default function Visits() {
                 </div>
               </>
             ) : (
-              /* Desktop Detail */
               <>
                 <DialogHeader>
                   <div className="flex items-center justify-between pr-8">
                     <DialogTitle className="font-display">Detalhes da Visita</DialogTitle>
                     {!editing && detailVisit.status !== "Cancelada" && (
-                      <Button variant="ghost" size="sm" className="gap-1.5 h-8" onClick={() => {
-                        setEditForm({
-                          clientName: detailVisit.clientName,
-                          clientPhone: detailVisit.clientPhone,
-                          visitDate: detailVisit.visitDate,
-                          visitTime: detailVisit.visitTime.slice(0, 5),
-                          interestEventDate: detailVisit.interestEventDate || "",
-                          notes: detailVisit.notes || "",
-                          status: detailVisit.status,
-                          leadSource: detailVisit.leadSource || "Orgânico",
-                        });
-                        setEditing(true);
-                      }}>
+                      <Button variant="ghost" size="sm" className="gap-1.5 h-8" onClick={() => openEditForm(detailVisit)}>
                         <Pencil size={14} /> Editar
                       </Button>
                     )}
@@ -877,65 +904,15 @@ export default function Visits() {
                 </DialogHeader>
                 {editing ? (
                   <div className="space-y-4">
-                    <div><Label>Nome do cliente *</Label><Input className="h-12" value={editForm.clientName} onChange={(e) => setEditForm(p => ({ ...p, clientName: e.target.value }))} /></div>
-                    <div><Label>Telefone *</Label><Input className="h-12" type="tel" value={editForm.clientPhone} onChange={(e) => setEditForm(p => ({ ...p, clientPhone: phoneMask(e.target.value) }))} /></div>
-                    <div><Label>Data da visita *</Label><Input className="h-12" type="date" value={editForm.visitDate} onChange={(e) => setEditForm(p => ({ ...p, visitDate: e.target.value }))} /></div>
-                    <div><Label>Horário *</Label><Input className="h-12" type="time" value={editForm.visitTime} onChange={(e) => setEditForm(p => ({ ...p, visitTime: e.target.value }))} /></div>
-                    <div><Label>Data de interesse (opcional)</Label><Input className="h-12" type="date" value={editForm.interestEventDate} onChange={(e) => setEditForm(p => ({ ...p, interestEventDate: e.target.value }))} /></div>
-                    <div>
-                      <Label>Status</Label>
-                      <Select value={editForm.status} onValueChange={(v) => setEditForm(p => ({ ...p, status: v }))}>
-                        <SelectTrigger className="h-12"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Agendada">Agendada</SelectItem>
-                          <SelectItem value="Confirmada">Confirmada</SelectItem>
-                          <SelectItem value="Remarcada">Remarcada</SelectItem>
-                          <SelectItem value="Cancelada">Cancelada</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label>Fonte do Lead</Label>
-                      <Select value={editForm.leadSource} onValueChange={(v) => setEditForm(p => ({ ...p, leadSource: v as LeadSource }))}>
-                        <SelectTrigger className="h-12"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Orgânico">Orgânico</SelectItem>
-                          <SelectItem value="Tráfego Pago">Tráfego Pago</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div><Label>Observações</Label><Textarea value={editForm.notes} onChange={(e) => setEditForm(p => ({ ...p, notes: e.target.value }))} rows={3} /></div>
+                    {renderEditFormFields(false)}
                     <DialogFooter>
                       <Button variant="outline" onClick={() => setEditing(false)}>Cancelar</Button>
-                      <Button disabled={editSaving} onClick={async () => {
-                        if (!editForm.clientName.trim() || !editForm.visitDate || !editForm.visitTime) { toast.error("Preencha os campos obrigatórios"); return; }
-                        setEditSaving(true);
-                        try {
-                          await updateVisit(detailVisit.id, {
-                            clientName: editForm.clientName.trim(), clientPhone: editForm.clientPhone.trim(),
-                            visitDate: editForm.visitDate, visitTime: editForm.visitTime,
-                            interestEventDate: editForm.interestEventDate || null, notes: editForm.notes.trim(), status: editForm.status, leadSource: editForm.leadSource,
-                          });
-                          try { await syncVisitToGoogle(detailVisit.id); toast.success("Visita atualizada e sincronizada!"); } catch { toast.warning("Salvo, mas falhou sincronizar com Google Agenda."); }
-                          if (editForm.status === "Cancelada" && detailVisit.googleEventId) { try { await deleteVisitGoogleEvent(detailVisit.id); } catch {} }
-                          setEditing(false); setDetailVisit(null); loadVisits();
-                        } catch (e: any) { toast.error(e.message || "Erro ao salvar"); } finally { setEditSaving(false); }
-                      }}>{editSaving ? "Salvando..." : "Salvar alterações"}</Button>
+                      <Button disabled={editSaving} onClick={handleEditSave}>{editSaving ? "Salvando..." : "Salvar alterações"}</Button>
                     </DialogFooter>
                   </div>
                 ) : (
                   <>
-                    <div className="space-y-3 text-sm">
-                      <div className="flex justify-between"><span className="text-muted-foreground">Cliente</span><span className="font-medium">{detailVisit.clientName}</span></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Telefone</span><a href={`tel:${detailVisit.clientPhone.replace(/\D/g, "")}`} className="text-primary">{detailVisit.clientPhone}</a></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Data de interesse</span><span>{detailVisit.interestEventDate ? format(new Date(detailVisit.interestEventDate + "T12:00:00"), "dd/MM/yyyy") : "—"}</span></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Data da visita</span><span className="font-medium">{format(new Date(detailVisit.visitDate + "T12:00:00"), "dd/MM/yyyy")}</span></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Horário</span><span>{detailVisit.visitTime.slice(0, 5)}</span></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Status</span><Badge className={`text-[10px] font-medium border rounded-full px-2.5 py-0.5 ${VISIT_STATUS_COLORS[detailVisit.status as VisitStatus] || ""}`}>{detailVisit.status}</Badge></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Fonte do Lead</span><Badge variant="outline" className="text-[10px] font-medium rounded-full px-2.5 py-0.5">{detailVisit.leadSource || "Orgânico"}</Badge></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Data de cadastro</span><span className="text-sm">{format(new Date(detailVisit.createdAt), "dd/MM/yyyy 'às' HH:mm")}</span></div>
-                      {detailVisit.notes && (<div><span className="text-muted-foreground block mb-1">Observações</span><p className="text-sm bg-muted/50 rounded-lg p-3">{detailVisit.notes}</p></div>)}
-                    </div>
+                    {renderDetailView(detailVisit)}
                     {detailVisit.status !== "Cancelada" && (
                       <DialogFooter className="flex-wrap gap-2">
                         {detailVisit.status !== "Confirmada" && (
@@ -957,6 +934,43 @@ export default function Visits() {
                 )}
               </>
             )
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* WhatsApp Confirmation Message Modal */}
+      <Dialog open={!!confirmMsgVisit} onOpenChange={(open) => { if (!open) setConfirmMsgVisit(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display flex items-center gap-2">
+              <MessageCircle size={20} className="text-green-500" />
+              Enviar confirmação por WhatsApp
+            </DialogTitle>
+          </DialogHeader>
+          {confirmMsgVisit && (
+            <div className="space-y-4">
+              <div className="bg-muted/50 rounded-xl p-4 text-sm whitespace-pre-wrap border border-border">
+                {buildWhatsAppMessage(confirmMsgVisit)}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Número de destino: <span className="font-medium">(31) 99859-5155</span>
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  className="flex-1 gap-2 bg-green-600 hover:bg-green-700 text-white"
+                  onClick={() => {
+                    const msg = encodeURIComponent(buildWhatsAppMessage(confirmMsgVisit));
+                    window.open(`https://wa.me/${NOTIFICATION_PHONE}?text=${msg}`, "_blank");
+                    setConfirmMsgVisit(null);
+                  }}
+                >
+                  <MessageCircle size={16} /> Enviar WhatsApp
+                </Button>
+                <Button variant="outline" onClick={() => setConfirmMsgVisit(null)}>
+                  Fechar
+                </Button>
+              </div>
+            </div>
           )}
         </DialogContent>
       </Dialog>
