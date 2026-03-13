@@ -19,6 +19,9 @@ export interface Visit {
   status: string;
   leadSource: LeadSource | string;
   guestCount: number;
+  eventTypeDesired: string;
+  eventValue: number;
+  clientId: string | null;
   googleEventId: string | null;
   createdAt: string;
   updatedAt: string;
