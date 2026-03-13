@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { parseLocalDate, formatDateBR } from "@/lib/dateUtils";
 import { useSearchParams } from "react-router-dom";
 import { Plus, Search, Eye, Pencil, Upload, Trash2, CalendarDays, Link2, ExternalLink, FileText, CalendarCheck, Activity } from "lucide-react";
@@ -21,6 +21,7 @@ import { CurrencyInput, PercentInput } from "@/components/CurrencyInput";
 import { triggerGoogleSync } from "@/lib/googleSync";
 import { NumericInput } from "@/components/NumericInput";
 import ImportContractModal from "@/components/ImportContractModal";
+import { supabase } from "@/integrations/supabase/client";
 
 const EVENT_TYPES: EventType[] = [
   "Aniversário Adulto", "Aniversário Infantil", "Casamento", "Confraternização", "Evento Corporativo",
@@ -91,6 +92,36 @@ export default function Contracts() {
   const openNew = () => {
     if (clients.length === 0) { toast.error("Cadastre um cliente antes de criar um contrato"); return; }
     setEditing(null); setForm({ ...emptyForm, clientId: clients[0].id, rentalType: "Locação (1 dia)", eventDateEnd: "" }); setOpen(true);
+    // Auto-fill from most recent visit of first client
+    autoFillFromClient(clients[0].id);
+  };
+
+  const autoFillFromClient = async (clientId: string) => {
+    try {
+      const { data: visitRows } = await supabase
+        .from("visits")
+        .select("*")
+        .eq("client_id", clientId)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (visitRows && visitRows.length > 0) {
+        const v = visitRows[0];
+        const updates: Record<string, any> = {};
+        if (v.event_type_desired) {
+          const validTypes = ["Aniversário Adulto", "Aniversário Infantil", "Casamento", "Confraternização", "Evento Corporativo"];
+          if (validTypes.includes(v.event_type_desired)) {
+            updates.eventType = v.event_type_desired;
+          }
+        }
+        if (v.interest_event_date) updates.eventDate = v.interest_event_date;
+        if (v.guest_count > 0) updates.guestCount = v.guest_count;
+        if (Number(v.event_value) > 0) updates.totalValue = Number(v.event_value);
+        if (Object.keys(updates).length > 0) {
+          setForm(prev => ({ ...prev, ...updates }));
+          toast.info("Dados preenchidos automaticamente com base na visita", { duration: 3000 });
+        }
+      }
+    } catch {}
   };
 
   const openEdit = (c: Contract) => {
@@ -124,9 +155,19 @@ export default function Contracts() {
         // Sync to Google Calendar on edit too
         triggerGoogleSync(editing.id);
       } else {
-        const newContract = await addContract(form);
+        // Find linked visit for this client
+        let visitId: string | undefined;
+        try {
+          const { data: visitRows } = await supabase
+            .from("visits")
+            .select("id")
+            .eq("client_id", form.clientId)
+            .order("created_at", { ascending: false })
+            .limit(1);
+          if (visitRows && visitRows.length > 0) visitId = visitRows[0].id;
+        } catch {}
+        const newContract = await addContract({ ...form, visitId, source: visitId ? "visita" : "" });
         toast.success("Contrato criado com sucesso");
-        // Sync to Google Calendar immediately (even before signature)
         triggerGoogleSync(newContract.id);
       }
       setOpen(false); await load();
@@ -415,7 +456,7 @@ export default function Contracts() {
               <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Cliente e evento</p>
               <div className="grid gap-1.5">
                 <Label className="text-xs font-medium text-muted-foreground">Cliente *</Label>
-                <Select value={form.clientId} onValueChange={(v) => set("clientId", v)}>
+                <Select value={form.clientId} onValueChange={(v) => { set("clientId", v); if (!editing) autoFillFromClient(v); }}>
                   <SelectTrigger className="rounded-lg"><SelectValue /></SelectTrigger>
                   <SelectContent>{clients.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                 </Select>

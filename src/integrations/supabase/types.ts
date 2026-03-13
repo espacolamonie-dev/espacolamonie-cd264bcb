@@ -505,9 +505,11 @@ export type Database = {
           payment_status: string
           remaining_value: number
           rental_type: string
+          source: string
           status: string
           total_value: number
           user_id: string
+          visit_id: string | null
         }
         Insert: {
           cancelled_at?: string | null
@@ -526,9 +528,11 @@ export type Database = {
           payment_status?: string
           remaining_value?: number
           rental_type?: string
+          source?: string
           status?: string
           total_value?: number
           user_id: string
+          visit_id?: string | null
         }
         Update: {
           cancelled_at?: string | null
@@ -547,9 +551,11 @@ export type Database = {
           payment_status?: string
           remaining_value?: number
           rental_type?: string
+          source?: string
           status?: string
           total_value?: number
           user_id?: string
+          visit_id?: string | null
         }
         Relationships: [
           {
@@ -557,6 +563,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: false
+            referencedRelation: "visits"
             referencedColumns: ["id"]
           },
         ]
@@ -1149,9 +1162,12 @@ export type Database = {
       }
       visits: {
         Row: {
+          client_id: string | null
           client_name: string
           client_phone: string
           created_at: string
+          event_type_desired: string
+          event_value: number
           google_event_id: string | null
           guest_count: number
           id: string
@@ -1165,9 +1181,12 @@ export type Database = {
           visit_time: string
         }
         Insert: {
+          client_id?: string | null
           client_name: string
           client_phone: string
           created_at?: string
+          event_type_desired?: string
+          event_value?: number
           google_event_id?: string | null
           guest_count?: number
           id?: string
@@ -1181,9 +1200,12 @@ export type Database = {
           visit_time: string
         }
         Update: {
+          client_id?: string | null
           client_name?: string
           client_phone?: string
           created_at?: string
+          event_type_desired?: string
+          event_value?: number
           google_event_id?: string | null
           guest_count?: number
           id?: string
@@ -1196,7 +1218,15 @@ export type Database = {
           visit_date?: string
           visit_time?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "visits_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       whatsapp_connection: {
         Row: {
