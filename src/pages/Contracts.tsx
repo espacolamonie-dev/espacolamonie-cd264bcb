@@ -155,9 +155,19 @@ export default function Contracts() {
         // Sync to Google Calendar on edit too
         triggerGoogleSync(editing.id);
       } else {
-        const newContract = await addContract(form);
+        // Find linked visit for this client
+        let visitId: string | undefined;
+        try {
+          const { data: visitRows } = await supabase
+            .from("visits")
+            .select("id")
+            .eq("client_id", form.clientId)
+            .order("created_at", { ascending: false })
+            .limit(1);
+          if (visitRows && visitRows.length > 0) visitId = visitRows[0].id;
+        } catch {}
+        const newContract = await addContract({ ...form, visitId, source: visitId ? "visita" : "" });
         toast.success("Contrato criado com sucesso");
-        // Sync to Google Calendar immediately (even before signature)
         triggerGoogleSync(newContract.id);
       }
       setOpen(false); await load();
