@@ -43,6 +43,7 @@ export const addContract = async (c: {
   rentalType?: string; eventTime: string;
   guestCount: number; totalValue: number; depositPercent: number;
   status: string; paymentStatus: string;
+  visitId?: string; source?: string;
 }) => {
   const userId = await getUserId();
   const depositValue = (c.totalValue * c.depositPercent) / 100;
@@ -61,7 +62,9 @@ export const addContract = async (c: {
     remaining_value: c.totalValue,
     status: c.status,
     payment_status: c.paymentStatus,
-  }).select().single();
+    visit_id: c.visitId || null,
+    source: c.source || "",
+  } as any).select().single();
   if (error) throw error;
   return mapContract(data);
 };
