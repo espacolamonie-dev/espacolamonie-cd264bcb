@@ -21,6 +21,7 @@ import { CurrencyInput, PercentInput } from "@/components/CurrencyInput";
 import { triggerGoogleSync } from "@/lib/googleSync";
 import { NumericInput } from "@/components/NumericInput";
 import ImportContractModal from "@/components/ImportContractModal";
+import { supabase } from "@/integrations/supabase/client";
 
 const EVENT_TYPES: EventType[] = [
   "Aniversário Adulto", "Aniversário Infantil", "Casamento", "Confraternização", "Evento Corporativo",
