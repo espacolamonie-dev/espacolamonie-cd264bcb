@@ -91,6 +91,7 @@ export const updateContract = async (id: string, updates: Record<string, any>) =
     depositPercent: "deposit_percent", depositValue: "deposit_value",
     remainingValue: "remaining_value", paymentStatus: "payment_status",
     cancelledAt: "cancelled_at", cancelledBy: "cancelled_by",
+    visitId: "visit_id", source: "source",
   };
   for (const [k, v] of Object.entries(updates)) {
     mapped[keyMap[k] || k] = v;
