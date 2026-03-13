@@ -142,6 +142,10 @@ export const updateVisit = async (id: string, updates: Record<string, any>): Pro
     visitTime: "visit_time",
     googleEventId: "google_event_id",
     leadSource: "lead_source",
+    eventTypeDesired: "event_type_desired",
+    eventValue: "event_value",
+    guestCount: "guest_count",
+    clientId: "client_id",
   };
   for (const [k, v] of Object.entries(updates)) {
     mapped[keyMap[k] || k] = v;
