@@ -91,6 +91,36 @@ export default function Contracts() {
   const openNew = () => {
     if (clients.length === 0) { toast.error("Cadastre um cliente antes de criar um contrato"); return; }
     setEditing(null); setForm({ ...emptyForm, clientId: clients[0].id, rentalType: "Locação (1 dia)", eventDateEnd: "" }); setOpen(true);
+    // Auto-fill from most recent visit of first client
+    autoFillFromClient(clients[0].id);
+  };
+
+  const autoFillFromClient = async (clientId: string) => {
+    try {
+      const { data: visitRows } = await supabase
+        .from("visits")
+        .select("*")
+        .eq("client_id", clientId)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (visitRows && visitRows.length > 0) {
+        const v = visitRows[0];
+        const updates: Record<string, any> = {};
+        if (v.event_type_desired) {
+          const validTypes = ["Aniversário Adulto", "Aniversário Infantil", "Casamento", "Confraternização", "Evento Corporativo"];
+          if (validTypes.includes(v.event_type_desired)) {
+            updates.eventType = v.event_type_desired;
+          }
+        }
+        if (v.interest_event_date) updates.eventDate = v.interest_event_date;
+        if (v.guest_count > 0) updates.guestCount = v.guest_count;
+        if (Number(v.event_value) > 0) updates.totalValue = Number(v.event_value);
+        if (Object.keys(updates).length > 0) {
+          setForm(prev => ({ ...prev, ...updates }));
+          toast.info("Dados preenchidos automaticamente com base na visita", { duration: 3000 });
+        }
+      }
+    } catch {}
   };
 
   const openEdit = (c: Contract) => {
