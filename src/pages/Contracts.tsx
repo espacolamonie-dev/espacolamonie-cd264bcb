@@ -446,7 +446,7 @@ export default function Contracts() {
               <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Cliente e evento</p>
               <div className="grid gap-1.5">
                 <Label className="text-xs font-medium text-muted-foreground">Cliente *</Label>
-                <Select value={form.clientId} onValueChange={(v) => set("clientId", v)}>
+                <Select value={form.clientId} onValueChange={(v) => { set("clientId", v); if (!editing) autoFillFromClient(v); }}>
                   <SelectTrigger className="rounded-lg"><SelectValue /></SelectTrigger>
                   <SelectContent>{clients.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                 </Select>
