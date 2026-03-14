@@ -8,6 +8,7 @@ import {
   Users, Clock, Sparkles, Volume2, Car, PawPrint, Cigarette, Palette, Info
 } from "lucide-react";
 import { jsPDF } from "jspdf";
+import SignBudget from "@/pages/SignBudget";
 
 const fmt = (v: number) => Number(v).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
