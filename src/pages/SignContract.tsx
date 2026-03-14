@@ -8,6 +8,7 @@ import {
   Users, Clock, Sparkles, Volume2, Car, PawPrint, Cigarette, Palette, Info
 } from "lucide-react";
 import { jsPDF } from "jspdf";
+import SignBudget from "@/pages/SignBudget";
 
 const fmt = (v: number) => Number(v).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -364,6 +365,7 @@ export default function SignContract() {
   const { slug } = useParams();
   const token = searchParams.get("token");
   const [data, setData] = useState<SignatureData | null>(null);
+  const [budgetData, setBudgetData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [signing, setSigning] = useState(false);
   const [signed, setSigned] = useState(false);
@@ -395,13 +397,23 @@ export default function SignContract() {
       .then((d) => {
         if (d.error) { setError(d.error); }
         else {
-          setData(d);
+          // If this is a budget signature (has budget_id, no contract_id), use budget flow
+          if (d.budget_id && !d.contract_id) {
+            setBudgetData(d);
+          } else {
+            setData(d);
+          }
           if (d.status === "signed") setSigned(true);
         }
       })
       .catch(() => setError("Erro ao carregar contrato"))
       .finally(() => setLoading(false));
   }, [token, slug]);
+
+  // If it's a budget signature, render SignBudget component
+  if (budgetData && !loading) {
+    return <SignBudget data={budgetData} />;
+  }
 
   const toggleRule = (index: number) => {
     setCheckedRules(prev => {
