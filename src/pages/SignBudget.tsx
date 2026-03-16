@@ -49,7 +49,7 @@ async function loadLogoBase64(): Promise<string> {
 }
 
 async function generateBudgetSignedPDF(
-  d: SignatureData,
+  d: SignatureData & { depositValue?: number },
   items: BudgetItemRow[],
   signatureDataUrl: string
 ): Promise<string> {
