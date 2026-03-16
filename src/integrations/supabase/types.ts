@@ -213,6 +213,7 @@ export type Database = {
           client_phone: string
           contract_id: string | null
           created_at: string
+          deposit_value: number
           event_date: string | null
           event_type: string
           final_total: number
@@ -234,6 +235,7 @@ export type Database = {
           client_phone?: string
           contract_id?: string | null
           created_at?: string
+          deposit_value?: number
           event_date?: string | null
           event_type?: string
           final_total?: number
@@ -255,6 +257,7 @@ export type Database = {
           client_phone?: string
           contract_id?: string | null
           created_at?: string
+          deposit_value?: number
           event_date?: string | null
           event_type?: string
           final_total?: number
