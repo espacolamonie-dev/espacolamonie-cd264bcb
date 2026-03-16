@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { CurrencyInput } from "@/components/CurrencyInput";
-import { Plus, TrendingUp, TrendingDown, Wallet, Trash2, FileText, HandCoins, CreditCard, Landmark } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, Wallet, Trash2, FileText, HandCoins, CreditCard, Landmark, FileSignature } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
