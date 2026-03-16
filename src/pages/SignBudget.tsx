@@ -190,12 +190,12 @@ export default function SignBudget({ data: initialData }: Props) {
   useEffect(() => {
     const loadItems = async () => {
       if (!data.budget_id) return;
-      const { data: rows } = await supabase
-        .from("budget_items")
-        .select("id, name, quantity, unit_label, final_value, category")
-        .eq("budget_id", data.budget_id)
-        .order("sort_order");
-      setItems((rows || []) as BudgetItemRow[]);
+      const [itemsRes, budgetRes] = await Promise.all([
+        supabase.from("budget_items").select("id, name, quantity, unit_label, final_value, category").eq("budget_id", data.budget_id).order("sort_order"),
+        supabase.from("budgets").select("deposit_value").eq("id", data.budget_id).single(),
+      ]);
+      setItems((itemsRes.data || []) as BudgetItemRow[]);
+      if (budgetRes.data) setDepositValue(Number((budgetRes.data as any).deposit_value || 0));
       setLoadingItems(false);
     };
     loadItems();
