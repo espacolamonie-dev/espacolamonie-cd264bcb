@@ -191,7 +191,7 @@ export default function BudgetFormModal({ budgetId, open, onClose, onSaved }: Pr
       } else {
         const newBudget = await addBudget({
           clientId, clientName, clientPhone, eventType,
-          eventDate: eventDate || null, guestCount, notes, globalPercentage,
+          eventDate: eventDate || null, guestCount, notes, globalPercentage, depositValue,
         });
         bid = newBudget.id;
       }
