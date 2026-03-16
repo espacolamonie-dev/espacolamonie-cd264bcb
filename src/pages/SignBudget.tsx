@@ -175,6 +175,7 @@ interface Props {
 export default function SignBudget({ data: initialData }: Props) {
   const [data] = useState<SignatureData>(initialData);
   const [items, setItems] = useState<BudgetItemRow[]>([]);
+  const [depositValue, setDepositValue] = useState(0);
   const [loadingItems, setLoadingItems] = useState(true);
   const [step, setStep] = useState<"review" | "sign" | "done">(initialData.status === "signed" ? "done" : "review");
   const [signing, setSigning] = useState(false);
