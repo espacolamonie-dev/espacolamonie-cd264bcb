@@ -101,6 +101,7 @@ function mapBudget(row: any): Budget {
     subtotal: Number(row.subtotal),
     additionalTotal: Number(row.additional_total),
     finalTotal: Number(row.final_total),
+    depositValue: Number(row.deposit_value || 0),
     publicToken: row.public_token,
     pdfUrl: row.pdf_url,
     contractId: row.contract_id,
