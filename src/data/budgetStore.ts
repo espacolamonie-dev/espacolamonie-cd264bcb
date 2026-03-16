@@ -238,7 +238,7 @@ export const updateBudget = async (id: string, updates: Record<string, any>): Pr
     clientId: "client_id", clientName: "client_name", clientPhone: "client_phone",
     eventType: "event_type", eventDate: "event_date", guestCount: "guest_count",
     globalPercentage: "global_percentage", additionalTotal: "additional_total",
-    finalTotal: "final_total", publicToken: "public_token", pdfUrl: "pdf_url",
+    finalTotal: "final_total", depositValue: "deposit_value", publicToken: "public_token", pdfUrl: "pdf_url",
     contractId: "contract_id",
   };
   const mapped: Record<string, any> = { updated_at: new Date().toISOString() };
