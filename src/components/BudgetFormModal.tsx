@@ -303,6 +303,10 @@ export default function BudgetFormModal({ budgetId, open, onClose, onSaved }: Pr
                 <Label className="text-xs">Percentual geral (%)</Label>
                 <NumericInput value={globalPercentage} onChange={setGlobalPercentage} />
               </div>
+              <div>
+                <Label className="text-xs">Valor do sinal (reserva)</Label>
+                <CurrencyInput value={depositValue} onChange={setDepositValue} />
+              </div>
             </div>
             <div>
               <Label className="text-xs">Observações</Label>
