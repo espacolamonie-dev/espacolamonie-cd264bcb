@@ -183,7 +183,7 @@ export default function BudgetFormModal({ budgetId, open, onClose, onSaved }: Pr
       if (isEdit) {
         await updateBudget(bid!, {
           clientId, clientName, clientPhone, eventType,
-          eventDate: eventDate || null, guestCount, notes, globalPercentage,
+          eventDate: eventDate || null, guestCount, notes, globalPercentage, depositValue,
         });
         // Remove old items and re-add
         const existing = await getBudgetItems(bid!);
