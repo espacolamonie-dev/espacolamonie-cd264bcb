@@ -279,7 +279,7 @@ export default function SignBudget({ data: initialData }: Props) {
     setError("");
     try {
       const sigDataUrl = canvasRef.current!.toDataURL("image/png");
-      const pdfDataUri = await generateBudgetSignedPDF(data, items, sigDataUrl);
+      const pdfDataUri = await generateBudgetSignedPDF({ ...data, depositValue }, items, sigDataUrl);
       const rawBase64 = pdfDataUri.split(",")[1];
 
       const res = await fetch(FUNC_URL, {
