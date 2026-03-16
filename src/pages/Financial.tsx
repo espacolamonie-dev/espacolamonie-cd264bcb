@@ -271,6 +271,57 @@ export default function Financial() {
         </div>
       </div>
 
+      {/* Contract Production */}
+      {(() => {
+        const activeContracts = contracts.filter(c => c.status !== "cancelled");
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const dayOfWeek = now.getDay();
+        const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+        weekStart.setHours(0, 0, 0, 0);
+
+        const contractsThisMonth = activeContracts.filter(c => new Date(c.createdAt) >= monthStart);
+        const contractsThisWeek = activeContracts.filter(c => new Date(c.createdAt) >= weekStart);
+        const totalValueMonth = contractsThisMonth.reduce((s, c) => s + c.totalValue, 0);
+        const totalValueWeek = contractsThisWeek.reduce((s, c) => s + c.totalValue, 0);
+        const totalValueAll = activeContracts.reduce((s, c) => s + c.totalValue, 0);
+
+        return (
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="stat-card !border-success/20">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="rounded-full bg-success/10 p-2">
+                  <FileSignature size={14} className="text-success" />
+                </div>
+                <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider">Contratos na semana</p>
+              </div>
+              <p className="text-2xl font-display font-bold text-success tracking-tight">{contractsThisWeek.length}</p>
+              <p className="text-[11px] text-muted-foreground mt-1">{fmt(totalValueWeek)} em valor total</p>
+            </div>
+            <div className="stat-card !border-primary/20">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="rounded-full bg-primary/10 p-2">
+                  <FileSignature size={14} className="text-primary" />
+                </div>
+                <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider">Contratos no mês</p>
+              </div>
+              <p className="text-2xl font-display font-bold text-primary tracking-tight">{contractsThisMonth.length}</p>
+              <p className="text-[11px] text-muted-foreground mt-1">{fmt(totalValueMonth)} em valor total</p>
+            </div>
+            <div className="stat-card !border-warning/20">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="rounded-full bg-warning/10 p-2">
+                  <FileSignature size={14} className="text-warning" />
+                </div>
+                <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider">Total de contratos</p>
+              </div>
+              <p className="text-2xl font-display font-bold text-warning tracking-tight">{activeContracts.length}</p>
+              <p className="text-[11px] text-muted-foreground mt-1">{fmt(totalValueAll)} em valor total</p>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Receivables Summary */}
       {(() => {
         const activeContracts = contracts.filter(c => c.status !== "cancelled");
