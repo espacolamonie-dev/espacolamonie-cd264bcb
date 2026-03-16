@@ -68,6 +68,7 @@ export default function BudgetFormModal({ budgetId, open, onClose, onSaved }: Pr
   const [clientResults, setClientResults] = useState<any[]>([]);
   const [allClients, setAllClients] = useState<any[]>([]);
   const [globalPercentage, setGlobalPercentage] = useState(0);
+  const [depositValue, setDepositValue] = useState(0);
 
   // Step 2
   const [items, setItems] = useState<ItemLocal[]>([]);
