@@ -23,6 +23,7 @@ export interface Budget {
   subtotal: number;
   additionalTotal: number;
   finalTotal: number;
+  depositValue: number;
   publicToken: string;
   pdfUrl: string | null;
   contractId: string | null;
