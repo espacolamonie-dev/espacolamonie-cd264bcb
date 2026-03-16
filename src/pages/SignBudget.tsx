@@ -430,13 +430,35 @@ export default function SignBudget({ data: initialData }: Props) {
 
             {/* Total */}
             <div className="rounded-2xl overflow-hidden mb-8" style={{ background: "linear-gradient(135deg, #1F4D3A 0%, #2A6B4A 100%)", boxShadow: "0 8px 32px rgba(31, 77, 58, 0.2)" }}>
-              <div style={{ padding: "20px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <p style={{ fontFamily: "'Playfair Display', serif", fontSize: "16px", fontWeight: 600, color: "rgba(255,255,255,0.9)" }}>
-                  Valor Total
-                </p>
-                <p style={{ fontFamily: "'Playfair Display', serif", fontSize: "28px", fontWeight: 700, color: "#FFFFFF" }}>
-                  {fmt(data.total_value)}
-                </p>
+              <div style={{ padding: "20px 24px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <p style={{ fontFamily: "'Playfair Display', serif", fontSize: "16px", fontWeight: 600, color: "rgba(255,255,255,0.9)" }}>
+                    Valor Total
+                  </p>
+                  <p style={{ fontFamily: "'Playfair Display', serif", fontSize: "28px", fontWeight: 700, color: "#FFFFFF" }}>
+                    {fmt(data.total_value)}
+                  </p>
+                </div>
+                {depositValue > 0 && (
+                  <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.2)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <p style={{ fontFamily: "'Poppins', sans-serif", fontSize: "13px", fontWeight: 500, color: "rgba(255,255,255,0.8)" }}>
+                      Sinal pago (reserva)
+                    </p>
+                    <p style={{ fontFamily: "'Poppins', sans-serif", fontSize: "16px", fontWeight: 600, color: "#86EFAC" }}>
+                      {fmt(depositValue)}
+                    </p>
+                  </div>
+                )}
+                {depositValue > 0 && (
+                  <div style={{ marginTop: "8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <p style={{ fontFamily: "'Poppins', sans-serif", fontSize: "13px", fontWeight: 500, color: "rgba(255,255,255,0.7)" }}>
+                      Restante
+                    </p>
+                    <p style={{ fontFamily: "'Poppins', sans-serif", fontSize: "16px", fontWeight: 600, color: "#FFFFFF" }}>
+                      {fmt(data.total_value - depositValue)}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
