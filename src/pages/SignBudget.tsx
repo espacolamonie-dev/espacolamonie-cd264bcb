@@ -136,6 +136,11 @@ async function generateBudgetSignedPDF(
   doc.line(margin, y, pageWidth - margin, y);
   y += 6;
   addText(`VALOR TOTAL: ${fmt(d.total_value)}`, { bold: true, size: 13 });
+  if ((d as any).depositValue && (d as any).depositValue > 0) {
+    addSpace(2);
+    addText(`Sinal pago (reserva): ${fmt((d as any).depositValue)}`, { size: 11 });
+    addText(`Restante: ${fmt(d.total_value - (d as any).depositValue)}`, { bold: true, size: 11 });
+  }
   addSpace(8);
 
   // Declaration

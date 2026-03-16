@@ -281,6 +281,7 @@ export const duplicateBudget = async (id: string): Promise<Budget> => {
     notes: original.notes,
     status: "draft",
     globalPercentage: original.globalPercentage,
+    depositValue: original.depositValue,
   });
 
   // Copy items
