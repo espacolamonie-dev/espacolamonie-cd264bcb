@@ -23,6 +23,7 @@ export interface Budget {
   subtotal: number;
   additionalTotal: number;
   finalTotal: number;
+  depositValue: number;
   publicToken: string;
   pdfUrl: string | null;
   contractId: string | null;
@@ -100,6 +101,7 @@ function mapBudget(row: any): Budget {
     subtotal: Number(row.subtotal),
     additionalTotal: Number(row.additional_total),
     finalTotal: Number(row.final_total),
+    depositValue: Number(row.deposit_value || 0),
     publicToken: row.public_token,
     pdfUrl: row.pdf_url,
     contractId: row.contract_id,
@@ -200,6 +202,7 @@ export const addBudget = async (b: {
   notes?: string;
   status?: BudgetStatus;
   globalPercentage?: number;
+  depositValue?: number;
 }): Promise<Budget> => {
   const userId = await getUserId();
   const slug = await uniqueSlug(b.clientName);
@@ -214,6 +217,7 @@ export const addBudget = async (b: {
     notes: b.notes || "",
     status: b.status || "draft",
     global_percentage: b.globalPercentage || 0,
+    deposit_value: b.depositValue || 0,
     public_token: slug,
   }).select().single();
   if (error) throw error;
@@ -234,7 +238,7 @@ export const updateBudget = async (id: string, updates: Record<string, any>): Pr
     clientId: "client_id", clientName: "client_name", clientPhone: "client_phone",
     eventType: "event_type", eventDate: "event_date", guestCount: "guest_count",
     globalPercentage: "global_percentage", additionalTotal: "additional_total",
-    finalTotal: "final_total", publicToken: "public_token", pdfUrl: "pdf_url",
+    finalTotal: "final_total", depositValue: "deposit_value", publicToken: "public_token", pdfUrl: "pdf_url",
     contractId: "contract_id",
   };
   const mapped: Record<string, any> = { updated_at: new Date().toISOString() };
@@ -277,6 +281,7 @@ export const duplicateBudget = async (id: string): Promise<Budget> => {
     notes: original.notes,
     status: "draft",
     globalPercentage: original.globalPercentage,
+    depositValue: original.depositValue,
   });
 
   // Copy items

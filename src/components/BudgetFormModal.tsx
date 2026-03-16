@@ -68,6 +68,7 @@ export default function BudgetFormModal({ budgetId, open, onClose, onSaved }: Pr
   const [clientResults, setClientResults] = useState<any[]>([]);
   const [allClients, setAllClients] = useState<any[]>([]);
   const [globalPercentage, setGlobalPercentage] = useState(0);
+  const [depositValue, setDepositValue] = useState(0);
 
   // Step 2
   const [items, setItems] = useState<ItemLocal[]>([]);
@@ -90,6 +91,7 @@ export default function BudgetFormModal({ budgetId, open, onClose, onSaved }: Pr
         setNotes(b.notes);
         setClientId(b.clientId);
         setGlobalPercentage(b.globalPercentage);
+        setDepositValue(b.depositValue || 0);
         const bItems = await getBudgetItems(budgetId!);
         setItems(bItems.map(i => ({
           id: i.id,
@@ -181,7 +183,7 @@ export default function BudgetFormModal({ budgetId, open, onClose, onSaved }: Pr
       if (isEdit) {
         await updateBudget(bid!, {
           clientId, clientName, clientPhone, eventType,
-          eventDate: eventDate || null, guestCount, notes, globalPercentage,
+          eventDate: eventDate || null, guestCount, notes, globalPercentage, depositValue,
         });
         // Remove old items and re-add
         const existing = await getBudgetItems(bid!);
@@ -189,7 +191,7 @@ export default function BudgetFormModal({ budgetId, open, onClose, onSaved }: Pr
       } else {
         const newBudget = await addBudget({
           clientId, clientName, clientPhone, eventType,
-          eventDate: eventDate || null, guestCount, notes, globalPercentage,
+          eventDate: eventDate || null, guestCount, notes, globalPercentage, depositValue,
         });
         bid = newBudget.id;
       }
@@ -300,6 +302,10 @@ export default function BudgetFormModal({ budgetId, open, onClose, onSaved }: Pr
               <div>
                 <Label className="text-xs">Percentual geral (%)</Label>
                 <NumericInput value={globalPercentage} onChange={setGlobalPercentage} />
+              </div>
+              <div>
+                <Label className="text-xs">Valor do sinal (reserva)</Label>
+                <CurrencyInput value={depositValue} onChange={setDepositValue} />
               </div>
             </div>
             <div>

@@ -1,0 +1,1 @@
+ALTER TABLE public.budgets ADD COLUMN deposit_value numeric NOT NULL DEFAULT 0;

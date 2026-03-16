@@ -23,6 +23,7 @@ interface SignatureData {
   event_date: string;
   event_type: string;
   total_value: number;
+  deposit_percent: number;
   status: string;
   signed_at: string | null;
   user_id: string;
@@ -48,7 +49,7 @@ async function loadLogoBase64(): Promise<string> {
 }
 
 async function generateBudgetSignedPDF(
-  d: SignatureData,
+  d: SignatureData & { depositValue?: number },
   items: BudgetItemRow[],
   signatureDataUrl: string
 ): Promise<string> {
@@ -135,6 +136,11 @@ async function generateBudgetSignedPDF(
   doc.line(margin, y, pageWidth - margin, y);
   y += 6;
   addText(`VALOR TOTAL: ${fmt(d.total_value)}`, { bold: true, size: 13 });
+  if ((d as any).depositValue && (d as any).depositValue > 0) {
+    addSpace(2);
+    addText(`Sinal pago (reserva): ${fmt((d as any).depositValue)}`, { size: 11 });
+    addText(`Restante: ${fmt(d.total_value - (d as any).depositValue)}`, { bold: true, size: 11 });
+  }
   addSpace(8);
 
   // Declaration
@@ -174,6 +180,7 @@ interface Props {
 export default function SignBudget({ data: initialData }: Props) {
   const [data] = useState<SignatureData>(initialData);
   const [items, setItems] = useState<BudgetItemRow[]>([]);
+  const [depositValue, setDepositValue] = useState(0);
   const [loadingItems, setLoadingItems] = useState(true);
   const [step, setStep] = useState<"review" | "sign" | "done">(initialData.status === "signed" ? "done" : "review");
   const [signing, setSigning] = useState(false);
@@ -188,12 +195,12 @@ export default function SignBudget({ data: initialData }: Props) {
   useEffect(() => {
     const loadItems = async () => {
       if (!data.budget_id) return;
-      const { data: rows } = await supabase
-        .from("budget_items")
-        .select("id, name, quantity, unit_label, final_value, category")
-        .eq("budget_id", data.budget_id)
-        .order("sort_order");
-      setItems((rows || []) as BudgetItemRow[]);
+      const [itemsRes, budgetRes] = await Promise.all([
+        supabase.from("budget_items").select("id, name, quantity, unit_label, final_value, category").eq("budget_id", data.budget_id).order("sort_order"),
+        supabase.from("budgets").select("deposit_value").eq("id", data.budget_id).single(),
+      ]);
+      setItems((itemsRes.data || []) as BudgetItemRow[]);
+      if (budgetRes.data) setDepositValue(Number((budgetRes.data as any).deposit_value || 0));
       setLoadingItems(false);
     };
     loadItems();
@@ -272,7 +279,7 @@ export default function SignBudget({ data: initialData }: Props) {
     setError("");
     try {
       const sigDataUrl = canvasRef.current!.toDataURL("image/png");
-      const pdfDataUri = await generateBudgetSignedPDF(data, items, sigDataUrl);
+      const pdfDataUri = await generateBudgetSignedPDF({ ...data, depositValue }, items, sigDataUrl);
       const rawBase64 = pdfDataUri.split(",")[1];
 
       const res = await fetch(FUNC_URL, {
@@ -428,13 +435,35 @@ export default function SignBudget({ data: initialData }: Props) {
 
             {/* Total */}
             <div className="rounded-2xl overflow-hidden mb-8" style={{ background: "linear-gradient(135deg, #1F4D3A 0%, #2A6B4A 100%)", boxShadow: "0 8px 32px rgba(31, 77, 58, 0.2)" }}>
-              <div style={{ padding: "20px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <p style={{ fontFamily: "'Playfair Display', serif", fontSize: "16px", fontWeight: 600, color: "rgba(255,255,255,0.9)" }}>
-                  Valor Total
-                </p>
-                <p style={{ fontFamily: "'Playfair Display', serif", fontSize: "28px", fontWeight: 700, color: "#FFFFFF" }}>
-                  {fmt(data.total_value)}
-                </p>
+              <div style={{ padding: "20px 24px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <p style={{ fontFamily: "'Playfair Display', serif", fontSize: "16px", fontWeight: 600, color: "rgba(255,255,255,0.9)" }}>
+                    Valor Total
+                  </p>
+                  <p style={{ fontFamily: "'Playfair Display', serif", fontSize: "28px", fontWeight: 700, color: "#FFFFFF" }}>
+                    {fmt(data.total_value)}
+                  </p>
+                </div>
+                {depositValue > 0 && (
+                  <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.2)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <p style={{ fontFamily: "'Poppins', sans-serif", fontSize: "13px", fontWeight: 500, color: "rgba(255,255,255,0.8)" }}>
+                      Sinal pago (reserva)
+                    </p>
+                    <p style={{ fontFamily: "'Poppins', sans-serif", fontSize: "16px", fontWeight: 600, color: "#86EFAC" }}>
+                      {fmt(depositValue)}
+                    </p>
+                  </div>
+                )}
+                {depositValue > 0 && (
+                  <div style={{ marginTop: "8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <p style={{ fontFamily: "'Poppins', sans-serif", fontSize: "13px", fontWeight: 500, color: "rgba(255,255,255,0.7)" }}>
+                      Restante
+                    </p>
+                    <p style={{ fontFamily: "'Poppins', sans-serif", fontSize: "16px", fontWeight: 600, color: "#FFFFFF" }}>
+                      {fmt(data.total_value - depositValue)}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
