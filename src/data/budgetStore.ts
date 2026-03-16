@@ -202,6 +202,7 @@ export const addBudget = async (b: {
   notes?: string;
   status?: BudgetStatus;
   globalPercentage?: number;
+  depositValue?: number;
 }): Promise<Budget> => {
   const userId = await getUserId();
   const slug = await uniqueSlug(b.clientName);
@@ -216,6 +217,7 @@ export const addBudget = async (b: {
     notes: b.notes || "",
     status: b.status || "draft",
     global_percentage: b.globalPercentage || 0,
+    deposit_value: b.depositValue || 0,
     public_token: slug,
   }).select().single();
   if (error) throw error;
