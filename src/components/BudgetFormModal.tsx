@@ -91,6 +91,7 @@ export default function BudgetFormModal({ budgetId, open, onClose, onSaved }: Pr
         setNotes(b.notes);
         setClientId(b.clientId);
         setGlobalPercentage(b.globalPercentage);
+        setDepositValue(b.depositValue || 0);
         const bItems = await getBudgetItems(budgetId!);
         setItems(bItems.map(i => ({
           id: i.id,
