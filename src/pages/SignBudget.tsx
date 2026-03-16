@@ -23,6 +23,7 @@ interface SignatureData {
   event_date: string;
   event_type: string;
   total_value: number;
+  deposit_percent: number;
   status: string;
   signed_at: string | null;
   user_id: string;
