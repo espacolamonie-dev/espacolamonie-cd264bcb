@@ -368,7 +368,8 @@ Deno.serve(async (req) => {
           const visitDesc = [
             `👤 Cliente: ${clientName}`,
             `📞 Telefone: ${clientPhone}`,
-            `📅 Data de interesse: ${interestEventDate || '—'}`,
+            eventTypeDesired ? `🎉 Tipo de evento: ${eventTypeDesired}` : '',
+            `📅 Data de interesse: ${interestEventDate ? interestEventDate.split('-').reverse().join('/') : '—'}`,
             `👥 Quantidade de pessoas: ${guestCount || '—'}`,
             notes ? `📝 Observações: ${notes}` : '',
             `🌐 Origem: Agendamento online`,
