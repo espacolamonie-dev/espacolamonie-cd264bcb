@@ -326,6 +326,35 @@ Deno.serve(async (req) => {
 
       const userId = ownerUserId || (await supabase.from('visits').select('user_id').limit(1).single()).data?.user_id;
 
+      // Auto-create or link client
+      let clientId: string | null = null;
+      const normalizedPhone = clientPhone.replace(/\D/g, '');
+      
+      const { data: existingClients } = await supabase
+        .from('clients')
+        .select('id, name, phone')
+        .eq('user_id', userId);
+      
+      const matchingClient = (existingClients || []).find(
+        (c: any) => c.phone.replace(/\D/g, '') === normalizedPhone
+      );
+      
+      if (matchingClient) {
+        clientId = matchingClient.id;
+      } else {
+        const { data: newClient } = await supabase
+          .from('clients')
+          .insert({
+            user_id: userId,
+            name: clientName.trim(),
+            phone: clientPhone.trim(),
+            notes: notes || '',
+          })
+          .select()
+          .single();
+        if (newClient) clientId = newClient.id;
+      }
+
       // Create visit
       const { data: visit, error: insertError } = await supabase.from('visits').insert({
         user_id: userId,
@@ -339,6 +368,7 @@ Deno.serve(async (req) => {
         lead_source: 'Agendamento online',
         status: 'Agendada',
         event_type_desired: eventTypeDesired || '',
+        client_id: clientId,
       }).select().single();
 
       if (insertError) {
