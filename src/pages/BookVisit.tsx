@@ -59,6 +59,7 @@ export default function BookVisit() {
   const [interestDate, setInterestDate] = useState("");
   const [guestCount, setGuestCount] = useState("");
   const [notes, setNotes] = useState("");
+  const [eventType, setEventType] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [allowedDays, setAllowedDays] = useState<number[]>([2, 4]);
