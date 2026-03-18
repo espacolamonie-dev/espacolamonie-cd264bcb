@@ -25,7 +25,7 @@ import { NumericInput } from "@/components/NumericInput";
 
 const EVENT_TYPES_OPTIONS = [
   "Aniversário 15 anos", "Aniversário Adulto", "Aniversário Infantil", "Casamento",
-  "Chá de fraldas", "Chá de panela", "Chá de revelação",
+  "Chá de bebê", "Chá de fraldas", "Chá de panela", "Chá de revelação",
   "Confraternização", "Recepção de casamento",
 ];
 
