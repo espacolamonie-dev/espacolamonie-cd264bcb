@@ -24,7 +24,9 @@ import { CurrencyInput } from "@/components/CurrencyInput";
 import { NumericInput } from "@/components/NumericInput";
 
 const EVENT_TYPES_OPTIONS = [
-  "Aniversário Adulto", "Aniversário Infantil", "Casamento", "Confraternização", "Evento Corporativo",
+  "Aniversário 15 anos", "Aniversário Adulto", "Aniversário Infantil", "Casamento",
+  "Chá de fraldas", "Chá de panela", "Chá de revelação",
+  "Confraternização", "Recepção de casamento",
 ];
 
 const NOTIFICATION_PHONE = "5531998595155";

@@ -404,8 +404,27 @@ export default function BookVisit() {
                   </div>
 
                   <div>
+                    <Label htmlFor="eventType" className="text-xs font-semibold text-stone-600">Tipo de evento</Label>
+                    <div className="mt-1.5">
+                      <Select value={eventType} onValueChange={setEventType}>
+                        <SelectTrigger className="h-11 rounded-xl bg-stone-50/50 border-stone-200 focus:bg-white">
+                          <div className="flex items-center gap-2">
+                            <PartyPopper className="w-4 h-4 text-stone-300" />
+                            <SelectValue placeholder="Selecione o tipo de evento" />
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {EVENT_TYPES_OPTIONS.map((t) => (
+                            <SelectItem key={t} value={t}>{t}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div>
                     <Label htmlFor="notes" className="text-xs font-semibold text-stone-600">Observações</Label>
-                    <Textarea id="notes" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Tipo de evento, preferências..." className="mt-1.5 rounded-xl bg-stone-50/50 border-stone-200 focus:bg-white resize-none" rows={2} />
+                    <Textarea id="notes" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Preferências, detalhes..." className="mt-1.5 rounded-xl bg-stone-50/50 border-stone-200 focus:bg-white resize-none" rows={2} />
                   </div>
                 </div>
 

@@ -338,6 +338,7 @@ Deno.serve(async (req) => {
         notes: notes || '',
         lead_source: 'Agendamento online',
         status: 'Agendada',
+        event_type_desired: eventTypeDesired || '',
       }).select().single();
 
       if (insertError) {
