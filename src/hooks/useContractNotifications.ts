@@ -136,9 +136,10 @@ export function useContractNotifications() {
         (payload) => {
           const row = payload.new as any;
           if (row.status !== "signed") return;
+          const eventDateFmt = row.event_date ? row.event_date.split('-').reverse().join('/') : '';
           showInAppNotification(
             "✅ Contrato Assinado!",
-            `${row.client_name} assinou o contrato para ${row.event_date}.`,
+            `${row.client_name} assinou o contrato para ${eventDateFmt}.`,
             `contract-signed-${row.contract_id}`,
             "/contracts"
           );
