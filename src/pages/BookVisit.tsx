@@ -7,7 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { CalendarDays, Clock, CheckCircle2, Users, Phone, User, Loader2, MapPin, Sparkles, ChevronRight, CalendarHeart } from "lucide-react";
+import { CalendarDays, Clock, CheckCircle2, Users, Phone, User, Loader2, MapPin, Sparkles, ChevronRight, CalendarHeart, PartyPopper } from "lucide-react";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+
+const EVENT_TYPES_OPTIONS = [
+  "Aniversário 15 anos", "Aniversário Adulto", "Aniversário Infantil", "Casamento",
+  "Chá de fraldas", "Chá de panela", "Chá de revelação",
+  "Confraternização", "Recepção de casamento",
+];
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
