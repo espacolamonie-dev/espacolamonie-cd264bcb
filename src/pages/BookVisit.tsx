@@ -7,7 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { CalendarDays, Clock, CheckCircle2, Users, Phone, User, Loader2, MapPin, Sparkles, ChevronRight, CalendarHeart } from "lucide-react";
+import { CalendarDays, Clock, CheckCircle2, Users, Phone, User, Loader2, MapPin, Sparkles, ChevronRight, CalendarHeart, PartyPopper } from "lucide-react";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+
+const EVENT_TYPES_OPTIONS = [
+  "Aniversário 15 anos", "Aniversário Adulto", "Aniversário Infantil", "Casamento",
+  "Chá de fraldas", "Chá de panela", "Chá de revelação",
+  "Confraternização", "Recepção de casamento",
+];
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -50,6 +59,7 @@ export default function BookVisit() {
   const [interestDate, setInterestDate] = useState("");
   const [guestCount, setGuestCount] = useState("");
   const [notes, setNotes] = useState("");
+  const [eventType, setEventType] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [allowedDays, setAllowedDays] = useState<number[]>([2, 4]);
@@ -122,6 +132,7 @@ export default function BookVisit() {
         visitDate: format(selectedDate!, "yyyy-MM-dd"),
         visitTime: selectedTime,
         notes: notes.trim(),
+        eventTypeDesired: eventType || "",
       });
       setConfirmData(data.visit);
       setStep("success");
@@ -393,8 +404,27 @@ export default function BookVisit() {
                   </div>
 
                   <div>
+                    <Label htmlFor="eventType" className="text-xs font-semibold text-stone-600">Tipo de evento</Label>
+                    <div className="mt-1.5">
+                      <Select value={eventType} onValueChange={setEventType}>
+                        <SelectTrigger className="h-11 rounded-xl bg-stone-50/50 border-stone-200 focus:bg-white">
+                          <div className="flex items-center gap-2">
+                            <PartyPopper className="w-4 h-4 text-stone-300" />
+                            <SelectValue placeholder="Selecione o tipo de evento" />
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {EVENT_TYPES_OPTIONS.map((t) => (
+                            <SelectItem key={t} value={t}>{t}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div>
                     <Label htmlFor="notes" className="text-xs font-semibold text-stone-600">Observações</Label>
-                    <Textarea id="notes" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Tipo de evento, preferências..." className="mt-1.5 rounded-xl bg-stone-50/50 border-stone-200 focus:bg-white resize-none" rows={2} />
+                    <Textarea id="notes" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Preferências, detalhes..." className="mt-1.5 rounded-xl bg-stone-50/50 border-stone-200 focus:bg-white resize-none" rows={2} />
                   </div>
                 </div>
 

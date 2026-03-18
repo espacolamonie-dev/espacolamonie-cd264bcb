@@ -136,9 +136,10 @@ export function useContractNotifications() {
         (payload) => {
           const row = payload.new as any;
           if (row.status !== "signed") return;
+          const eventDateFmt = row.event_date ? row.event_date.split('-').reverse().join('/') : '';
           showInAppNotification(
             "✅ Contrato Assinado!",
-            `${row.client_name} assinou o contrato para ${row.event_date}.`,
+            `${row.client_name} assinou o contrato para ${eventDateFmt}.`,
             `contract-signed-${row.contract_id}`,
             "/contracts"
           );
@@ -150,9 +151,10 @@ export function useContractNotifications() {
         (payload) => {
           const row = payload.new as any;
           const time = row.visit_time ? row.visit_time.slice(0, 5) : "";
+          const visitDateFmt = row.visit_date ? row.visit_date.split('-').reverse().join('/') : '';
           showInAppNotification(
             "📅 Nova Visita Agendada!",
-            `${row.client_name} agendou visita para ${row.visit_date} às ${time}h.`,
+            `${row.client_name} agendou visita para ${visitDateFmt} às ${time}h.`,
             `visit-booked-${row.id}`,
             "/visits"
           );

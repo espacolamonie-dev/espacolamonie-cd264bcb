@@ -270,7 +270,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'book-visit') {
-      const { clientName, clientPhone, interestEventDate, guestCount, visitDate, visitTime, notes } = body;
+      const { clientName, clientPhone, interestEventDate, guestCount, visitDate, visitTime, notes, eventTypeDesired } = body;
 
       // Validations
       if (!clientName || !clientPhone || !visitDate || !visitTime) {
@@ -338,6 +338,7 @@ Deno.serve(async (req) => {
         notes: notes || '',
         lead_source: 'Agendamento online',
         status: 'Agendada',
+        event_type_desired: eventTypeDesired || '',
       }).select().single();
 
       if (insertError) {
@@ -367,7 +368,8 @@ Deno.serve(async (req) => {
           const visitDesc = [
             `👤 Cliente: ${clientName}`,
             `📞 Telefone: ${clientPhone}`,
-            `📅 Data de interesse: ${interestEventDate || '—'}`,
+            eventTypeDesired ? `🎉 Tipo de evento: ${eventTypeDesired}` : '',
+            `📅 Data de interesse: ${interestEventDate ? interestEventDate.split('-').reverse().join('/') : '—'}`,
             `👥 Quantidade de pessoas: ${guestCount || '—'}`,
             notes ? `📝 Observações: ${notes}` : '',
             `🌐 Origem: Agendamento online`,
