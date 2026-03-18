@@ -270,7 +270,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'book-visit') {
-      const { clientName, clientPhone, interestEventDate, guestCount, visitDate, visitTime, notes } = body;
+      const { clientName, clientPhone, interestEventDate, guestCount, visitDate, visitTime, notes, eventTypeDesired } = body;
 
       // Validations
       if (!clientName || !clientPhone || !visitDate || !visitTime) {
