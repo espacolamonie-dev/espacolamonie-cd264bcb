@@ -132,6 +132,7 @@ export default function BookVisit() {
         visitDate: format(selectedDate!, "yyyy-MM-dd"),
         visitTime: selectedTime,
         notes: notes.trim(),
+        eventTypeDesired: eventType || "",
       });
       setConfirmData(data.visit);
       setStep("success");
