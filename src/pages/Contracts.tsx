@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { parseLocalDate, formatDateBR } from "@/lib/dateUtils";
 import { useSearchParams } from "react-router-dom";
 import { Plus, Search, Eye, Pencil, Upload, Trash2, CalendarDays, Link2, ExternalLink, FileText, CalendarCheck, Activity } from "lucide-react";
