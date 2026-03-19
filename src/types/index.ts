@@ -38,11 +38,17 @@ export type ContractStatus =
 export type PaymentStatus = "pending" | "deposit_paid" | "paid_full";
 
 export type EventType =
+  | "Aniversário 15 anos"
   | "Aniversário Adulto"
   | "Aniversário Infantil"
   | "Casamento"
+  | "Chá de bebê"
+  | "Chá de fraldas"
+  | "Chá de panela"
+  | "Chá de revelação"
   | "Confraternização"
-  | "Evento Corporativo";
+  | "Evento Corporativo"
+  | "Recepção de casamento";
 
 export type RentalType = "Locação (1 dia)" | "Locação (2 dias)";
 

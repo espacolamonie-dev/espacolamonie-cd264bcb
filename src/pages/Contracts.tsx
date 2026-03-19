@@ -24,7 +24,9 @@ import ImportContractModal from "@/components/ImportContractModal";
 import { supabase } from "@/integrations/supabase/client";
 
 const EVENT_TYPES: EventType[] = [
-  "Aniversário Adulto", "Aniversário Infantil", "Casamento", "Confraternização", "Evento Corporativo",
+  "Aniversário 15 anos", "Aniversário Adulto", "Aniversário Infantil", "Casamento",
+  "Chá de bebê", "Chá de fraldas", "Chá de panela", "Chá de revelação",
+  "Confraternização", "Evento Corporativo", "Recepção de casamento",
 ];
 
 const RENTAL_TYPES: RentalType[] = ["Locação (1 dia)", "Locação (2 dias)"];
@@ -108,8 +110,7 @@ export default function Contracts() {
         const v = visitRows[0];
         const updates: Record<string, any> = {};
         if (v.event_type_desired) {
-          const validTypes = ["Aniversário Adulto", "Aniversário Infantil", "Casamento", "Confraternização", "Evento Corporativo"];
-          if (validTypes.includes(v.event_type_desired)) {
+          if (EVENT_TYPES.includes(v.event_type_desired as EventType)) {
             updates.eventType = v.event_type_desired;
           }
         }
