@@ -382,10 +382,22 @@ Deno.serve(async (req) => {
       };
 
       const visitTitle = `[Visita Lamoniê] ${visit.client_name}`;
+      const formatDateBR = (d: string) => { const [y, m, day] = d.split('-'); return `${day}/${m}/${y}`; };
+      const formatCurrency = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      const createdAt = new Date(visit.created_at);
+      const createdAtStr = `${createdAt.toLocaleDateString('pt-BR')} às ${createdAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+
       const visitDesc = [
         `👤 Cliente: ${visit.client_name} | ${visit.client_phone}`,
-        `📅 Data de interesse do evento: ${visit.interest_event_date || '—'}`,
+        `📅 Data de interesse do evento: ${visit.interest_event_date ? formatDateBR(visit.interest_event_date) : '—'}`,
+        `🎉 Evento desejado: ${visit.event_type_desired || '—'}`,
+        `💰 Valor do evento: ${visit.event_value ? formatCurrency(Number(visit.event_value)) : '—'}`,
+        `👥 Qtd. de pessoas: ${visit.guest_count || '—'}`,
+        `📆 Data da visita: ${formatDateBR(visit.visit_date)}`,
+        `🕐 Horário: ${visit.visit_time?.slice(0, 5) || '—'}`,
         `📊 Status: ${visitStatusLabels[visit.status] || visit.status}`,
+        `📣 Fonte do Lead: ${visit.lead_source || '—'}`,
+        `🗓️ Data de cadastro: ${createdAtStr}`,
         visit.notes ? `📝 Observações: ${visit.notes}` : '',
         '', '— Criado automaticamente pelo CRM Lamoniê',
       ].filter(Boolean).join('\n');
