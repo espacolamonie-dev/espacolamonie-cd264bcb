@@ -1,7 +1,7 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { parseLocalDate, formatDateBR } from "@/lib/dateUtils";
 import { useSearchParams } from "react-router-dom";
-import { Plus, Search, Eye, Pencil, Upload, Trash2, CalendarDays, Link2, ExternalLink, FileText, CalendarCheck, Activity } from "lucide-react";
+import { Plus, Search, Eye, Pencil, Upload, Trash2, CalendarDays, Link2, ExternalLink, FileText, CalendarCheck, Activity, Check, ChevronsUpDown } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { getContracts, getClients, addContract, updateContract, deleteContract } from "@/data/store";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -52,6 +55,7 @@ export default function Contracts() {
   const [detailId, setDetailId] = useState<string | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Contract | null>(null);
+  const [clientSearchOpen, setClientSearchOpen] = useState(false);
 
   const load = async () => {
     try {
@@ -457,10 +461,38 @@ export default function Contracts() {
               <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Cliente e evento</p>
               <div className="grid gap-1.5">
                 <Label className="text-xs font-medium text-muted-foreground">Cliente *</Label>
-                <Select value={form.clientId} onValueChange={(v) => { set("clientId", v); if (!editing) autoFillFromClient(v); }}>
-                  <SelectTrigger className="rounded-lg"><SelectValue /></SelectTrigger>
-                  <SelectContent>{clients.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-                </Select>
+                <Popover open={clientSearchOpen} onOpenChange={setClientSearchOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" role="combobox" aria-expanded={clientSearchOpen} className="w-full justify-between rounded-lg font-normal">
+                      {form.clientId ? clients.find(c => c.id === form.clientId)?.name || "Selecione" : "Selecione um cliente"}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Buscar cliente..." />
+                      <CommandList>
+                        <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
+                        <CommandGroup>
+                          {clients.map((c) => (
+                            <CommandItem
+                              key={c.id}
+                              value={c.name}
+                              onSelect={() => {
+                                set("clientId", c.id);
+                                if (!editing) autoFillFromClient(c.id);
+                                setClientSearchOpen(false);
+                              }}
+                            >
+                              <Check className={cn("mr-2 h-4 w-4", form.clientId === c.id ? "opacity-100" : "opacity-0")} />
+                              {c.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
               <div className="grid gap-1.5">
                 <Label className="text-xs font-medium text-muted-foreground">Tipo de evento</Label>
