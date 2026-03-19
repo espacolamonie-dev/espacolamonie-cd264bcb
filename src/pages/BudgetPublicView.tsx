@@ -162,15 +162,9 @@ export default function BudgetPublicView() {
 
         {/* Financial Summary */}
         <div className="rounded-2xl overflow-hidden mb-6" style={{ background: "linear-gradient(135deg, #1F4D3A 0%, #2A6B4A 100%)", boxShadow: "0 8px 32px rgba(31, 77, 58, 0.2)" }}>
-          <div style={{ padding: "24px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-              <p style={{ fontFamily: "'Poppins', sans-serif", fontSize: "13px", color: "rgba(255,255,255,0.7)" }}>Subtotal</p>
-              <p style={{ fontFamily: "'Poppins', sans-serif", fontSize: "15px", fontWeight: 500, color: "rgba(255,255,255,0.9)" }}>{fmt(budget.subtotal)}</p>
-            </div>
-            <div style={{ borderTop: "1px solid rgba(255,255,255,0.15)", paddingTop: "16px", marginTop: "4px", display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-              <p style={{ fontFamily: "'Playfair Display', serif", fontSize: "16px", fontWeight: 600, color: "rgba(255,255,255,0.9)" }}>Total Final</p>
-              <p style={{ fontFamily: "'Playfair Display', serif", fontSize: "28px", fontWeight: 700, color: "#FFFFFF" }}>{fmt(budget.finalTotal)}</p>
-            </div>
+          <div style={{ padding: "24px", display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+            <p style={{ fontFamily: "'Playfair Display', serif", fontSize: "16px", fontWeight: 600, color: "rgba(255,255,255,0.9)" }}>Total Final</p>
+            <p style={{ fontFamily: "'Playfair Display', serif", fontSize: "28px", fontWeight: 700, color: "#FFFFFF" }}>{fmt(budget.finalTotal)}</p>
           </div>
         </div>
 
