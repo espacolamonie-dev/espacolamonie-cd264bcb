@@ -110,8 +110,7 @@ export default function Contracts() {
         const v = visitRows[0];
         const updates: Record<string, any> = {};
         if (v.event_type_desired) {
-          const validTypes = ["Aniversário Adulto", "Aniversário Infantil", "Casamento", "Confraternização", "Evento Corporativo"];
-          if (validTypes.includes(v.event_type_desired)) {
+          if (EVENT_TYPES.includes(v.event_type_desired as EventType)) {
             updates.eventType = v.event_type_desired;
           }
         }
