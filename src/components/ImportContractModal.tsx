@@ -18,7 +18,9 @@ interface Props {
 }
 
 const EVENT_TYPES: EventType[] = [
-  "Aniversário Adulto", "Aniversário Infantil", "Casamento", "Confraternização", "Evento Corporativo",
+  "Aniversário 15 anos", "Aniversário Adulto", "Aniversário Infantil", "Casamento",
+  "Chá de bebê", "Chá de fraldas", "Chá de panela", "Chá de revelação",
+  "Confraternização", "Evento Corporativo", "Recepção de casamento",
 ];
 
 interface ExtractedData {

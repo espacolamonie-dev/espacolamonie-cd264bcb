@@ -42,7 +42,7 @@ Os campos a extrair são:
 - percentualSinal: Percentual do sinal/entrada (número)
 - valorSinal: Valor do sinal/entrada (número, sem R$)
 - valorRestante: Valor restante (número, sem R$)
-- tipoEvento: Tipo do evento (Aniversário Adulto, Aniversário Infantil, Casamento, Confraternização, Evento Corporativo)
+- tipoEvento: Tipo do evento (Aniversário 15 anos, Aniversário Adulto, Aniversário Infantil, Casamento, Chá de bebê, Chá de fraldas, Chá de panela, Chá de revelação, Confraternização, Evento Corporativo, Recepção de casamento)
 - convidados: Número de convidados`;
 
     const response = await fetch(
