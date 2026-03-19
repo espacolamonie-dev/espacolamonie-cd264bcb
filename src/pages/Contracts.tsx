@@ -55,6 +55,7 @@ export default function Contracts() {
   const [detailId, setDetailId] = useState<string | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Contract | null>(null);
+  const [clientSearchOpen, setClientSearchOpen] = useState(false);
 
   const load = async () => {
     try {
