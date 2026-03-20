@@ -436,40 +436,47 @@ export default function Financial() {
               <UserRound size={20} className="text-violet-500" /> Pagamento Funcionário
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-4">
+            <div className="grid grid-cols-3 gap-3">
+              <div className="p-3 rounded-lg bg-violet-500/10 border border-violet-500/20">
+                <p className="text-[10px] text-muted-foreground uppercase font-semibold">Total a pagar</p>
+                <p className="text-lg font-bold text-violet-600 dark:text-violet-400">{fmt(pagamentoFuncionario)}</p>
+                <p className="text-[10px] text-muted-foreground">{contratosFechadosNoMes.length} × R$70</p>
+              </div>
               <div className="p-3 rounded-lg bg-success/10 border border-success/20">
                 <p className="text-[10px] text-muted-foreground uppercase font-semibold">Já pago</p>
-                <p className="text-lg font-bold text-success">{fmt(funcPago)}</p>
+                <p className="text-lg font-bold text-success">{fmt(funcValorPago)}</p>
               </div>
               <div className="p-3 rounded-lg bg-warning/10 border border-warning/20">
                 <p className="text-[10px] text-muted-foreground uppercase font-semibold">Falta pagar</p>
                 <p className="text-lg font-bold text-warning">{fmt(funcFalta)}</p>
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">Marque os contratos já pagos ao funcionário:</p>
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {contratosFechadosNoMes.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">Nenhum contrato fechado neste mês</p>
-              )}
-              {contratosFechadosNoMes.map(c => {
-                const clientName = clients.find(cl => cl.id === c.clientId)?.name || "—";
-                const isPaid = paidContracts.has(c.id);
-                return (
-                  <div
-                    key={c.id}
-                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${isPaid ? 'bg-success/5 border-success/30' : 'bg-card border-border hover:bg-muted/50'}`}
-                    onClick={() => togglePaidContract(c.id)}
-                  >
-                    <Checkbox checked={isPaid} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{clientName}</p>
-                      <p className="text-[10px] text-muted-foreground">{c.eventType} — {new Date(c.eventDate).toLocaleDateString("pt-BR")}</p>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Valor já pago ao funcionário neste mês</Label>
+              <CurrencyInput value={funcValorPago} onChange={handleFuncValorPagoChange} />
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground font-medium">Contratos do mês:</p>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {contratosFechadosNoMes.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-4">Nenhum contrato fechado neste mês</p>
+                )}
+                {contratosFechadosNoMes.map(c => {
+                  const clientName = clients.find(cl => cl.id === c.clientId)?.name || "—";
+                  return (
+                    <div key={c.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{clientName}</p>
+                        <p className="text-[10px] text-muted-foreground">{c.eventType} — {new Date(c.eventDate).toLocaleDateString("pt-BR")}</p>
+                      </div>
+                      <p className="text-sm font-bold text-foreground">{fmt(VALOR_POR_CONTRATO_FUNCIONARIO)}</p>
                     </div>
-                    <p className={`text-sm font-bold ${isPaid ? 'text-success' : 'text-foreground'}`}>{fmt(VALOR_POR_CONTRATO_FUNCIONARIO)}</p>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </div>
         </DialogContent>
