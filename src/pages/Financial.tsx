@@ -230,6 +230,13 @@ export default function Financial() {
     }).reduce((s, e) => s + e.amount, 0);
   }, [expenses, monthStart, monthEnd]);
 
+  const VALOR_POR_CONTRATO_FUNCIONARIO = 70;
+  const contratosFechadosNoMes = activeContracts.filter(c => {
+    const d = new Date(c.createdAt);
+    return d >= monthStart && d <= monthEnd;
+  });
+  const pagamentoFuncionario = contratosFechadosNoMes.length * VALOR_POR_CONTRATO_FUNCIONARIO;
+
   const lucroDoMes = recebidoNoMes - despesasDoMes;
 
   const extrato = useMemo((): FinancialTransaction[] => {
