@@ -34,6 +34,7 @@ type FinancialTransaction = {
   category: string;
   amount: number;
   type: "entrada" | "saida";
+  source: "payment" | "manual_entry" | "expense";
 };
 
 export default function Financial() {
