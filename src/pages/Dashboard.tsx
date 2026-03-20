@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { parseLocalDate, formatDateBR } from "@/lib/dateUtils";
 import {
   FileText, CheckCircle, Clock, CalendarDays, TrendingUp, TrendingDown, Wallet,
-  Plus, DollarSign, AlertTriangle, ArrowRight, Receipt, Users, MessageCircle, Save,
+  Plus, DollarSign, AlertTriangle, ArrowRight, Receipt, Users, MessageCircle, Save, UserRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -194,6 +194,20 @@ export default function Dashboard() {
     loadData();
   }, []);
 
+  // Re-render when returning to tab (picks up localStorage changes from Financial)
+  const [, forceUpdate] = useState(0);
+  useEffect(() => {
+    const onFocus = () => forceUpdate(n => n + 1);
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") onFocus();
+    });
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
+  }, []);
+
   const loadWhatsAppConversion = async (date: string, visitsData?: any[]) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -297,11 +311,26 @@ export default function Dashboard() {
     { label: "Eventos futuros", value: futureCount, sub: "Próximos agendados", icon: CalendarDays, iconBg: "bg-primary/10", iconColor: "text-primary", onClick: () => navigate("/agenda") },
   ];
 
+  // Funcionário calculation
+  const VALOR_POR_CONTRATO_FUNCIONARIO = 70;
+  const now2 = new Date();
+  const currentMonthKey = `${now2.getFullYear()}-${String(now2.getMonth() + 1).padStart(2, '0')}`;
+  const msStart = new Date(now2.getFullYear(), now2.getMonth(), 1);
+  const msEnd = new Date(now2.getFullYear(), now2.getMonth() + 1, 0, 23, 59, 59);
+  const contratosFechadosDash = contracts.filter(c => {
+    const d = new Date(c.createdAt);
+    return d >= msStart && d <= msEnd;
+  });
+  const pagamentoFuncTotal = contratosFechadosDash.length * VALOR_POR_CONTRATO_FUNCIONARIO;
+  const funcPagoDash = Number(localStorage.getItem(`func_pago_${currentMonthKey}`) || "0");
+  const funcFaltaDash = Math.max(0, pagamentoFuncTotal - funcPagoDash);
+
   const finCards = [
     { label: "Receita do mês", value: fmt(financialSummary.totalIn), icon: TrendingUp, iconBg: "bg-success/10", iconColor: "text-success", valueColor: "text-success" },
     { label: "Despesas", value: fmt(financialSummary.totalOut), icon: TrendingDown, iconBg: "bg-danger/10", iconColor: "text-danger", valueColor: "text-danger" },
     { label: "Lucro líquido", value: fmt(financialSummary.balance), icon: Wallet, iconBg: "bg-primary/10", iconColor: "text-primary", valueColor: financialSummary.balance >= 0 ? "text-primary" : "text-danger" },
     { label: "Ticket médio", value: fmt(ticketMedio), icon: Receipt, iconBg: "bg-gold/10", iconColor: "text-gold-dark", valueColor: "text-foreground" },
+    { label: "Funcionário", value: fmt(pagamentoFuncTotal), icon: UserRound, iconBg: "bg-violet-500/10", iconColor: "text-violet-500", valueColor: "text-violet-600 dark:text-violet-400", sub: `Pago: ${fmt(funcPagoDash)} · Falta: ${fmt(funcFaltaDash)}` },
   ];
 
   return (
@@ -372,7 +401,7 @@ export default function Dashboard() {
       </div>
 
       {/* Financial cards - Row 2 */}
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 stagger-fade-in">
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-5 stagger-fade-in">
         {finCards.map((card) => (
           <div key={card.label} className="stat-card">
             <div className="flex items-start justify-between">
@@ -382,6 +411,7 @@ export default function Dashboard() {
               </div>
             </div>
             <p className={`text-2xl font-display font-bold mt-3 tracking-tight ${card.valueColor}`}>{card.value}</p>
+            {card.sub && <p className="text-[10px] text-muted-foreground mt-1">{card.sub}</p>}
           </div>
         ))}
       </div>
