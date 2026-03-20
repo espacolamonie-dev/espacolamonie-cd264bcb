@@ -104,6 +104,7 @@ export default function Reports() {
       ? Math.round((converted / confirmedVisits.length) * 100)
       : 0;
 
+    const totalEvents = monthContracts.length;
     // Revenue = sinais dos contratos criados no mês + entradas manuais
     const contractsCreatedThisMonth = active.filter((c) => {
       const d = new Date(c.createdAt);
