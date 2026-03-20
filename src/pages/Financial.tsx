@@ -424,7 +424,7 @@ export default function Financial() {
           <p className="text-2xl lg:text-3xl font-display font-bold text-violet-600 dark:text-violet-400 tracking-tight">{fmt(pagamentoFuncionario)}</p>
           <div className="flex items-center justify-between mt-1">
             <p className="text-[10px] text-muted-foreground">{contratosFechadosNoMes.length} contrato(s) × R$70</p>
-            <p className="text-[10px] text-success font-medium">Pago: {fmt(funcPago)}</p>
+            <p className="text-[10px] text-success font-medium">Pago: {fmt(funcValorPago)}</p>
           </div>
         </Card>
       </div>
