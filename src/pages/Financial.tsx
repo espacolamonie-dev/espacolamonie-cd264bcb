@@ -49,6 +49,8 @@ export default function Financial() {
   const [importEntryOpen, setImportEntryOpen] = useState(false);
   const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
   const [selectedExpenses, setSelectedExpenses] = useState<Set<string>>(new Set());
+  const [funcModalOpen, setFuncModalOpen] = useState(false);
+  const [paidContracts, setPaidContracts] = useState<Set<string>>(new Set());
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -77,6 +79,24 @@ export default function Financial() {
     } catch {}
   };
   useEffect(() => { load(); }, []);
+
+  // Load paid contracts from localStorage
+  useEffect(() => {
+    const key = `func_paid_${selectedMonth}`;
+    const saved = localStorage.getItem(key);
+    if (saved) setPaidContracts(new Set(JSON.parse(saved)));
+    else setPaidContracts(new Set());
+  }, [selectedMonth]);
+
+  const togglePaidContract = (contractId: string) => {
+    setPaidContracts(prev => {
+      const next = new Set(prev);
+      if (next.has(contractId)) next.delete(contractId); else next.add(contractId);
+      const key = `func_paid_${selectedMonth}`;
+      localStorage.setItem(key, JSON.stringify([...next]));
+      return next;
+    });
+  };
 
   // Auto-refresh when page gains focus (e.g. after editing contracts)
   useEffect(() => {
@@ -236,6 +256,8 @@ export default function Financial() {
     return d >= monthStart && d <= monthEnd;
   });
   const pagamentoFuncionario = contratosFechadosNoMes.length * VALOR_POR_CONTRATO_FUNCIONARIO;
+  const funcPago = contratosFechadosNoMes.filter(c => paidContracts.has(c.id)).length * VALOR_POR_CONTRATO_FUNCIONARIO;
+  const funcFalta = pagamentoFuncionario - funcPago;
 
   const lucroDoMes = recebidoNoMes - despesasDoMes;
 
@@ -399,7 +421,7 @@ export default function Financial() {
           <p className="text-[10px] text-muted-foreground mt-1">Recebido - Despesas</p>
         </Card>
 
-        <Card className="p-4 border-violet-500/30 bg-gradient-to-br from-violet-500/5 to-transparent">
+        <Card className="p-4 border-violet-500/30 bg-gradient-to-br from-violet-500/5 to-transparent cursor-pointer hover:shadow-md transition-shadow" onClick={() => setFuncModalOpen(true)}>
           <div className="flex items-center gap-2 mb-2">
             <div className="rounded-full bg-violet-500/15 p-2">
               <UserRound size={16} className="text-violet-500" />
@@ -407,9 +429,58 @@ export default function Financial() {
             <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Funcionário (Mês)</p>
           </div>
           <p className="text-2xl lg:text-3xl font-display font-bold text-violet-600 dark:text-violet-400 tracking-tight">{fmt(pagamentoFuncionario)}</p>
-          <p className="text-[10px] text-muted-foreground mt-1">{contratosFechadosNoMes.length} contrato(s) × R$70</p>
+          <div className="flex items-center justify-between mt-1">
+            <p className="text-[10px] text-muted-foreground">{contratosFechadosNoMes.length} contrato(s) × R$70</p>
+            <p className="text-[10px] text-success font-medium">Pago: {fmt(funcPago)}</p>
+          </div>
         </Card>
       </div>
+
+      <Dialog open={funcModalOpen} onOpenChange={setFuncModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserRound size={20} className="text-violet-500" /> Pagamento Funcionário
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 rounded-lg bg-success/10 border border-success/20">
+                <p className="text-[10px] text-muted-foreground uppercase font-semibold">Já pago</p>
+                <p className="text-lg font-bold text-success">{fmt(funcPago)}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-warning/10 border border-warning/20">
+                <p className="text-[10px] text-muted-foreground uppercase font-semibold">Falta pagar</p>
+                <p className="text-lg font-bold text-warning">{fmt(funcFalta)}</p>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">Marque os contratos já pagos ao funcionário:</p>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {contratosFechadosNoMes.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">Nenhum contrato fechado neste mês</p>
+              )}
+              {contratosFechadosNoMes.map(c => {
+                const clientName = clients.find(cl => cl.id === c.clientId)?.name || "—";
+                const isPaid = paidContracts.has(c.id);
+                return (
+                  <div
+                    key={c.id}
+                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${isPaid ? 'bg-success/5 border-success/30' : 'bg-card border-border hover:bg-muted/50'}`}
+                    onClick={() => togglePaidContract(c.id)}
+                  >
+                    <Checkbox checked={isPaid} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{clientName}</p>
+                      <p className="text-[10px] text-muted-foreground">{c.eventType} — {new Date(c.eventDate).toLocaleDateString("pt-BR")}</p>
+                    </div>
+                    <p className={`text-sm font-bold ${isPaid ? 'text-success' : 'text-foreground'}`}>{fmt(VALOR_POR_CONTRATO_FUNCIONARIO)}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {Object.entries(mediasGastos).map(([cat, val]) => (
