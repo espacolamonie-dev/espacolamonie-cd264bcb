@@ -11,7 +11,7 @@ import {
   LogOut,
   Settings,
   ClipboardCheck,
-  MessageCircle,
+  
   Calculator,
 } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -43,8 +43,7 @@ const navGroups = [
     label: "Planejamento",
     items: [
       { to: "/agenda", label: "Agenda", icon: CalendarDays },
-      { to: "/leads", label: "Leads WhatsApp", icon: MessageCircle },
-      { to: "/visits", label: "Agendar Visita", icon: ClipboardCheck },
+      { to: "/visits", label: "Visitas", icon: ClipboardCheck },
       { to: "/reports", label: "Relatórios", icon: BarChart3 },
     ],
   },

@@ -3,9 +3,11 @@ import {
   ClipboardCheck,
   FileText,
   Users,
+  LayoutDashboard,
 } from "lucide-react";
 
 const items = [
+  { to: "/", label: "Início", icon: LayoutDashboard },
   { to: "/visits", label: "Visitas", icon: ClipboardCheck },
   { to: "/contracts", label: "Contratos", icon: FileText },
   { to: "/clients", label: "Clientes", icon: Users },
@@ -36,10 +38,10 @@ export default function MobileBottomNav() {
               }`}
               style={{ fontFamily: "var(--font-body)" }}
             >
-              <item.icon size={24} strokeWidth={active ? 2.2 : 1.6} />
+              <item.icon size={22} strokeWidth={active ? 2.2 : 1.6} />
               <span>{item.label}</span>
               {active && (
-                <span className="absolute top-0 h-[3px] w-10 rounded-b-full bg-primary" />
+                <span className="absolute top-0 h-[3px] w-8 rounded-b-full bg-primary" />
               )}
             </Link>
           );

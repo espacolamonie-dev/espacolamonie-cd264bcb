@@ -12,7 +12,7 @@ import Agenda from "@/pages/Agenda";
 import Reports from "@/pages/Reports";
 import Settings from "@/pages/Settings";
 import Visits from "@/pages/Visits";
-import LeadsWhatsApp from "@/pages/LeadsWhatsApp";
+
 import SignContract from "@/pages/SignContract";
 import BookVisit from "@/pages/BookVisit";
 import EventDates from "@/pages/EventDates";
@@ -92,7 +92,7 @@ const App = () => (
                     <Route path="/reports" element={<Reports />} />
                     <Route path="/budgets" element={<Budgets />} />
                     <Route path="/visits" element={<Visits />} />
-                    <Route path="/leads" element={<LeadsWhatsApp />} />
+                    
                     <Route path="/settings" element={<Settings />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
