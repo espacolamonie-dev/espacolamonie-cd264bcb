@@ -14,7 +14,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/budgets": "Orçamentos",
 };
 
-export default function MobileTopBar({ onMenuOpen }: Props) {
+export default function MobileTopBar() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const title = PAGE_TITLES[pathname] || "Lamoniê CRM";
