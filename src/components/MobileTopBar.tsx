@@ -36,14 +36,7 @@ export default function MobileTopBar() {
         className="flex items-center gap-3 px-4"
         style={{ height: "var(--mobile-header-h)" }}
       >
-        {isHome ? (
-          <button
-            onClick={onMenuOpen}
-            className="flex items-center justify-center w-10 h-10 -ml-1 rounded-xl text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <Menu size={22} />
-          </button>
-        ) : isMainTab ? (
+        {isHome || isMainTab ? (
           <img src="/images/logo-lamonie.png" alt="Lamoniê" className="w-8 h-8 object-contain -ml-1" />
         ) : (
           <button
