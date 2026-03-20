@@ -398,6 +398,17 @@ export default function Financial() {
           </p>
           <p className="text-[10px] text-muted-foreground mt-1">Recebido - Despesas</p>
         </Card>
+
+        <Card className="p-4 border-violet-500/30 bg-gradient-to-br from-violet-500/5 to-transparent">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="rounded-full bg-violet-500/15 p-2">
+              <UserRound size={16} className="text-violet-500" />
+            </div>
+            <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Funcionário (Mês)</p>
+          </div>
+          <p className="text-2xl lg:text-3xl font-display font-bold text-violet-600 dark:text-violet-400 tracking-tight">{fmt(pagamentoFuncionario)}</p>
+          <p className="text-[10px] text-muted-foreground mt-1">{contratosFechadosNoMes.length} contrato(s) × R$70</p>
+        </Card>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
