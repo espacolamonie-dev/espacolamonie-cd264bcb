@@ -23,24 +23,36 @@ export default function Reports() {
   const [allExpenses, setAllExpenses] = useState<{ amount: number; date: string }[]>([]);
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), "yyyy-MM"));
 
+  const loadData = async () => {
+    try {
+      const [c, cl, ap, me, v, exp] = await Promise.all([
+        getContracts(), getClients(), getActivePayments(), getManualEntries(), getVisits(), getExpenses(),
+      ]);
+      setContracts(c);
+      setClientMap(Object.fromEntries(cl.map((x) => [x.id, x.name])));
+      setPayments([
+        ...ap.map((p) => ({ amount: p.amount, date: p.date })),
+        ...me.map((e) => ({ amount: e.amount, date: e.date })),
+      ]);
+      setVisits(v);
+      setAllExpenses(exp.map((e: any) => ({ amount: e.amount, date: e.date })));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { loadData(); }, []);
+
+  // Auto-refresh when page gains focus
   useEffect(() => {
-    (async () => {
-      try {
-        const [c, cl, ap, me, v, exp] = await Promise.all([
-          getContracts(), getClients(), getActivePayments(), getManualEntries(), getVisits(), getExpenses(),
-        ]);
-        setContracts(c);
-        setClientMap(Object.fromEntries(cl.map((x) => [x.id, x.name])));
-        setPayments([
-          ...ap.map((p) => ({ amount: p.amount, date: p.date })),
-          ...me.map((e) => ({ amount: e.amount, date: e.date })),
-        ]);
-        setVisits(v);
-        setAllExpenses(exp.map((e: any) => ({ amount: e.amount, date: e.date })));
-      } finally {
-        setLoading(false);
-      }
-    })();
+    const handleFocus = () => { loadData(); };
+    window.addEventListener("focus", handleFocus);
+    const handleVisibility = () => { if (document.visibilityState === "visible") loadData(); };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, []);
 
   const monthOptions = useMemo(() => {
@@ -93,12 +105,24 @@ export default function Reports() {
       : 0;
 
     const totalEvents = monthContracts.length;
-    const totalRevenue = payments
+    // Revenue = sinais dos contratos criados no mês + entradas manuais
+    const contractsCreatedThisMonth = active.filter((c) => {
+      const d = new Date(c.createdAt);
+      return !isBefore(d, monthStart) && !isAfter(d, monthEnd);
+    });
+    const sinaisRecebidos = contractsCreatedThisMonth.reduce((sum, c) => {
+      if (c.paymentStatus === "deposit_paid" || c.paymentStatus === "paid_full") {
+        return sum + c.depositValue;
+      }
+      return sum;
+    }, 0);
+    const manualEntriesRevenue = payments
       .filter((p) => {
         const d = parseISO(p.date);
         return !isBefore(d, monthStart) && !isAfter(d, monthEnd);
       })
       .reduce((s, p) => s + p.amount, 0);
+    const totalRevenue = sinaisRecebidos + manualEntriesRevenue;
     const avgTicket = totalEvents > 0
       ? monthContracts.reduce((s, c) => s + c.totalValue, 0) / totalEvents
       : 0;
@@ -137,9 +161,21 @@ export default function Reports() {
       const me = endOfMonth(ms);
       const label = format(ms, "MMM yy", { locale: ptBR });
 
-      const receita = payments
+      // Sinais dos contratos criados nesse mês
+      const contractsCreated = contracts.filter((c) => {
+        const d = new Date(c.createdAt);
+        return !isBefore(d, ms) && !isAfter(d, me) && c.status !== "cancelled";
+      });
+      const sinais = contractsCreated.reduce((sum, c) => {
+        if (c.paymentStatus === "deposit_paid" || c.paymentStatus === "paid_full") {
+          return sum + c.depositValue;
+        }
+        return sum;
+      }, 0);
+      const manualEntries = payments
         .filter((p) => { const d = parseISO(p.date); return !isBefore(d, ms) && !isAfter(d, me); })
         .reduce((s, p) => s + p.amount, 0);
+      const receita = sinais + manualEntries;
 
       const contratos = contracts.filter((c) => {
         const d = parseISO(c.eventDate);
