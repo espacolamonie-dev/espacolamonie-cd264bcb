@@ -42,6 +42,8 @@ export default function Financial() {
   const [clients, setClients] = useState<Client[]>([]);
   const [expOpen, setExpOpen] = useState(false);
   const [entryOpen, setEntryOpen] = useState(false);
+  const [importExpOpen, setImportExpOpen] = useState(false);
+  const [importEntryOpen, setImportEntryOpen] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
