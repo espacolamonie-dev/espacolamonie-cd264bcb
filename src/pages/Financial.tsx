@@ -1,6 +1,8 @@
 import { useEffect, useState, useMemo } from "react";
 import { CurrencyInput } from "@/components/CurrencyInput";
-import { Plus, TrendingUp, TrendingDown, Wallet, Trash2, FileText, HandCoins, Calendar, DollarSign, CircleArrowDown as ArrowDownCircle, CircleArrowUp as ArrowUpCircle, Upload } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, Wallet, Trash2, FileText, HandCoins, Calendar, DollarSign, CircleArrowDown as ArrowDownCircle, CircleArrowUp as ArrowUpCircle, Upload, CheckSquare } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import ImportStatementModal from "@/components/ImportStatementModal";
 import ImportBankEntryModal from "@/components/ImportBankEntryModal";
 import { Button } from "@/components/ui/button";
@@ -32,6 +34,7 @@ type FinancialTransaction = {
   category: string;
   amount: number;
   type: "entrada" | "saida";
+  source: "payment" | "manual_entry" | "expense";
 };
 
 export default function Financial() {
@@ -44,6 +47,8 @@ export default function Financial() {
   const [entryOpen, setEntryOpen] = useState(false);
   const [importExpOpen, setImportExpOpen] = useState(false);
   const [importEntryOpen, setImportEntryOpen] = useState(false);
+  const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
+  const [selectedExpenses, setSelectedExpenses] = useState<Set<string>>(new Set());
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -107,6 +112,43 @@ export default function Financial() {
 
   const setExp = (field: string, value: any) => setExpForm((p) => ({ ...p, [field]: value }));
   const setEntry = (field: string, value: any) => setEntryForm((p) => ({ ...p, [field]: value }));
+
+  const toggleSelection = (set: Set<string>, setFn: React.Dispatch<React.SetStateAction<Set<string>>>, id: string) => {
+    const next = new Set(set);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    setFn(next);
+  };
+
+  const handleDeleteSelectedEntries = async () => {
+    try {
+      for (const id of selectedEntries) {
+        await deleteManualEntry(id);
+      }
+      toast.success(`${selectedEntries.size} entrada(s) excluída(s)`);
+      setSelectedEntries(new Set());
+      await load();
+    } catch (e: any) { toast.error(e.message || "Erro ao excluir"); }
+  };
+
+  const handleDeleteSelectedExpenses = async () => {
+    try {
+      for (const id of selectedExpenses) {
+        await deleteExpense(id);
+      }
+      toast.success(`${selectedExpenses.size} despesa(s) excluída(s)`);
+      setSelectedExpenses(new Set());
+      await load();
+    } catch (e: any) { toast.error(e.message || "Erro ao excluir"); }
+  };
+
+  const handleDeleteSingleEntry = async (item: FinancialTransaction) => {
+    try {
+      if (item.source === "manual_entry") await deleteManualEntry(item.id);
+      else if (item.source === "expense") await deleteExpense(item.id);
+      toast.success("Item excluído");
+      await load();
+    } catch (e: any) { toast.error(e.message || "Erro ao excluir"); }
+  };
 
   const cancelledContractIds = new Set(
     contracts.filter((c) => c.status === "cancelled").map((c) => c.id)
@@ -189,6 +231,7 @@ export default function Financial() {
         category: "Contrato",
         amount: p.amount,
         type: "entrada" as const,
+        source: "payment" as const,
       })),
       ...monthManualEntries.map(e => ({
         id: e.id,
@@ -197,6 +240,7 @@ export default function Financial() {
         category: e.category,
         amount: e.amount,
         type: "entrada" as const,
+        source: "manual_entry" as const,
       })),
       ...monthExpenses.map(e => ({
         id: e.id,
@@ -205,6 +249,7 @@ export default function Financial() {
         category: e.category,
         amount: e.amount,
         type: "saida" as const,
+        source: "expense" as const,
       })),
     ];
 
@@ -345,6 +390,25 @@ export default function Financial() {
               <p className="text-xs text-muted-foreground mt-0.5">Recebimentos do mês</p>
             </div>
             <div className="flex gap-2">
+              {selectedEntries.size > 0 && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="destructive" className="gap-1.5 h-9 rounded-lg">
+                      <Trash2 size={14} /> Excluir ({selectedEntries.size})
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Excluir {selectedEntries.size} entrada(s)?</AlertDialogTitle>
+                      <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDeleteSelectedEntries} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
               <Button onClick={() => setImportEntryOpen(true)} size="sm" variant="outline" className="gap-2 h-9 rounded-lg">
                 <Upload size={14} /> Importar
               </Button>
@@ -360,8 +424,15 @@ export default function Financial() {
               </div>
             ) : (
               extrato.filter(i => i.type === "entrada").map((item) => (
-                <div key={item.id} className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors">
+                <div key={item.id} className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors group">
                   <div className="flex items-center gap-3">
+                    {item.source === "manual_entry" && (
+                      <Checkbox
+                        checked={selectedEntries.has(item.id)}
+                        onCheckedChange={() => toggleSelection(selectedEntries, setSelectedEntries, item.id)}
+                        className="shrink-0"
+                      />
+                    )}
                     <div className="rounded-full p-2 bg-success/10">
                       <ArrowUpCircle size={16} className="text-success" />
                     </div>
@@ -374,7 +445,28 @@ export default function Financial() {
                       </div>
                     </div>
                   </div>
-                  <p className="font-bold text-base text-success shrink-0">+ {fmt(item.amount)}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-bold text-base text-success shrink-0">+ {fmt(item.amount)}</p>
+                    {item.source === "manual_entry" && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button size="icon" variant="ghost" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive">
+                            <Trash2 size={14} />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Excluir entrada?</AlertDialogTitle>
+                            <AlertDialogDescription>"{item.description}" será removida permanentemente.</AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDeleteSingleEntry(item)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                  </div>
                 </div>
               ))
             )}
@@ -394,6 +486,25 @@ export default function Financial() {
               <p className="text-xs text-muted-foreground mt-0.5">Despesas do mês</p>
             </div>
             <div className="flex gap-2">
+              {selectedExpenses.size > 0 && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="destructive" className="gap-1.5 h-9 rounded-lg">
+                      <Trash2 size={14} /> Excluir ({selectedExpenses.size})
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Excluir {selectedExpenses.size} despesa(s)?</AlertDialogTitle>
+                      <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDeleteSelectedExpenses} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
               <Button onClick={() => setImportExpOpen(true)} size="sm" variant="outline" className="gap-2 h-9 rounded-lg">
                 <Upload size={14} /> Importar
               </Button>
@@ -409,8 +520,13 @@ export default function Financial() {
               </div>
             ) : (
               extrato.filter(i => i.type === "saida").map((item) => (
-                <div key={item.id} className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors">
+                <div key={item.id} className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors group">
                   <div className="flex items-center gap-3">
+                    <Checkbox
+                      checked={selectedExpenses.has(item.id)}
+                      onCheckedChange={() => toggleSelection(selectedExpenses, setSelectedExpenses, item.id)}
+                      className="shrink-0"
+                    />
                     <div className="rounded-full p-2 bg-danger/10">
                       <ArrowDownCircle size={16} className="text-danger" />
                     </div>
@@ -423,7 +539,26 @@ export default function Financial() {
                       </div>
                     </div>
                   </div>
-                  <p className="font-bold text-base text-danger shrink-0">- {fmt(item.amount)}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-bold text-base text-danger shrink-0">- {fmt(item.amount)}</p>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive">
+                          <Trash2 size={14} />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Excluir despesa?</AlertDialogTitle>
+                          <AlertDialogDescription>"{item.description}" será removida permanentemente.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDeleteSingleEntry(item)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </div>
               ))
             )}
