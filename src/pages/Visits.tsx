@@ -633,58 +633,72 @@ export default function Visits() {
 
       {/* Mobile: Cards / Desktop: Table */}
       {isMobile ? (
-        <div className="space-y-3">
+        <div className="space-y-3 stagger-fade-in">
           {filtered.length === 0 ? (
-            <div className="text-center text-muted-foreground py-12 text-sm">
-              Nenhuma visita encontrada
+            <div className="text-center text-muted-foreground py-16 text-sm">
+              <CalendarDays size={40} className="mx-auto mb-3 text-muted-foreground/30" />
+              <p>Nenhuma visita encontrada</p>
             </div>
           ) : (
             filtered.map((v) => (
               <div
                 key={v.id}
-                className={`rounded-xl border border-border bg-card p-4 border-l-4 ${VISIT_STATUS_BG[v.status as VisitStatus] || ""}`}
+                className={`rounded-2xl border bg-card p-4 border-l-4 shadow-sm transition-all duration-200 ${VISIT_STATUS_BG[v.status as VisitStatus] || ""}`}
               >
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <p className="font-semibold text-base">{v.clientName}</p>
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-display font-semibold text-base truncate">{v.clientName}</p>
                     <a
                       href={`tel:${v.clientPhone.replace(/\D/g, "")}`}
-                      className="text-sm text-primary flex items-center gap-1 mt-0.5"
+                      className="text-sm text-primary flex items-center gap-1.5 mt-0.5"
                     >
-                      <Phone size={12} /> {v.clientPhone}
+                      <Phone size={13} /> {v.clientPhone}
                     </a>
                   </div>
-                  <Badge className={`text-[10px] font-medium border rounded-full px-2.5 py-0.5 shrink-0 ${VISIT_STATUS_COLORS[v.status as VisitStatus] || ""}`}>
+                  <Badge className={`text-[10px] font-semibold border rounded-full px-3 py-1 shrink-0 ${VISIT_STATUS_COLORS[v.status as VisitStatus] || ""}`}>
                     {v.status}
                   </Badge>
                 </div>
 
-                <div className="flex items-center gap-4 text-sm text-muted-foreground mb-1">
-                  <span className="flex items-center gap-1">
-                    <CalendarDays size={13} />
-                    {format(new Date(v.visitDate + "T12:00:00"), "dd/MM/yyyy")}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Clock size={13} />
-                    {v.visitTime.slice(0, 5)}
-                  </span>
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  <div className="flex items-center gap-2 rounded-xl bg-muted/50 px-3 py-2">
+                    <CalendarDays size={14} className="text-muted-foreground shrink-0" />
+                    <span className="text-sm font-medium">{format(new Date(v.visitDate + "T12:00:00"), "dd/MM/yyyy")}</span>
+                  </div>
+                  <div className="flex items-center gap-2 rounded-xl bg-muted/50 px-3 py-2">
+                    <Clock size={14} className="text-muted-foreground shrink-0" />
+                    <span className="text-sm font-medium">{v.visitTime.slice(0, 5)}</span>
+                  </div>
                 </div>
 
-                {v.eventTypeDesired && (
-                  <p className="text-xs text-muted-foreground mb-1">{v.eventTypeDesired} {v.eventValue > 0 ? `• ${formatCurrency(v.eventValue)}` : ""} {v.guestCount > 0 ? `• ${v.guestCount} pessoas` : ""}</p>
+                {(v.eventTypeDesired || v.guestCount > 0 || v.eventValue > 0) && (
+                  <div className="flex flex-wrap gap-1.5 mb-3">
+                    {v.eventTypeDesired && (
+                      <span className="text-[11px] bg-accent text-accent-foreground rounded-lg px-2 py-1 font-medium">{v.eventTypeDesired}</span>
+                    )}
+                    {v.guestCount > 0 && (
+                      <span className="text-[11px] bg-muted text-muted-foreground rounded-lg px-2 py-1 flex items-center gap-1">
+                        <Users size={11} /> {v.guestCount} pessoas
+                      </span>
+                    )}
+                    {v.eventValue > 0 && (
+                      <span className="text-[11px] bg-success/10 text-success rounded-lg px-2 py-1 font-semibold flex items-center gap-1">
+                        <DollarSign size={11} /> {formatCurrency(v.eventValue)}
+                      </span>
+                    )}
+                  </div>
                 )}
 
                 {v.notes && (
-                  <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-2 mb-3 line-clamp-2">{v.notes}</p>
+                  <p className="text-xs text-muted-foreground bg-muted/40 rounded-xl p-2.5 mb-3 line-clamp-2">{v.notes}</p>
                 )}
 
-                {/* Action buttons */}
                 {v.status !== "Cancelada" ? (
                   <div className="flex gap-2">
                     {v.status !== "Confirmada" && (
                       <Button
                         size="sm"
-                        className="flex-1 gap-1.5 h-11 bg-success hover:bg-success/90 text-success-foreground font-semibold"
+                        className="flex-1 gap-1.5 h-12 bg-success hover:bg-success/90 text-success-foreground font-semibold rounded-xl"
                         onClick={() => handleStatusChange(v, "Confirmada")}
                       >
                         <Check size={16} /> Confirmar
@@ -693,7 +707,7 @@ export default function Visits() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="flex-1 gap-1.5 h-11"
+                      className="flex-1 gap-1.5 h-12 rounded-xl"
                       onClick={() => setDetailVisit(v)}
                     >
                       <Eye size={16} /> Detalhes
@@ -701,7 +715,7 @@ export default function Visits() {
                     <Button
                       size="sm"
                       variant="destructive"
-                      className="h-11 px-3"
+                      className="h-12 px-3.5 rounded-xl"
                       onClick={() => handleStatusChange(v, "Cancelada")}
                     >
                       <XIcon size={16} />
@@ -712,7 +726,7 @@ export default function Visits() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="flex-1 gap-1.5 h-11"
+                      className="flex-1 gap-1.5 h-12 rounded-xl"
                       onClick={() => setDetailVisit(v)}
                     >
                       <Eye size={16} /> Detalhes
