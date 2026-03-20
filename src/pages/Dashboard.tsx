@@ -387,7 +387,7 @@ export default function Dashboard() {
       </div>
 
       {/* Financial cards - Row 2 */}
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 stagger-fade-in">
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-5 stagger-fade-in">
         {finCards.map((card) => (
           <div key={card.label} className="stat-card">
             <div className="flex items-start justify-between">
@@ -397,6 +397,7 @@ export default function Dashboard() {
               </div>
             </div>
             <p className={`text-2xl font-display font-bold mt-3 tracking-tight ${card.valueColor}`}>{card.value}</p>
+            {card.sub && <p className="text-[10px] text-muted-foreground mt-1">{card.sub}</p>}
           </div>
         ))}
       </div>
