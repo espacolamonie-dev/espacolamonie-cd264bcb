@@ -104,13 +104,24 @@ export default function Reports() {
       ? Math.round((converted / confirmedVisits.length) * 100)
       : 0;
 
-    const totalEvents = monthContracts.length;
-    const totalRevenue = payments
+    // Revenue = sinais dos contratos criados no mês + entradas manuais
+    const contractsCreatedThisMonth = active.filter((c) => {
+      const d = new Date(c.createdAt);
+      return !isBefore(d, monthStart) && !isAfter(d, monthEnd);
+    });
+    const sinaisRecebidos = contractsCreatedThisMonth.reduce((sum, c) => {
+      if (c.paymentStatus === "deposit_paid" || c.paymentStatus === "paid_full") {
+        return sum + c.depositValue;
+      }
+      return sum;
+    }, 0);
+    const manualEntriesRevenue = payments
       .filter((p) => {
         const d = parseISO(p.date);
         return !isBefore(d, monthStart) && !isAfter(d, monthEnd);
       })
       .reduce((s, p) => s + p.amount, 0);
+    const totalRevenue = sinaisRecebidos + manualEntriesRevenue;
     const avgTicket = totalEvents > 0
       ? monthContracts.reduce((s, c) => s + c.totalValue, 0) / totalEvents
       : 0;
