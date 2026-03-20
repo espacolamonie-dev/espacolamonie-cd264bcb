@@ -12,7 +12,7 @@ import Agenda from "@/pages/Agenda";
 import Reports from "@/pages/Reports";
 import Settings from "@/pages/Settings";
 import Visits from "@/pages/Visits";
-import LeadsWhatsApp from "@/pages/LeadsWhatsApp";
+
 import SignContract from "@/pages/SignContract";
 import BookVisit from "@/pages/BookVisit";
 import EventDates from "@/pages/EventDates";
