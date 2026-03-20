@@ -390,6 +390,25 @@ export default function Financial() {
               <p className="text-xs text-muted-foreground mt-0.5">Recebimentos do mês</p>
             </div>
             <div className="flex gap-2">
+              {selectedEntries.size > 0 && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="destructive" className="gap-1.5 h-9 rounded-lg">
+                      <Trash2 size={14} /> Excluir ({selectedEntries.size})
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Excluir {selectedEntries.size} entrada(s)?</AlertDialogTitle>
+                      <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDeleteSelectedEntries} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
               <Button onClick={() => setImportEntryOpen(true)} size="sm" variant="outline" className="gap-2 h-9 rounded-lg">
                 <Upload size={14} /> Importar
               </Button>
@@ -405,8 +424,15 @@ export default function Financial() {
               </div>
             ) : (
               extrato.filter(i => i.type === "entrada").map((item) => (
-                <div key={item.id} className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors">
+                <div key={item.id} className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors group">
                   <div className="flex items-center gap-3">
+                    {item.source === "manual_entry" && (
+                      <Checkbox
+                        checked={selectedEntries.has(item.id)}
+                        onCheckedChange={() => toggleSelection(selectedEntries, setSelectedEntries, item.id)}
+                        className="shrink-0"
+                      />
+                    )}
                     <div className="rounded-full p-2 bg-success/10">
                       <ArrowUpCircle size={16} className="text-success" />
                     </div>
@@ -419,7 +445,28 @@ export default function Financial() {
                       </div>
                     </div>
                   </div>
-                  <p className="font-bold text-base text-success shrink-0">+ {fmt(item.amount)}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-bold text-base text-success shrink-0">+ {fmt(item.amount)}</p>
+                    {item.source === "manual_entry" && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button size="icon" variant="ghost" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive">
+                            <Trash2 size={14} />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Excluir entrada?</AlertDialogTitle>
+                            <AlertDialogDescription>"{item.description}" será removida permanentemente.</AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDeleteSingleEntry(item)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                  </div>
                 </div>
               ))
             )}
