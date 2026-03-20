@@ -78,6 +78,19 @@ export default function Financial() {
   };
   useEffect(() => { load(); }, []);
 
+  // Auto-refresh when page gains focus (e.g. after editing contracts)
+  useEffect(() => {
+    const handleFocus = () => { load(); };
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") load();
+    });
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleFocus);
+    };
+  }, []);
+
   const handleAddExpense = async () => {
     if (!expForm.description.trim() || expForm.amount <= 0) { toast.error("Preencha descrição e valor"); return; }
     try {
