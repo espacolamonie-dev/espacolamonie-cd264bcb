@@ -319,45 +319,85 @@ export default function Contracts() {
       </div>
 
       {isMobile ? (
-        <div className="space-y-3">
+        <div className="space-y-3 stagger-fade-in">
           {filtered.length === 0 ? (
-            <div className="text-center text-muted-foreground py-12 text-sm">Nenhum contrato encontrado</div>
+            <div className="text-center text-muted-foreground py-16 text-sm">
+              <FileText size={40} className="mx-auto mb-3 text-muted-foreground/30" />
+              <p>Nenhum contrato encontrado</p>
+            </div>
           ) : (
             filtered.map((c) => {
               const isCancelled = c.status === "cancelled";
               const statusLabel = CONTRACT_STATUS_LABELS[c.status] || c.status;
               const statusColor = CONTRACT_STATUS_COLORS[c.status] || "";
+              const paymentLabel = PAYMENT_STATUS_LABELS[c.paymentStatus] || c.paymentStatus;
+              const paymentColor = PAYMENT_STATUS_COLORS[c.paymentStatus] || "";
               return (
-                <div key={c.id} className={`rounded-xl border border-border bg-card p-4 ${isCancelled ? "opacity-50" : ""}`}>
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <p className="font-semibold text-base">{clientMap[c.clientId]?.name || "—"}</p>
-                      <p className="text-xs text-muted-foreground">{c.eventType}</p>
+                <div key={c.id} className={`rounded-2xl border bg-card shadow-sm transition-all duration-200 overflow-hidden ${isCancelled ? "opacity-50" : ""}`}>
+                  <div className="p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-display font-semibold text-base truncate">{clientMap[c.clientId]?.name || "—"}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{c.eventType}</p>
+                      </div>
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <Badge className={`text-[10px] font-semibold border rounded-full px-3 py-1 ${statusColor}`}>
+                          {statusLabel}
+                        </Badge>
+                        <Badge className={`text-[10px] font-medium border rounded-full px-2.5 py-0.5 ${paymentColor}`}>
+                          {paymentLabel}
+                        </Badge>
+                      </div>
                     </div>
-                    <Badge className={`text-[10px] font-medium border rounded-full px-2.5 py-0.5 shrink-0 ${statusColor}`}>
-                      {statusLabel}
-                    </Badge>
-                  </div>
-                   <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
-                    <span className="flex items-center gap-1">
-                      <CalendarDays size={13} />
-                      {formatDateBR(c.eventDate)}
-                      {c.eventDateEnd && ` – ${formatDateBR(c.eventDateEnd)}`}
-                    </span>
-                    <span className="font-semibold text-foreground">{fmt(c.totalValue)}</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline" className="flex-1 h-11 gap-1.5" onClick={() => setDetailId(c.id)}>
-                      <Eye size={16} /> Detalhes
-                    </Button>
+
+                    <div className="grid grid-cols-2 gap-2 mb-3">
+                      <div className="flex items-center gap-2 rounded-xl bg-muted/50 px-3 py-2">
+                        <CalendarDays size={14} className="text-muted-foreground shrink-0" />
+                        <span className="text-sm font-medium">
+                          {formatDateBR(c.eventDate)}
+                          {c.eventDateEnd && <span className="text-xs text-muted-foreground"> – {formatDateBR(c.eventDateEnd)}</span>}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-center rounded-xl bg-primary/8 px-3 py-2">
+                        <span className="text-sm font-display font-bold text-primary">{fmt(c.totalValue)}</span>
+                      </div>
+                    </div>
+
                     {!isCancelled && (
-                      <Button size="sm" variant="outline" className="flex-1 h-11 gap-1.5" onClick={() => openEdit(c)}>
-                        <Pencil size={16} /> Editar
-                      </Button>
+                      <div className="grid grid-cols-2 gap-2 mb-3">
+                        <div className="rounded-xl bg-success/8 px-3 py-2 text-center">
+                          <p className="text-[10px] text-muted-foreground uppercase font-medium tracking-wider">Sinal</p>
+                          <p className="text-sm font-bold text-success">{fmt(c.depositValue)}</p>
+                        </div>
+                        <div className="rounded-xl bg-warning/8 px-3 py-2 text-center">
+                          <p className="text-[10px] text-muted-foreground uppercase font-medium tracking-wider">Restante</p>
+                          <p className="text-sm font-bold text-warning">{fmt(c.remainingValue)}</p>
+                        </div>
+                      </div>
                     )}
-                    <Button size="sm" variant="outline" className="h-11 px-3 text-destructive hover:text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setDeleteTarget(c)}>
-                      <Trash2 size={16} />
-                    </Button>
+                  </div>
+
+                  <div className="flex border-t border-border">
+                    <button
+                      className="flex-1 flex items-center justify-center gap-1.5 py-3 text-sm font-medium text-muted-foreground hover:bg-muted/50 transition-colors"
+                      onClick={() => setDetailId(c.id)}
+                    >
+                      <Eye size={15} /> Detalhes
+                    </button>
+                    {!isCancelled && (
+                      <button
+                        className="flex-1 flex items-center justify-center gap-1.5 py-3 text-sm font-medium text-muted-foreground hover:bg-muted/50 transition-colors border-l border-border"
+                        onClick={() => openEdit(c)}
+                      >
+                        <Pencil size={15} /> Editar
+                      </button>
+                    )}
+                    <button
+                      className="flex items-center justify-center gap-1.5 px-4 py-3 text-sm font-medium text-destructive hover:bg-destructive/5 transition-colors border-l border-border"
+                      onClick={() => setDeleteTarget(c)}
+                    >
+                      <Trash2 size={15} />
+                    </button>
                   </div>
                 </div>
               );

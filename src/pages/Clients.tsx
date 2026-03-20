@@ -173,29 +173,45 @@ export default function Clients() {
       </div>
 
       {isMobile ? (
-        <div className="space-y-3">
+        <div className="space-y-3 stagger-fade-in">
           {filtered.length === 0 ? (
-            <div className="text-center text-muted-foreground py-12 text-sm">Nenhum cliente encontrado</div>
+            <div className="text-center text-muted-foreground py-16 text-sm">
+              <Users size={40} className="mx-auto mb-3 text-muted-foreground/30" />
+              <p>Nenhum cliente encontrado</p>
+            </div>
           ) : (
             filtered.map((c) => (
-              <div key={c.id} className="rounded-xl border border-border bg-card p-4">
-                <div className="flex items-start justify-between mb-2">
-                  <p className="font-semibold text-base">{c.name}</p>
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg" onClick={() => openEdit(c)}>
-                      <Pencil size={16} />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg text-destructive" onClick={() => handleDeleteRequest(c)}>
-                      <Trash2 size={16} />
-                    </Button>
+              <div key={c.id} className="rounded-2xl border bg-card shadow-sm overflow-hidden transition-all duration-200">
+                <div className="p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-display font-semibold text-base truncate">{c.name}</p>
+                      {c.cpf && <p className="text-xs text-muted-foreground tabular-nums mt-0.5">CPF: {c.cpf}</p>}
+                    </div>
                   </div>
+                  {c.phone && (
+                    <a href={`tel:${c.phone.replace(/\D/g, "")}`} className="text-sm text-primary flex items-center gap-1.5 mb-2">
+                      <Phone size={14} /> {c.phone}
+                    </a>
+                  )}
+                  {(c.addressStreet || c.address) && (
+                    <p className="text-xs text-muted-foreground line-clamp-1">{getDisplayAddress(c)}</p>
+                  )}
                 </div>
-                {c.phone && (
-                  <a href={`tel:${c.phone.replace(/\D/g, "")}`} className="text-sm text-primary flex items-center gap-1.5 mb-1">
-                    <Phone size={13} /> {c.phone}
-                  </a>
-                )}
-                {c.cpf && <p className="text-xs text-muted-foreground tabular-nums">CPF: {c.cpf}</p>}
+                <div className="flex border-t border-border">
+                  <button
+                    className="flex-1 flex items-center justify-center gap-1.5 py-3 text-sm font-medium text-muted-foreground hover:bg-muted/50 transition-colors"
+                    onClick={() => openEdit(c)}
+                  >
+                    <Pencil size={15} /> Editar
+                  </button>
+                  <button
+                    className="flex items-center justify-center gap-1.5 px-4 py-3 text-sm font-medium text-destructive hover:bg-destructive/5 transition-colors border-l border-border"
+                    onClick={() => handleDeleteRequest(c)}
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
               </div>
             ))
           )}
