@@ -250,8 +250,7 @@ export default function Financial() {
     return d >= monthStart && d <= monthEnd;
   });
   const pagamentoFuncionario = contratosFechadosNoMes.length * VALOR_POR_CONTRATO_FUNCIONARIO;
-  const funcPago = contratosFechadosNoMes.filter(c => paidContracts.has(c.id)).length * VALOR_POR_CONTRATO_FUNCIONARIO;
-  const funcFalta = pagamentoFuncionario - funcPago;
+  const funcFalta = Math.max(0, pagamentoFuncionario - funcValorPago);
 
   const lucroDoMes = recebidoNoMes - despesasDoMes;
 
