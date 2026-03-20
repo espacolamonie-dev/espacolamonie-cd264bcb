@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { parseLocalDate, formatDateBR } from "@/lib/dateUtils";
 import {
   FileText, CheckCircle, Clock, CalendarDays, TrendingUp, TrendingDown, Wallet,
-  Plus, DollarSign, AlertTriangle, ArrowRight, Receipt, Users, MessageCircle, Save,
+  Plus, DollarSign, AlertTriangle, ArrowRight, Receipt, Users, MessageCircle, Save, UserRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
