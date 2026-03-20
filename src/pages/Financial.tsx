@@ -194,6 +194,7 @@ export default function Financial() {
         category: "Contrato",
         amount: p.amount,
         type: "entrada" as const,
+        source: "payment" as const,
       })),
       ...monthManualEntries.map(e => ({
         id: e.id,
@@ -202,6 +203,7 @@ export default function Financial() {
         category: e.category,
         amount: e.amount,
         type: "entrada" as const,
+        source: "manual_entry" as const,
       })),
       ...monthExpenses.map(e => ({
         id: e.id,
@@ -210,6 +212,7 @@ export default function Financial() {
         category: e.category,
         amount: e.amount,
         type: "saida" as const,
+        source: "expense" as const,
       })),
     ];
 
