@@ -1,6 +1,8 @@
 import { useEffect, useState, useMemo } from "react";
 import { CurrencyInput } from "@/components/CurrencyInput";
-import { Plus, TrendingUp, TrendingDown, Wallet, Trash2, FileText, HandCoins, Calendar, DollarSign, CircleArrowDown as ArrowDownCircle, CircleArrowUp as ArrowUpCircle } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, Wallet, Trash2, FileText, HandCoins, Calendar, DollarSign, CircleArrowDown as ArrowDownCircle, CircleArrowUp as ArrowUpCircle, Upload } from "lucide-react";
+import ImportStatementModal from "@/components/ImportStatementModal";
+import ImportBankEntryModal from "@/components/ImportBankEntryModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
