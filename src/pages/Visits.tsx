@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { Plus, Search, Phone, CalendarDays, Clock, Filter, Eye, Check, RotateCcw, X as XIcon, AlertTriangle, Pencil, Users, Megaphone, TrendingUp, Link2, ExternalLink, MessageCircle, DollarSign } from "lucide-react";
+import { Plus, Search, Phone, CalendarDays, Clock, Filter, Eye, Check, RotateCcw, X as XIcon, AlertTriangle, Pencil, Users, Megaphone, TrendingUp, Link2, ExternalLink, MessageCircle, DollarSign, Copy } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -960,7 +960,7 @@ export default function Visits() {
           <DialogHeader>
             <DialogTitle className="font-display flex items-center gap-2">
               <MessageCircle size={20} className="text-green-500" />
-              Enviar confirmação por WhatsApp
+              Enviar confirmação no grupo
             </DialogTitle>
           </DialogHeader>
           {confirmMsgVisit && (
@@ -969,18 +969,23 @@ export default function Visits() {
                 {buildWhatsAppMessage(confirmMsgVisit)}
               </div>
               <p className="text-xs text-muted-foreground">
-                Número de destino: <span className="font-medium">(31) 99859-5155</span>
+                A mensagem será copiada. Cole no grupo do WhatsApp.
               </p>
               <div className="flex gap-2">
                 <Button
                   className="flex-1 gap-2 bg-green-600 hover:bg-green-700 text-white"
                   onClick={() => {
-                    const msg = encodeURIComponent(buildWhatsAppMessage(confirmMsgVisit));
-                    window.open(`https://wa.me/${NOTIFICATION_PHONE}?text=${msg}`, "_blank");
+                    const msg = buildWhatsAppMessage(confirmMsgVisit);
+                    navigator.clipboard.writeText(msg).then(() => {
+                      toast.success("Mensagem copiada!");
+                    }).catch(() => {
+                      toast.error("Não foi possível copiar");
+                    });
+                    window.open("https://web.whatsapp.com/", "_blank");
                     setConfirmMsgVisit(null);
                   }}
                 >
-                  <MessageCircle size={16} /> Enviar WhatsApp
+                  <Copy size={16} /> Copiar e abrir WhatsApp
                 </Button>
                 <Button variant="outline" onClick={() => setConfirmMsgVisit(null)}>
                   Fechar
