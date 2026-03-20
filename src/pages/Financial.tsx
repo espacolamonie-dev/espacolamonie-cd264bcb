@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { CurrencyInput } from "@/components/CurrencyInput";
-import { Plus, TrendingUp, TrendingDown, Wallet, Trash2, FileText, HandCoins, Calendar, DollarSign, CircleArrowDown as ArrowDownCircle, CircleArrowUp as ArrowUpCircle, Upload, CheckSquare } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, Wallet, Trash2, FileText, HandCoins, Calendar, DollarSign, CircleArrowDown as ArrowDownCircle, CircleArrowUp as ArrowUpCircle, Upload, CheckSquare, UserRound } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import ImportStatementModal from "@/components/ImportStatementModal";
@@ -230,6 +230,13 @@ export default function Financial() {
     }).reduce((s, e) => s + e.amount, 0);
   }, [expenses, monthStart, monthEnd]);
 
+  const VALOR_POR_CONTRATO_FUNCIONARIO = 70;
+  const contratosFechadosNoMes = activeContracts.filter(c => {
+    const d = new Date(c.createdAt);
+    return d >= monthStart && d <= monthEnd;
+  });
+  const pagamentoFuncionario = contratosFechadosNoMes.length * VALOR_POR_CONTRATO_FUNCIONARIO;
+
   const lucroDoMes = recebidoNoMes - despesasDoMes;
 
   const extrato = useMemo((): FinancialTransaction[] => {
@@ -334,7 +341,7 @@ export default function Financial() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
         <Card className="p-4 border-warning/30 bg-gradient-to-br from-warning/5 to-transparent">
           <div className="flex items-center gap-2 mb-2">
             <div className="rounded-full bg-warning/15 p-2">
@@ -390,6 +397,17 @@ export default function Financial() {
             {fmt(lucroDoMes)}
           </p>
           <p className="text-[10px] text-muted-foreground mt-1">Recebido - Despesas</p>
+        </Card>
+
+        <Card className="p-4 border-violet-500/30 bg-gradient-to-br from-violet-500/5 to-transparent">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="rounded-full bg-violet-500/15 p-2">
+              <UserRound size={16} className="text-violet-500" />
+            </div>
+            <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Funcionário (Mês)</p>
+          </div>
+          <p className="text-2xl lg:text-3xl font-display font-bold text-violet-600 dark:text-violet-400 tracking-tight">{fmt(pagamentoFuncionario)}</p>
+          <p className="text-[10px] text-muted-foreground mt-1">{contratosFechadosNoMes.length} contrato(s) × R$70</p>
         </Card>
       </div>
 
