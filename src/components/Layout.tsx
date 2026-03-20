@@ -162,7 +162,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Mobile header */}
-        {isMobile && <MobileTopBar onMenuOpen={() => setMobileOpen(true)} />}
+        {isMobile && <MobileTopBar />}
 
         <div className={`page-enter max-w-[1440px] ${isMobile ? "px-4 pt-[calc(var(--safe-top)+var(--mobile-header-h)+8px)] pb-[calc(var(--safe-bottom)+var(--mobile-bottom-h)+16px)]" : "p-6 md:p-10"}`}>
           {children}
