@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { ArrowLeft, Menu, Bell, BellOff, BellRing } from "lucide-react";
+import { ArrowLeft, Bell, BellOff, BellRing } from "lucide-react";
 import { useNotificationPermission } from "@/hooks/useContractNotifications";
 
 const PAGE_TITLES: Record<string, string> = {
@@ -13,10 +13,6 @@ const PAGE_TITLES: Record<string, string> = {
   "/settings": "Configurações",
   "/budgets": "Orçamentos",
 };
-
-interface Props {
-  onMenuOpen: () => void;
-}
 
 export default function MobileTopBar({ onMenuOpen }: Props) {
   const { pathname } = useLocation();
