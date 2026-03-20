@@ -50,7 +50,7 @@ export default function Financial() {
   const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
   const [selectedExpenses, setSelectedExpenses] = useState<Set<string>>(new Set());
   const [funcModalOpen, setFuncModalOpen] = useState(false);
-  const [paidContracts, setPaidContracts] = useState<Set<string>>(new Set());
+  const [funcValorPago, setFuncValorPago] = useState(0);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -80,22 +80,16 @@ export default function Financial() {
   };
   useEffect(() => { load(); }, []);
 
-  // Load paid contracts from localStorage
+  // Load func valor pago from localStorage
   useEffect(() => {
-    const key = `func_paid_${selectedMonth}`;
+    const key = `func_pago_${selectedMonth}`;
     const saved = localStorage.getItem(key);
-    if (saved) setPaidContracts(new Set(JSON.parse(saved)));
-    else setPaidContracts(new Set());
+    setFuncValorPago(saved ? Number(saved) : 0);
   }, [selectedMonth]);
 
-  const togglePaidContract = (contractId: string) => {
-    setPaidContracts(prev => {
-      const next = new Set(prev);
-      if (next.has(contractId)) next.delete(contractId); else next.add(contractId);
-      const key = `func_paid_${selectedMonth}`;
-      localStorage.setItem(key, JSON.stringify([...next]));
-      return next;
-    });
+  const handleFuncValorPagoChange = (val: number) => {
+    setFuncValorPago(val);
+    localStorage.setItem(`func_pago_${selectedMonth}`, String(val));
   };
 
   // Auto-refresh when page gains focus (e.g. after editing contracts)
@@ -256,8 +250,7 @@ export default function Financial() {
     return d >= monthStart && d <= monthEnd;
   });
   const pagamentoFuncionario = contratosFechadosNoMes.length * VALOR_POR_CONTRATO_FUNCIONARIO;
-  const funcPago = contratosFechadosNoMes.filter(c => paidContracts.has(c.id)).length * VALOR_POR_CONTRATO_FUNCIONARIO;
-  const funcFalta = pagamentoFuncionario - funcPago;
+  const funcFalta = Math.max(0, pagamentoFuncionario - funcValorPago);
 
   const lucroDoMes = recebidoNoMes - despesasDoMes;
 
@@ -431,7 +424,7 @@ export default function Financial() {
           <p className="text-2xl lg:text-3xl font-display font-bold text-violet-600 dark:text-violet-400 tracking-tight">{fmt(pagamentoFuncionario)}</p>
           <div className="flex items-center justify-between mt-1">
             <p className="text-[10px] text-muted-foreground">{contratosFechadosNoMes.length} contrato(s) × R$70</p>
-            <p className="text-[10px] text-success font-medium">Pago: {fmt(funcPago)}</p>
+            <p className="text-[10px] text-success font-medium">Pago: {fmt(funcValorPago)}</p>
           </div>
         </Card>
       </div>
@@ -443,40 +436,47 @@ export default function Financial() {
               <UserRound size={20} className="text-violet-500" /> Pagamento Funcionário
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-4">
+            <div className="grid grid-cols-3 gap-3">
+              <div className="p-3 rounded-lg bg-violet-500/10 border border-violet-500/20">
+                <p className="text-[10px] text-muted-foreground uppercase font-semibold">Total a pagar</p>
+                <p className="text-lg font-bold text-violet-600 dark:text-violet-400">{fmt(pagamentoFuncionario)}</p>
+                <p className="text-[10px] text-muted-foreground">{contratosFechadosNoMes.length} × R$70</p>
+              </div>
               <div className="p-3 rounded-lg bg-success/10 border border-success/20">
                 <p className="text-[10px] text-muted-foreground uppercase font-semibold">Já pago</p>
-                <p className="text-lg font-bold text-success">{fmt(funcPago)}</p>
+                <p className="text-lg font-bold text-success">{fmt(funcValorPago)}</p>
               </div>
               <div className="p-3 rounded-lg bg-warning/10 border border-warning/20">
                 <p className="text-[10px] text-muted-foreground uppercase font-semibold">Falta pagar</p>
                 <p className="text-lg font-bold text-warning">{fmt(funcFalta)}</p>
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">Marque os contratos já pagos ao funcionário:</p>
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {contratosFechadosNoMes.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">Nenhum contrato fechado neste mês</p>
-              )}
-              {contratosFechadosNoMes.map(c => {
-                const clientName = clients.find(cl => cl.id === c.clientId)?.name || "—";
-                const isPaid = paidContracts.has(c.id);
-                return (
-                  <div
-                    key={c.id}
-                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${isPaid ? 'bg-success/5 border-success/30' : 'bg-card border-border hover:bg-muted/50'}`}
-                    onClick={() => togglePaidContract(c.id)}
-                  >
-                    <Checkbox checked={isPaid} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{clientName}</p>
-                      <p className="text-[10px] text-muted-foreground">{c.eventType} — {new Date(c.eventDate).toLocaleDateString("pt-BR")}</p>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Valor já pago ao funcionário neste mês</Label>
+              <CurrencyInput value={funcValorPago} onChange={handleFuncValorPagoChange} />
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground font-medium">Contratos do mês:</p>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {contratosFechadosNoMes.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-4">Nenhum contrato fechado neste mês</p>
+                )}
+                {contratosFechadosNoMes.map(c => {
+                  const clientName = clients.find(cl => cl.id === c.clientId)?.name || "—";
+                  return (
+                    <div key={c.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{clientName}</p>
+                        <p className="text-[10px] text-muted-foreground">{c.eventType} — {new Date(c.eventDate).toLocaleDateString("pt-BR")}</p>
+                      </div>
+                      <p className="text-sm font-bold text-foreground">{fmt(VALOR_POR_CONTRATO_FUNCIONARIO)}</p>
                     </div>
-                    <p className={`text-sm font-bold ${isPaid ? 'text-success' : 'text-foreground'}`}>{fmt(VALOR_POR_CONTRATO_FUNCIONARIO)}</p>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </div>
         </DialogContent>
