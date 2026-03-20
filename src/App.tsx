@@ -92,7 +92,7 @@ const App = () => (
                     <Route path="/reports" element={<Reports />} />
                     <Route path="/budgets" element={<Budgets />} />
                     <Route path="/visits" element={<Visits />} />
-                    <Route path="/leads" element={<LeadsWhatsApp />} />
+                    
                     <Route path="/settings" element={<Settings />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>

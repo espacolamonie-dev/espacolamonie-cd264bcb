@@ -11,7 +11,7 @@ import {
   LogOut,
   Settings,
   ClipboardCheck,
-  MessageCircle,
+  
   Calculator,
 } from "lucide-react";
 import { useState, useEffect } from "react";

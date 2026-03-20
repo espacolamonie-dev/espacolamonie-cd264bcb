@@ -10,8 +10,8 @@ const PAGE_TITLES: Record<string, string> = {
   "/agenda": "Agenda",
   "/reports": "Relatórios",
   "/visits": "Visitas",
-  "/leads": "Leads WhatsApp",
   "/settings": "Configurações",
+  "/budgets": "Orçamentos",
 };
 
 interface Props {
