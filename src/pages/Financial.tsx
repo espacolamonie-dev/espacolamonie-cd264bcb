@@ -486,6 +486,25 @@ export default function Financial() {
               <p className="text-xs text-muted-foreground mt-0.5">Despesas do mês</p>
             </div>
             <div className="flex gap-2">
+              {selectedExpenses.size > 0 && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="destructive" className="gap-1.5 h-9 rounded-lg">
+                      <Trash2 size={14} /> Excluir ({selectedExpenses.size})
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Excluir {selectedExpenses.size} despesa(s)?</AlertDialogTitle>
+                      <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDeleteSelectedExpenses} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
               <Button onClick={() => setImportExpOpen(true)} size="sm" variant="outline" className="gap-2 h-9 rounded-lg">
                 <Upload size={14} /> Importar
               </Button>
@@ -501,8 +520,13 @@ export default function Financial() {
               </div>
             ) : (
               extrato.filter(i => i.type === "saida").map((item) => (
-                <div key={item.id} className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors">
+                <div key={item.id} className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors group">
                   <div className="flex items-center gap-3">
+                    <Checkbox
+                      checked={selectedExpenses.has(item.id)}
+                      onCheckedChange={() => toggleSelection(selectedExpenses, setSelectedExpenses, item.id)}
+                      className="shrink-0"
+                    />
                     <div className="rounded-full p-2 bg-danger/10">
                       <ArrowDownCircle size={16} className="text-danger" />
                     </div>
@@ -515,7 +539,26 @@ export default function Financial() {
                       </div>
                     </div>
                   </div>
-                  <p className="font-bold text-base text-danger shrink-0">- {fmt(item.amount)}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-bold text-base text-danger shrink-0">- {fmt(item.amount)}</p>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive">
+                          <Trash2 size={14} />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Excluir despesa?</AlertDialogTitle>
+                          <AlertDialogDescription>"{item.description}" será removida permanentemente.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDeleteSingleEntry(item)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </div>
               ))
             )}
