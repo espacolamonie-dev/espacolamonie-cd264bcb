@@ -113,6 +113,43 @@ export default function Financial() {
   const setExp = (field: string, value: any) => setExpForm((p) => ({ ...p, [field]: value }));
   const setEntry = (field: string, value: any) => setEntryForm((p) => ({ ...p, [field]: value }));
 
+  const toggleSelection = (set: Set<string>, setFn: React.Dispatch<React.SetStateAction<Set<string>>>, id: string) => {
+    const next = new Set(set);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    setFn(next);
+  };
+
+  const handleDeleteSelectedEntries = async () => {
+    try {
+      for (const id of selectedEntries) {
+        await deleteManualEntry(id);
+      }
+      toast.success(`${selectedEntries.size} entrada(s) excluída(s)`);
+      setSelectedEntries(new Set());
+      await load();
+    } catch (e: any) { toast.error(e.message || "Erro ao excluir"); }
+  };
+
+  const handleDeleteSelectedExpenses = async () => {
+    try {
+      for (const id of selectedExpenses) {
+        await deleteExpense(id);
+      }
+      toast.success(`${selectedExpenses.size} despesa(s) excluída(s)`);
+      setSelectedExpenses(new Set());
+      await load();
+    } catch (e: any) { toast.error(e.message || "Erro ao excluir"); }
+  };
+
+  const handleDeleteSingleEntry = async (item: FinancialTransaction) => {
+    try {
+      if (item.source === "manual_entry") await deleteManualEntry(item.id);
+      else if (item.source === "expense") await deleteExpense(item.id);
+      toast.success("Item excluído");
+      await load();
+    } catch (e: any) { toast.error(e.message || "Erro ao excluir"); }
+  };
+
   const cancelledContractIds = new Set(
     contracts.filter((c) => c.status === "cancelled").map((c) => c.id)
   );
