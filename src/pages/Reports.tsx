@@ -161,9 +161,21 @@ export default function Reports() {
       const me = endOfMonth(ms);
       const label = format(ms, "MMM yy", { locale: ptBR });
 
-      const receita = payments
+      // Sinais dos contratos criados nesse mês
+      const contractsCreated = contracts.filter((c) => {
+        const d = new Date(c.createdAt);
+        return !isBefore(d, ms) && !isAfter(d, me) && c.status !== "cancelled";
+      });
+      const sinais = contractsCreated.reduce((sum, c) => {
+        if (c.paymentStatus === "deposit_paid" || c.paymentStatus === "paid_full") {
+          return sum + c.depositValue;
+        }
+        return sum;
+      }, 0);
+      const manualEntries = payments
         .filter((p) => { const d = parseISO(p.date); return !isBefore(d, ms) && !isAfter(d, me); })
         .reduce((s, p) => s + p.amount, 0);
+      const receita = sinais + manualEntries;
 
       const contratos = contracts.filter((c) => {
         const d = parseISO(c.eventDate);
