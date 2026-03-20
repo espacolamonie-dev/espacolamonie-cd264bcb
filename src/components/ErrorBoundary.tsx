@@ -26,67 +26,30 @@ export class ErrorBoundary extends React.Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontFamily: "'Poppins', sans-serif",
-          background: "#f4f5f7",
-          padding: "2rem",
-        }}>
-          <div style={{
-            background: "#fff",
-            borderRadius: "16px",
-            padding: "2.5rem",
-            maxWidth: "420px",
-            width: "100%",
-            textAlign: "center",
-            boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
-          }}>
-            <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>⚠️</div>
-            <h1 style={{ fontSize: "1.25rem", fontWeight: 600, marginBottom: "0.5rem", color: "#1a1a1a" }}>
-              Ocorreu um erro
-            </h1>
-            <p style={{ fontSize: "0.875rem", color: "#666", marginBottom: "1.5rem", lineHeight: 1.5 }}>
-              Algo inesperado aconteceu ao carregar a aplicação. Tente recarregar a página.
+        <div className="flex min-h-screen items-center justify-center bg-background p-6 text-foreground">
+          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-sm">
+            <div className="mb-3 text-3xl">⚠️</div>
+            <h1 className="text-xl font-semibold">Ocorreu um erro ao carregar esta página</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Algo inesperado aconteceu. Tente recarregar para continuar.
             </p>
+
             {this.state.error && (
-              <details style={{ textAlign: "left", marginBottom: "1.5rem" }}>
-                <summary style={{ fontSize: "0.75rem", color: "#999", cursor: "pointer" }}>Detalhes técnicos</summary>
-                <pre style={{
-                  fontSize: "0.7rem",
-                  color: "#c00",
-                  background: "#fff5f5",
-                  padding: "0.75rem",
-                  borderRadius: "8px",
-                  marginTop: "0.5rem",
-                  overflow: "auto",
-                  maxHeight: "120px",
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-word",
-                }}>
+              <details className="mt-4 rounded-lg border border-border bg-muted/40 p-3">
+                <summary className="cursor-pointer text-xs text-muted-foreground">Detalhes técnicos</summary>
+                <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-words text-xs text-destructive">
                   {this.state.error.message}
                   {"\n"}
                   {this.state.error.stack}
                 </pre>
               </details>
             )}
+
             <button
               onClick={() => window.location.reload()}
-              style={{
-                background: "#2d5a3f",
-                color: "#fff",
-                border: "none",
-                borderRadius: "12px",
-                padding: "0.75rem 2rem",
-                fontSize: "0.875rem",
-                fontWeight: 500,
-                cursor: "pointer",
-                width: "100%",
-              }}
+              className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
-              Recarregar página
+              Recarregar
             </button>
           </div>
         </div>
