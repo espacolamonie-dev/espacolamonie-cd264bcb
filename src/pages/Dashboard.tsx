@@ -194,6 +194,20 @@ export default function Dashboard() {
     loadData();
   }, []);
 
+  // Re-render when returning to tab (picks up localStorage changes from Financial)
+  const [, forceUpdate] = useState(0);
+  useEffect(() => {
+    const onFocus = () => forceUpdate(n => n + 1);
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") onFocus();
+    });
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
+  }, []);
+
   const loadWhatsAppConversion = async (date: string, visitsData?: any[]) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
