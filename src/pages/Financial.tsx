@@ -22,8 +22,8 @@ import ExpenseFiltersBar, { type ExpenseFilters, defaultExpenseFilters, hasActiv
 import ImportStatementModal from "@/components/ImportStatementModal";
 import ImportBankEntryModal from "@/components/ImportBankEntryModal";
 
-const EXPENSE_CATEGORIES: ExpenseCategory[] = [
-  "Luz", "Água", "Funcionários", "Manutenção", "Compras", "Marketing", "Outros",
+const EXPENSE_CATEGORIES: string[] = [
+  "Energia (CEMIG)", "Água (COPASA)", "Internet", "Luz", "Água", "Funcionários", "Manutenção", "Compras", "Marketing", "Outros",
 ];
 const ENTRY_CATEGORIES: ManualEntryCategory[] = ["Aluguel extra", "Taxa adicional", "Serviço avulso", "Outro"];
 const PAYMENT_METHODS: PaymentMethod[] = ["Pix", "Dinheiro", "Cartão", "Transferência"];
