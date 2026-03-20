@@ -252,7 +252,7 @@ export default function Financial() {
   const pagamentoFuncionario = contratosFechadosNoMes.length * VALOR_POR_CONTRATO_FUNCIONARIO;
   const funcFalta = Math.max(0, pagamentoFuncionario - funcValorPago);
 
-  const lucroDoMes = recebidoNoMes - despesasDoMes - pagamentoFuncionario;
+  const lucroDoMes = recebidoNoMes - despesasDoMes - funcValorPago;
 
   const extrato = useMemo((): FinancialTransaction[] => {
     const monthPayments = activePayments.filter(p => {

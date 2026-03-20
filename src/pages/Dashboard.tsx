@@ -328,7 +328,7 @@ export default function Dashboard() {
   const finCards = [
     { label: "Receita do mês", value: fmt(financialSummary.totalIn), icon: TrendingUp, iconBg: "bg-success/10", iconColor: "text-success", valueColor: "text-success" },
     { label: "Despesas", value: fmt(financialSummary.totalOut), icon: TrendingDown, iconBg: "bg-danger/10", iconColor: "text-danger", valueColor: "text-danger" },
-    { label: "Lucro líquido", value: fmt(financialSummary.balance - pagamentoFuncTotal), icon: Wallet, iconBg: "bg-primary/10", iconColor: "text-primary", valueColor: (financialSummary.balance - pagamentoFuncTotal) >= 0 ? "text-primary" : "text-danger" },
+    { label: "Lucro líquido", value: fmt(financialSummary.balance - funcPagoDash), icon: Wallet, iconBg: "bg-primary/10", iconColor: "text-primary", valueColor: (financialSummary.balance - funcPagoDash) >= 0 ? "text-primary" : "text-danger" },
     { label: "Ticket médio", value: fmt(ticketMedio), icon: Receipt, iconBg: "bg-gold/10", iconColor: "text-gold-dark", valueColor: "text-foreground" },
     { label: "Funcionário", value: fmt(pagamentoFuncTotal), icon: UserRound, iconBg: "bg-violet-500/10", iconColor: "text-violet-500", valueColor: "text-violet-600 dark:text-violet-400", sub: `Pago: ${fmt(funcPagoDash)} · Falta: ${fmt(funcFaltaDash)}` },
   ];
