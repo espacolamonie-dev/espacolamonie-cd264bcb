@@ -189,16 +189,26 @@ export default function Financial() {
   }, 0);
 
   const recebidoNoMes = useMemo(() => {
-    const monthPayments = activePayments.filter(p => {
-      const d = new Date(p.date);
+    // Sinais dos contratos criados no mês selecionado (que tenham sinal pago ou pago total)
+    const contractsCreatedThisMonth = activeContracts.filter(c => {
+      const d = new Date(c.createdAt);
       return d >= monthStart && d <= monthEnd;
     });
+    const sinaisRecebidos = contractsCreatedThisMonth.reduce((sum, c) => {
+      if (c.paymentStatus === "deposit_paid" || c.paymentStatus === "paid_full") {
+        return sum + c.depositValue;
+      }
+      return sum;
+    }, 0);
+
+    // Entradas manuais do mês
     const monthManualEntries = manualEntries.filter(e => {
       const d = new Date(e.date);
       return d >= monthStart && d <= monthEnd;
     });
-    return monthPayments.reduce((s, p) => s + p.amount, 0) + monthManualEntries.reduce((s, e) => s + e.amount, 0);
-  }, [activePayments, manualEntries, monthStart, monthEnd]);
+
+    return sinaisRecebidos + monthManualEntries.reduce((s, e) => s + e.amount, 0);
+  }, [activeContracts, manualEntries, monthStart, monthEnd]);
 
   const despesasDoMes = useMemo(() => {
     return expenses.filter(e => {
