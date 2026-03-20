@@ -341,9 +341,15 @@ export default function Financial() {
             <h2 className="text-xl font-display font-semibold">Extrato do Mês</h2>
             <p className="text-xs text-muted-foreground mt-0.5">Todas as entradas e saídas</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => setImportEntryOpen(true)} size="sm" variant="outline" className="gap-2 h-9 rounded-lg">
+              <Upload size={14} /> Importar Entradas
+            </Button>
             <Button onClick={() => setEntryOpen(true)} size="sm" variant="outline" className="gap-2 h-9 rounded-lg">
               <Plus size={14} /> Entrada
+            </Button>
+            <Button onClick={() => setImportExpOpen(true)} size="sm" variant="outline" className="gap-2 h-9 rounded-lg">
+              <Upload size={14} /> Importar Despesas
             </Button>
             <Button onClick={() => setExpOpen(true)} size="sm" className="gap-2 h-9 rounded-lg">
               <Plus size={14} /> Despesa
