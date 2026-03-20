@@ -1,6 +1,8 @@
 import { useEffect, useState, useMemo } from "react";
 import { CurrencyInput } from "@/components/CurrencyInput";
-import { Plus, TrendingUp, TrendingDown, Wallet, Trash2, FileText, HandCoins, Calendar, DollarSign, CircleArrowDown as ArrowDownCircle, CircleArrowUp as ArrowUpCircle } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, Wallet, Trash2, FileText, HandCoins, Calendar, DollarSign, CircleArrowDown as ArrowDownCircle, CircleArrowUp as ArrowUpCircle, Upload } from "lucide-react";
+import ImportStatementModal from "@/components/ImportStatementModal";
+import ImportBankEntryModal from "@/components/ImportBankEntryModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -40,6 +42,8 @@ export default function Financial() {
   const [clients, setClients] = useState<Client[]>([]);
   const [expOpen, setExpOpen] = useState(false);
   const [entryOpen, setEntryOpen] = useState(false);
+  const [importExpOpen, setImportExpOpen] = useState(false);
+  const [importEntryOpen, setImportEntryOpen] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -337,9 +341,15 @@ export default function Financial() {
             <h2 className="text-xl font-display font-semibold">Extrato do Mês</h2>
             <p className="text-xs text-muted-foreground mt-0.5">Todas as entradas e saídas</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => setImportEntryOpen(true)} size="sm" variant="outline" className="gap-2 h-9 rounded-lg">
+              <Upload size={14} /> Importar Entradas
+            </Button>
             <Button onClick={() => setEntryOpen(true)} size="sm" variant="outline" className="gap-2 h-9 rounded-lg">
               <Plus size={14} /> Entrada
+            </Button>
+            <Button onClick={() => setImportExpOpen(true)} size="sm" variant="outline" className="gap-2 h-9 rounded-lg">
+              <Upload size={14} /> Importar Despesas
             </Button>
             <Button onClick={() => setExpOpen(true)} size="sm" className="gap-2 h-9 rounded-lg">
               <Plus size={14} /> Despesa
@@ -470,6 +480,9 @@ export default function Financial() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ImportStatementModal open={importExpOpen} onOpenChange={setImportExpOpen} onImported={load} />
+      <ImportBankEntryModal open={importEntryOpen} onOpenChange={setImportEntryOpen} onImported={load} />
     </div>
   );
 }
