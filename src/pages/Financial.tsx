@@ -341,7 +341,7 @@ export default function Financial() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
         <Card className="p-4 border-warning/30 bg-gradient-to-br from-warning/5 to-transparent">
           <div className="flex items-center gap-2 mb-2">
             <div className="rounded-full bg-warning/15 p-2">
