@@ -195,7 +195,7 @@ export default function Financial() {
       return d >= monthStart && d <= monthEnd;
     });
     const sinaisRecebidos = contractsCreatedThisMonth.reduce((sum, c) => {
-      if (c.paymentStatus === "deposit_paid" || c.paymentStatus === "paid") {
+      if (c.paymentStatus === "deposit_paid" || c.paymentStatus === "paid_full") {
         return sum + c.depositValue;
       }
       return sum;
