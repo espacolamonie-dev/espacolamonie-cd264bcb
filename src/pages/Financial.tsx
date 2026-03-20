@@ -335,66 +335,105 @@ export default function Financial() {
         ))}
       </div>
 
-      <Card className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-xl font-display font-semibold">Extrato do Mês</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">Todas as entradas e saídas</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button onClick={() => setImportEntryOpen(true)} size="sm" variant="outline" className="gap-2 h-9 rounded-lg">
-              <Upload size={14} /> Importar Entradas
-            </Button>
-            <Button onClick={() => setEntryOpen(true)} size="sm" variant="outline" className="gap-2 h-9 rounded-lg">
-              <Plus size={14} /> Entrada
-            </Button>
-            <Button onClick={() => setImportExpOpen(true)} size="sm" variant="outline" className="gap-2 h-9 rounded-lg">
-              <Upload size={14} /> Importar Despesas
-            </Button>
-            <Button onClick={() => setExpOpen(true)} size="sm" className="gap-2 h-9 rounded-lg">
-              <Plus size={14} /> Despesa
-            </Button>
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          {extrato.length === 0 ? (
-            <div className="py-12 text-center text-muted-foreground text-sm">
-              Nenhuma movimentação neste mês
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-display font-semibold flex items-center gap-2">
+                <ArrowUpCircle size={20} className="text-success" /> Entradas
+              </h2>
+              <p className="text-xs text-muted-foreground mt-0.5">Recebimentos do mês</p>
             </div>
-          ) : (
-            extrato.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`rounded-full p-2 ${item.type === "entrada" ? 'bg-success/10' : 'bg-danger/10'}`}>
-                    {item.type === "entrada" ? (
+            <div className="flex gap-2">
+              <Button onClick={() => setImportEntryOpen(true)} size="sm" variant="outline" className="gap-2 h-9 rounded-lg">
+                <Upload size={14} /> Importar
+              </Button>
+              <Button onClick={() => setEntryOpen(true)} size="sm" variant="outline" className="gap-2 h-9 rounded-lg">
+                <Plus size={14} /> Entrada
+              </Button>
+            </div>
+          </div>
+          <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+            {extrato.filter(i => i.type === "entrada").length === 0 ? (
+              <div className="py-8 text-center text-muted-foreground text-sm">
+                Nenhuma entrada neste mês
+              </div>
+            ) : (
+              extrato.filter(i => i.type === "entrada").map((item) => (
+                <div key={item.id} className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-full p-2 bg-success/10">
                       <ArrowUpCircle size={16} className="text-success" />
-                    ) : (
-                      <ArrowDownCircle size={16} className="text-danger" />
-                    )}
-                  </div>
-                  <div>
-                    <p className="font-medium text-sm">{item.description}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <p className="text-xs text-muted-foreground">{new Date(item.date).toLocaleDateString("pt-BR")}</p>
-                      <span className="text-xs text-muted-foreground">•</span>
-                      <span className="text-xs bg-muted px-2 py-0.5 rounded-full">{item.category}</span>
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">{item.description}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <p className="text-xs text-muted-foreground">{new Date(item.date).toLocaleDateString("pt-BR")}</p>
+                        <span className="text-xs text-muted-foreground">•</span>
+                        <span className="text-xs bg-muted px-2 py-0.5 rounded-full">{item.category}</span>
+                      </div>
                     </div>
                   </div>
+                  <p className="font-bold text-base text-success shrink-0">+ {fmt(item.amount)}</p>
                 </div>
-                <div className="text-right">
-                  <p className={`font-bold text-base ${item.type === "entrada" ? 'text-success' : 'text-danger'}`}>
-                    {item.type === "entrada" ? '+' : '-'} {fmt(item.amount)}
-                  </p>
-                </div>
+              ))
+            )}
+          </div>
+          <div className="mt-3 pt-3 border-t flex justify-between items-center">
+            <span className="text-xs text-muted-foreground font-medium">Total entradas</span>
+            <span className="font-display font-bold text-success">{fmt(extrato.filter(i => i.type === "entrada").reduce((s, i) => s + i.amount, 0))}</span>
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-display font-semibold flex items-center gap-2">
+                <ArrowDownCircle size={20} className="text-danger" /> Saídas
+              </h2>
+              <p className="text-xs text-muted-foreground mt-0.5">Despesas do mês</p>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={() => setImportExpOpen(true)} size="sm" variant="outline" className="gap-2 h-9 rounded-lg">
+                <Upload size={14} /> Importar
+              </Button>
+              <Button onClick={() => setExpOpen(true)} size="sm" className="gap-2 h-9 rounded-lg">
+                <Plus size={14} /> Despesa
+              </Button>
+            </div>
+          </div>
+          <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+            {extrato.filter(i => i.type === "saida").length === 0 ? (
+              <div className="py-8 text-center text-muted-foreground text-sm">
+                Nenhuma despesa neste mês
               </div>
-            ))
-          )}
-        </div>
-      </Card>
+            ) : (
+              extrato.filter(i => i.type === "saida").map((item) => (
+                <div key={item.id} className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-full p-2 bg-danger/10">
+                      <ArrowDownCircle size={16} className="text-danger" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">{item.description}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <p className="text-xs text-muted-foreground">{new Date(item.date).toLocaleDateString("pt-BR")}</p>
+                        <span className="text-xs text-muted-foreground">•</span>
+                        <span className="text-xs bg-muted px-2 py-0.5 rounded-full">{item.category}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="font-bold text-base text-danger shrink-0">- {fmt(item.amount)}</p>
+                </div>
+              ))
+            )}
+          </div>
+          <div className="mt-3 pt-3 border-t flex justify-between items-center">
+            <span className="text-xs text-muted-foreground font-medium">Total saídas</span>
+            <span className="font-display font-bold text-danger">{fmt(extrato.filter(i => i.type === "saida").reduce((s, i) => s + i.amount, 0))}</span>
+          </div>
+        </Card>
+      </div>
 
       <Dialog open={expOpen} onOpenChange={setExpOpen}>
         <DialogContent className="max-w-md">
