@@ -23,24 +23,36 @@ export default function Reports() {
   const [allExpenses, setAllExpenses] = useState<{ amount: number; date: string }[]>([]);
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), "yyyy-MM"));
 
+  const loadData = async () => {
+    try {
+      const [c, cl, ap, me, v, exp] = await Promise.all([
+        getContracts(), getClients(), getActivePayments(), getManualEntries(), getVisits(), getExpenses(),
+      ]);
+      setContracts(c);
+      setClientMap(Object.fromEntries(cl.map((x) => [x.id, x.name])));
+      setPayments([
+        ...ap.map((p) => ({ amount: p.amount, date: p.date })),
+        ...me.map((e) => ({ amount: e.amount, date: e.date })),
+      ]);
+      setVisits(v);
+      setAllExpenses(exp.map((e: any) => ({ amount: e.amount, date: e.date })));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { loadData(); }, []);
+
+  // Auto-refresh when page gains focus
   useEffect(() => {
-    (async () => {
-      try {
-        const [c, cl, ap, me, v, exp] = await Promise.all([
-          getContracts(), getClients(), getActivePayments(), getManualEntries(), getVisits(), getExpenses(),
-        ]);
-        setContracts(c);
-        setClientMap(Object.fromEntries(cl.map((x) => [x.id, x.name])));
-        setPayments([
-          ...ap.map((p) => ({ amount: p.amount, date: p.date })),
-          ...me.map((e) => ({ amount: e.amount, date: e.date })),
-        ]);
-        setVisits(v);
-        setAllExpenses(exp.map((e: any) => ({ amount: e.amount, date: e.date })));
-      } finally {
-        setLoading(false);
-      }
-    })();
+    const handleFocus = () => { loadData(); };
+    window.addEventListener("focus", handleFocus);
+    const handleVisibility = () => { if (document.visibilityState === "visible") loadData(); };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, []);
 
   const monthOptions = useMemo(() => {
