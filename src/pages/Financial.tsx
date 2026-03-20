@@ -183,7 +183,7 @@ export default function Financial() {
   }, 0);
 
   const aReceberProximoMes = nextMonthContracts.reduce((sum, c) => {
-    if (c.paymentStatus === "pending") return sum + c.totalValue;
+    if (c.paymentStatus === "pending") return sum + c.remainingValue;
     if (c.paymentStatus === "deposit_paid") return sum + c.remainingValue;
     return sum;
   }, 0);
