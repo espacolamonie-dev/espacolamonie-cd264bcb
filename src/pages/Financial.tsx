@@ -80,6 +80,24 @@ export default function Financial() {
   };
   useEffect(() => { load(); }, []);
 
+  // Load paid contracts from localStorage
+  useEffect(() => {
+    const key = `func_paid_${selectedMonth}`;
+    const saved = localStorage.getItem(key);
+    if (saved) setPaidContracts(new Set(JSON.parse(saved)));
+    else setPaidContracts(new Set());
+  }, [selectedMonth]);
+
+  const togglePaidContract = (contractId: string) => {
+    setPaidContracts(prev => {
+      const next = new Set(prev);
+      if (next.has(contractId)) next.delete(contractId); else next.add(contractId);
+      const key = `func_paid_${selectedMonth}`;
+      localStorage.setItem(key, JSON.stringify([...next]));
+      return next;
+    });
+  };
+
   // Auto-refresh when page gains focus (e.g. after editing contracts)
   useEffect(() => {
     const handleFocus = () => { load(); };
