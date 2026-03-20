@@ -480,6 +480,9 @@ export default function Financial() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ImportStatementModal open={importExpOpen} onOpenChange={setImportExpOpen} onImported={load} />
+      <ImportBankEntryModal open={importEntryOpen} onOpenChange={setImportEntryOpen} onImported={load} />
     </div>
   );
 }
