@@ -214,6 +214,7 @@ export default function Visits() {
         leadSource: formLeadSource,
         eventTypeDesired: formEventType,
         eventValue: formEventValue,
+        depositPercent: formDepositPercent,
         guestCount: formGuestCount,
       });
       toast.success("Visita agendada e cliente criado automaticamente!");
