@@ -70,6 +70,7 @@ export const addVisit = async (v: {
   leadSource?: LeadSource;
   eventTypeDesired?: string;
   eventValue?: number;
+  depositPercent?: number;
   guestCount?: number;
 }): Promise<Visit> => {
   const userId = await getUserId();
