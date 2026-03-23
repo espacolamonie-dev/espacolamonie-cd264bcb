@@ -126,6 +126,7 @@ export const addVisit = async (v: {
       lead_source: v.leadSource || "Orgânico",
       event_type_desired: v.eventTypeDesired || "",
       event_value: v.eventValue || 0,
+      deposit_percent: v.depositPercent || 0,
       guest_count: v.guestCount || 0,
       client_id: clientId,
     })
