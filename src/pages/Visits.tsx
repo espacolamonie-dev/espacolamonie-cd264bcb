@@ -472,6 +472,7 @@ export default function Visits() {
       leadSource: visit.leadSource || "Orgânico",
       eventTypeDesired: visit.eventTypeDesired || "",
       eventValue: visit.eventValue || 0,
+      depositPercent: visit.depositPercent || 0,
       guestCount: visit.guestCount || 0,
     });
     setEditing(true);
