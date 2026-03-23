@@ -239,6 +239,7 @@ export default function Visits() {
     if (v.eventTypeDesired) msg += `*Evento de interesse:* ${v.eventTypeDesired}\n`;
     if (v.guestCount > 0) msg += `*Quantidade de pessoas:* ${v.guestCount}\n`;
     if (v.eventValue > 0) msg += `*Valor informado:* ${formatCurrency(v.eventValue)}\n`;
+    if (v.depositPercent > 0) msg += `*Sinal para reserva:* ${v.depositPercent}%${v.eventValue > 0 ? ` (${formatCurrency(v.eventValue * v.depositPercent / 100)})` : ''}\n`;
     msg += `\nInformações da visita que será realizada em breve!`;
     return msg;
   };
