@@ -441,6 +441,7 @@ export default function Visits() {
         leadSource: editForm.leadSource,
         eventTypeDesired: editForm.eventTypeDesired,
         eventValue: editForm.eventValue,
+        depositPercent: editForm.depositPercent,
         guestCount: editForm.guestCount,
       };
       await updateVisit(detailVisit.id, updates);
