@@ -42,6 +42,7 @@ function mapVisit(row: any): Visit {
     guestCount: row.guest_count || 0,
     eventTypeDesired: row.event_type_desired || "",
     eventValue: Number(row.event_value) || 0,
+    depositPercent: Number(row.deposit_percent) || 0,
     clientId: row.client_id || null,
     googleEventId: row.google_event_id,
     createdAt: row.created_at,
