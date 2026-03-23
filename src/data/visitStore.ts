@@ -21,6 +21,7 @@ export interface Visit {
   guestCount: number;
   eventTypeDesired: string;
   eventValue: number;
+  depositPercent: number;
   clientId: string | null;
   googleEventId: string | null;
   createdAt: string;
@@ -41,6 +42,7 @@ function mapVisit(row: any): Visit {
     guestCount: row.guest_count || 0,
     eventTypeDesired: row.event_type_desired || "",
     eventValue: Number(row.event_value) || 0,
+    depositPercent: Number(row.deposit_percent) || 0,
     clientId: row.client_id || null,
     googleEventId: row.google_event_id,
     createdAt: row.created_at,
@@ -68,6 +70,7 @@ export const addVisit = async (v: {
   leadSource?: LeadSource;
   eventTypeDesired?: string;
   eventValue?: number;
+  depositPercent?: number;
   guestCount?: number;
 }): Promise<Visit> => {
   const userId = await getUserId();
@@ -123,6 +126,7 @@ export const addVisit = async (v: {
       lead_source: v.leadSource || "Orgânico",
       event_type_desired: v.eventTypeDesired || "",
       event_value: v.eventValue || 0,
+      deposit_percent: v.depositPercent || 0,
       guest_count: v.guestCount || 0,
       client_id: clientId,
     })
@@ -144,6 +148,7 @@ export const updateVisit = async (id: string, updates: Record<string, any>): Pro
     leadSource: "lead_source",
     eventTypeDesired: "event_type_desired",
     eventValue: "event_value",
+    depositPercent: "deposit_percent",
     guestCount: "guest_count",
     clientId: "client_id",
   };

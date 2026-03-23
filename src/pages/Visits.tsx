@@ -71,7 +71,7 @@ export default function Visits() {
   const [editForm, setEditForm] = useState({
     clientName: "", clientPhone: "", visitDate: "", visitTime: "",
     interestEventDate: "", notes: "", status: "" as string, leadSource: "Orgânico" as string,
-    eventTypeDesired: "", eventValue: 0, guestCount: 0,
+    eventTypeDesired: "", eventValue: 0, depositPercent: 0, guestCount: 0,
   });
   const isMobile = useIsMobile();
 
@@ -87,6 +87,7 @@ export default function Visits() {
   const [formLeadSource, setFormLeadSource] = useState<LeadSource>("Orgânico");
   const [formEventType, setFormEventType] = useState("");
   const [formEventValue, setFormEventValue] = useState(0);
+  const [formDepositPercent, setFormDepositPercent] = useState(0);
   const [formGuestCount, setFormGuestCount] = useState(0);
   const [dateConflicts, setDateConflicts] = useState<{ name: string; phone: string; stage: string; type: string }[]>([]);
   
@@ -192,7 +193,7 @@ export default function Visits() {
     setFormName(""); setFormPhone(""); setFormInterestDate("");
     setFormVisitDate(""); setFormVisitTime(""); setFormNotes("");
     setFormLeadSource("Orgânico"); setFormEventType(""); setFormEventValue(0);
-    setFormGuestCount(0);
+    setFormDepositPercent(0); setFormGuestCount(0);
     setDateConflicts([]);
   };
 
@@ -213,6 +214,7 @@ export default function Visits() {
         leadSource: formLeadSource,
         eventTypeDesired: formEventType,
         eventValue: formEventValue,
+        depositPercent: formDepositPercent,
         guestCount: formGuestCount,
       });
       toast.success("Visita agendada e cliente criado automaticamente!");
@@ -237,6 +239,7 @@ export default function Visits() {
     if (v.eventTypeDesired) msg += `*Evento de interesse:* ${v.eventTypeDesired}\n`;
     if (v.guestCount > 0) msg += `*Quantidade de pessoas:* ${v.guestCount}\n`;
     if (v.eventValue > 0) msg += `*Valor informado:* ${formatCurrency(v.eventValue)}\n`;
+    if (v.depositPercent > 0) msg += `*Sinal para reserva:* ${v.depositPercent}%${v.eventValue > 0 ? ` (${formatCurrency(v.eventValue * v.depositPercent / 100)})` : ''}\n`;
     msg += `\nInformações da visita que será realizada em breve!`;
     return msg;
   };
@@ -321,13 +324,17 @@ export default function Visits() {
             </SelectContent>
           </Select>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <div>
             <Label>Valor do evento</Label>
             <CurrencyInput value={formEventValue} onChange={setFormEventValue} placeholder="R$ 0,00" />
           </div>
           <div>
-            <Label>Qtd. de pessoas</Label>
+            <Label>% Sinal</Label>
+            <NumericInput value={formDepositPercent} onChange={setFormDepositPercent} placeholder="0" />
+          </div>
+          <div>
+            <Label>Qtd. pessoas</Label>
             <NumericInput value={formGuestCount} onChange={setFormGuestCount} placeholder="0" />
           </div>
         </div>
@@ -375,13 +382,17 @@ export default function Visits() {
             </SelectContent>
           </Select>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <div>
             <Label>Valor do evento</Label>
             <CurrencyInput value={editForm.eventValue} onChange={(v) => setEditForm(p => ({ ...p, eventValue: v }))} placeholder="R$ 0,00" />
           </div>
           <div>
-            <Label>Qtd. de pessoas</Label>
+            <Label>% Sinal</Label>
+            <NumericInput value={editForm.depositPercent} onChange={(v) => setEditForm(p => ({ ...p, depositPercent: v }))} placeholder="0" />
+          </div>
+          <div>
+            <Label>Qtd. pessoas</Label>
             <NumericInput value={editForm.guestCount} onChange={(v) => setEditForm(p => ({ ...p, guestCount: v }))} placeholder="0" />
           </div>
         </div>
@@ -430,6 +441,7 @@ export default function Visits() {
         leadSource: editForm.leadSource,
         eventTypeDesired: editForm.eventTypeDesired,
         eventValue: editForm.eventValue,
+        depositPercent: editForm.depositPercent,
         guestCount: editForm.guestCount,
       };
       await updateVisit(detailVisit.id, updates);
@@ -469,6 +481,7 @@ export default function Visits() {
       leadSource: visit.leadSource || "Orgânico",
       eventTypeDesired: visit.eventTypeDesired || "",
       eventValue: visit.eventValue || 0,
+      depositPercent: visit.depositPercent || 0,
       guestCount: visit.guestCount || 0,
     });
     setEditing(true);
@@ -484,6 +497,9 @@ export default function Visits() {
       )}
       {visit.eventValue > 0 && (
         <div className="flex justify-between"><span className="text-muted-foreground">Valor do evento</span><span className="font-semibold">{formatCurrency(visit.eventValue)}</span></div>
+      )}
+      {visit.depositPercent > 0 && (
+        <div className="flex justify-between"><span className="text-muted-foreground">Sinal para reserva</span><span className="font-semibold">{visit.depositPercent}%{visit.eventValue > 0 ? ` (${formatCurrency(visit.eventValue * visit.depositPercent / 100)})` : ''}</span></div>
       )}
       {visit.guestCount > 0 && (
         <div className="flex justify-between"><span className="text-muted-foreground">Qtd. de pessoas</span><span>{visit.guestCount}</span></div>
