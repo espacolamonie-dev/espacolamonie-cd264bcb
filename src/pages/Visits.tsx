@@ -193,7 +193,7 @@ export default function Visits() {
     setFormName(""); setFormPhone(""); setFormInterestDate("");
     setFormVisitDate(""); setFormVisitTime(""); setFormNotes("");
     setFormLeadSource("Orgânico"); setFormEventType(""); setFormEventValue(0);
-    setFormGuestCount(0);
+    setFormDepositPercent(0); setFormGuestCount(0);
     setDateConflicts([]);
   };
 
