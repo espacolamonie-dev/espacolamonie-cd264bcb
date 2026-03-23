@@ -237,6 +237,7 @@ export default function Visits() {
     msg += `*Data da visita:* ${visitDateFmt}\n`;
     msg += `*Horário:* ${timeFmt}\n`;
     if (v.eventTypeDesired) msg += `*Evento de interesse:* ${v.eventTypeDesired}\n`;
+    if (v.interestEventDate) msg += `*Data de interesse:* ${format(new Date(v.interestEventDate + "T12:00:00"), "dd/MM/yyyy")}\n`;
     if (v.guestCount > 0) msg += `*Quantidade de pessoas:* ${v.guestCount}\n`;
     if (v.eventValue > 0) msg += `*Valor informado:* ${formatCurrency(v.eventValue)}\n`;
     if (v.depositPercent > 0) msg += `*Sinal para reserva:* ${v.depositPercent}%${v.eventValue > 0 ? ` (${formatCurrency(v.eventValue * v.depositPercent / 100)})` : ''}\n`;
