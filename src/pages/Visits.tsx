@@ -382,13 +382,17 @@ export default function Visits() {
             </SelectContent>
           </Select>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <div>
             <Label>Valor do evento</Label>
             <CurrencyInput value={editForm.eventValue} onChange={(v) => setEditForm(p => ({ ...p, eventValue: v }))} placeholder="R$ 0,00" />
           </div>
           <div>
-            <Label>Qtd. de pessoas</Label>
+            <Label>% Sinal</Label>
+            <NumericInput value={editForm.depositPercent} onChange={(v) => setEditForm(p => ({ ...p, depositPercent: v }))} placeholder="0" />
+          </div>
+          <div>
+            <Label>Qtd. pessoas</Label>
             <NumericInput value={editForm.guestCount} onChange={(v) => setEditForm(p => ({ ...p, guestCount: v }))} placeholder="0" />
           </div>
         </div>
