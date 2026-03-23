@@ -324,13 +324,17 @@ export default function Visits() {
             </SelectContent>
           </Select>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <div>
             <Label>Valor do evento</Label>
             <CurrencyInput value={formEventValue} onChange={setFormEventValue} placeholder="R$ 0,00" />
           </div>
           <div>
-            <Label>Qtd. de pessoas</Label>
+            <Label>% Sinal</Label>
+            <NumericInput value={formDepositPercent} onChange={setFormDepositPercent} placeholder="0" />
+          </div>
+          <div>
+            <Label>Qtd. pessoas</Label>
             <NumericInput value={formGuestCount} onChange={setFormGuestCount} placeholder="0" />
           </div>
         </div>
