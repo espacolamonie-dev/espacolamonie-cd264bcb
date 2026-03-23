@@ -90,37 +90,40 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/auth" element={<AuthRoute />} />
-          <Route path="/sign" element={<SignContract />} />
-          <Route path="/assinar/:slug" element={<SignContract />} />
-          <Route path="/agendar-visita" element={<BookVisit />} />
-          <Route path="/datas-eventos" element={<EventDates />} />
-          <Route path="/orcamento/:token" element={<BudgetPublicView />} />
-          <Route
-            path="/*"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <Routes>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route path="/clients" element={<Clients />} />
-                    <Route path="/contracts" element={<Contracts />} />
-                    <Route path="/financial" element={<Financial />} />
-                    <Route path="/agenda" element={<Agenda />} />
-                    <Route path="/reports" element={<Reports />} />
-                    <Route path="/budgets" element={<Budgets />} />
-                    <Route path="/visits" element={<Visits />} />
-                    
-                    <Route path="/settings" element={<Settings />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </Layout>
-                <PushNotificationPrompt />
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/auth" element={<AuthRoute />} />
+            <Route path="/sign" element={<SignContract />} />
+            <Route path="/assinar/:slug" element={<SignContract />} />
+            <Route path="/agendar-visita" element={<BookVisit />} />
+            <Route path="/datas-eventos" element={<EventDates />} />
+            <Route path="/orcamento/:token" element={<BudgetPublicView />} />
+            <Route
+              path="/*"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Suspense fallback={<PageLoader />}>
+                      <Routes>
+                        <Route path="/" element={<Dashboard />} />
+                        <Route path="/clients" element={<Clients />} />
+                        <Route path="/contracts" element={<Contracts />} />
+                        <Route path="/financial" element={<Financial />} />
+                        <Route path="/agenda" element={<Agenda />} />
+                        <Route path="/reports" element={<Reports />} />
+                        <Route path="/budgets" element={<Budgets />} />
+                        <Route path="/visits" element={<Visits />} />
+                        <Route path="/settings" element={<Settings />} />
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </Suspense>
+                  </Layout>
+                  <PushNotificationPrompt />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
