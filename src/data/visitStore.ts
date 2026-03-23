@@ -21,6 +21,7 @@ export interface Visit {
   guestCount: number;
   eventTypeDesired: string;
   eventValue: number;
+  depositPercent: number;
   clientId: string | null;
   googleEventId: string | null;
   createdAt: string;
