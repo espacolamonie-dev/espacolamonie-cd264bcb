@@ -1,0 +1,1 @@
+ALTER TABLE public.visits ADD COLUMN deposit_percent numeric DEFAULT 0 NOT NULL;
