@@ -498,6 +498,9 @@ export default function Visits() {
       {visit.eventValue > 0 && (
         <div className="flex justify-between"><span className="text-muted-foreground">Valor do evento</span><span className="font-semibold">{formatCurrency(visit.eventValue)}</span></div>
       )}
+      {visit.depositPercent > 0 && (
+        <div className="flex justify-between"><span className="text-muted-foreground">Sinal para reserva</span><span className="font-semibold">{visit.depositPercent}%{visit.eventValue > 0 ? ` (${formatCurrency(visit.eventValue * visit.depositPercent / 100)})` : ''}</span></div>
+      )}
       {visit.guestCount > 0 && (
         <div className="flex justify-between"><span className="text-muted-foreground">Qtd. de pessoas</span><span>{visit.guestCount}</span></div>
       )}
