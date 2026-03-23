@@ -148,6 +148,7 @@ export const updateVisit = async (id: string, updates: Record<string, any>): Pro
     leadSource: "lead_source",
     eventTypeDesired: "event_type_desired",
     eventValue: "event_value",
+    depositPercent: "deposit_percent",
     guestCount: "guest_count",
     clientId: "client_id",
   };
