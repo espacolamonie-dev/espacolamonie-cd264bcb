@@ -87,6 +87,7 @@ export default function Visits() {
   const [formLeadSource, setFormLeadSource] = useState<LeadSource>("Orgânico");
   const [formEventType, setFormEventType] = useState("");
   const [formEventValue, setFormEventValue] = useState(0);
+  const [formDepositPercent, setFormDepositPercent] = useState(0);
   const [formGuestCount, setFormGuestCount] = useState(0);
   const [dateConflicts, setDateConflicts] = useState<{ name: string; phone: string; stage: string; type: string }[]>([]);
   
