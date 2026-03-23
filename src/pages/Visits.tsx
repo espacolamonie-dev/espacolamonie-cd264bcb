@@ -71,7 +71,7 @@ export default function Visits() {
   const [editForm, setEditForm] = useState({
     clientName: "", clientPhone: "", visitDate: "", visitTime: "",
     interestEventDate: "", notes: "", status: "" as string, leadSource: "Orgânico" as string,
-    eventTypeDesired: "", eventValue: 0, guestCount: 0,
+    eventTypeDesired: "", eventValue: 0, depositPercent: 0, guestCount: 0,
   });
   const isMobile = useIsMobile();
 
