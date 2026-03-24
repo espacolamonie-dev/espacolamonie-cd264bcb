@@ -82,7 +82,19 @@ export default function Contracts() {
     const matchSearch = !search ||
       (client?.name || "").toLowerCase().includes(search.toLowerCase()) ||
       (client?.cpf || "").includes(search);
-    const matchStatus = statusFilter === "all" || c.status === statusFilter;
+
+    let matchStatus = true;
+    if (statusFilter === "created_today") {
+      matchStatus = getLocalDateStr(c.createdAt || "") === todayStr;
+    } else if (statusFilter === "created_month") {
+      const d = new Date(c.createdAt || c.eventDate);
+      matchStatus = d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    } else if (statusFilter === "active_only") {
+      matchStatus = c.status !== "cancelled";
+    } else if (statusFilter !== "all") {
+      matchStatus = c.status === statusFilter;
+    }
+
     let matchPayment = true;
     if (paymentFilter === "pending_urgent") {
       const sevenDays = new Date();
@@ -230,31 +242,40 @@ export default function Contracts() {
 
       {/* Stats cards */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="rounded-xl border border-border bg-card p-4 flex items-center gap-3">
+        <div
+          className={`rounded-xl border bg-card p-4 flex items-center gap-3 cursor-pointer hover:border-primary/50 transition-colors ${statusFilter === "created_today" ? "border-primary/50 ring-1 ring-primary/20" : "border-border"}`}
+          onClick={() => setStatusFilter(statusFilter === "created_today" ? "all" : "created_today")}
+        >
           <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
             <CalendarCheck size={20} className="text-primary" />
           </div>
           <div>
             <p className="text-2xl font-bold tabular-nums">{contractsToday}</p>
-            <p className="text-xs text-muted-foreground">Hoje</p>
+            <p className="text-xs text-muted-foreground">Hoje {statusFilter === "created_today" && "· Filtrado"}</p>
           </div>
         </div>
-        <div className="rounded-xl border border-border bg-card p-4 flex items-center gap-3">
+        <div
+          className={`rounded-xl border bg-card p-4 flex items-center gap-3 cursor-pointer hover:border-primary/50 transition-colors ${statusFilter === "created_month" ? "border-primary/50 ring-1 ring-primary/20" : "border-border"}`}
+          onClick={() => setStatusFilter(statusFilter === "created_month" ? "all" : "created_month")}
+        >
           <div className="h-10 w-10 rounded-lg bg-accent/50 flex items-center justify-center shrink-0">
             <FileText size={20} className="text-foreground" />
           </div>
           <div>
             <p className="text-2xl font-bold tabular-nums">{contractsThisMonth}</p>
-            <p className="text-xs text-muted-foreground">Este mês</p>
+            <p className="text-xs text-muted-foreground">Este mês {statusFilter === "created_month" && "· Filtrado"}</p>
           </div>
         </div>
-        <div className="rounded-xl border border-border bg-card p-4 flex items-center gap-3">
+        <div
+          className={`rounded-xl border bg-card p-4 flex items-center gap-3 cursor-pointer hover:border-primary/50 transition-colors ${statusFilter === "active_only" ? "border-primary/50 ring-1 ring-primary/20" : "border-border"}`}
+          onClick={() => setStatusFilter(statusFilter === "active_only" ? "all" : "active_only")}
+        >
           <div className="h-10 w-10 rounded-lg bg-green-500/10 flex items-center justify-center shrink-0">
             <Activity size={20} className="text-green-600" />
           </div>
           <div>
             <p className="text-2xl font-bold tabular-nums">{activeContracts}</p>
-            <p className="text-xs text-muted-foreground">Ativos</p>
+            <p className="text-xs text-muted-foreground">Ativos {statusFilter === "active_only" && "· Filtrado"}</p>
           </div>
         </div>
       </div>
