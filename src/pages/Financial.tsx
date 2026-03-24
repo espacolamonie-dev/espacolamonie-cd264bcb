@@ -306,6 +306,12 @@ export default function Financial() {
     return entries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [activePayments, manualEntries, expenses, contractClientMap, monthStart, monthEnd]);
 
+  const filteredExtrato = useMemo(() => {
+    if (extratoFilter === "entradas") return extrato.filter(i => i.type === "entrada");
+    if (extratoFilter === "despesas") return extrato.filter(i => i.type === "saida");
+    return extrato;
+  }, [extrato, extratoFilter]);
+
   const mediasGastos = useMemo(() => {
     const categorias = ["Energia (CEMIG)", "Água (COPASA)", "Internet"];
     const result: Record<string, number> = {};
