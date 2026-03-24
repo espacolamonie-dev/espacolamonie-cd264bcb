@@ -169,8 +169,12 @@ export default function Visits() {
   }, [visits]);
 
   const filtered = useMemo(() => {
+    const spFormatter = new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" });
+    const today = spFormatter.format(new Date());
     let list = visits;
-    if (filterStatus === "all") {
+    if (filterStatus === "today") {
+      list = list.filter((v) => v.visitDate === today && v.status !== "Cancelada");
+    } else if (filterStatus === "all") {
       list = list.filter((v) => v.status !== "Cancelada");
     } else {
       list = list.filter((v) => v.status === filterStatus);
