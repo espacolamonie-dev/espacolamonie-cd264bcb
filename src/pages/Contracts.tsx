@@ -82,7 +82,19 @@ export default function Contracts() {
     const matchSearch = !search ||
       (client?.name || "").toLowerCase().includes(search.toLowerCase()) ||
       (client?.cpf || "").includes(search);
-    const matchStatus = statusFilter === "all" || c.status === statusFilter;
+
+    let matchStatus = true;
+    if (statusFilter === "created_today") {
+      matchStatus = getLocalDateStr(c.createdAt || "") === todayStr;
+    } else if (statusFilter === "created_month") {
+      const d = new Date(c.createdAt || c.eventDate);
+      matchStatus = d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    } else if (statusFilter === "active_only") {
+      matchStatus = c.status !== "cancelled";
+    } else if (statusFilter !== "all") {
+      matchStatus = c.status === statusFilter;
+    }
+
     let matchPayment = true;
     if (paymentFilter === "pending_urgent") {
       const sevenDays = new Date();
