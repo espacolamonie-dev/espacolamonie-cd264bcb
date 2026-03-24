@@ -566,10 +566,20 @@ export default function Visits() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="rounded-xl border border-border bg-card p-4">
+        <div
+          className="rounded-xl border border-border bg-card p-4 cursor-pointer hover:border-primary/50 transition-colors"
+          onClick={() => {
+            if (filterStatus === "today") {
+              setFilterStatus("all");
+            } else {
+              setFilterStatus("today");
+            }
+          }}
+        >
           <div className="flex items-center gap-2 text-muted-foreground mb-1">
             <CalendarDays size={14} />
             <span className="text-xs font-medium">Visitas Hoje</span>
+            {filterStatus === "today" && <Badge variant="outline" className="text-[9px] px-1.5 py-0 ml-auto">Filtrado</Badge>}
           </div>
           <p className="text-2xl font-bold">{stats.visitsToday}</p>
         </div>
