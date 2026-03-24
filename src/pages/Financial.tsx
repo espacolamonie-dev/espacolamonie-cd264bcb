@@ -92,16 +92,20 @@ export default function Financial() {
     localStorage.setItem(`func_pago_${selectedMonth}`, String(val));
   };
 
-  // Auto-refresh when page gains focus (e.g. after editing contracts)
+  // Auto-refresh when page gains focus or periodically
   useEffect(() => {
     const handleFocus = () => { load(); };
-    window.addEventListener("focus", handleFocus);
-    document.addEventListener("visibilitychange", () => {
+    const handleVisibility = () => {
       if (document.visibilityState === "visible") load();
-    });
+    };
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibility);
+    // Poll every 5s to catch real-time contract updates
+    const interval = setInterval(load, 5000);
     return () => {
       window.removeEventListener("focus", handleFocus);
-      document.removeEventListener("visibilitychange", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      clearInterval(interval);
     };
   }, []);
 
