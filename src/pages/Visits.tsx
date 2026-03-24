@@ -169,8 +169,12 @@ export default function Visits() {
   }, [visits]);
 
   const filtered = useMemo(() => {
+    const spFormatter = new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" });
+    const today = spFormatter.format(new Date());
     let list = visits;
-    if (filterStatus === "all") {
+    if (filterStatus === "today") {
+      list = list.filter((v) => v.visitDate === today && v.status !== "Cancelada");
+    } else if (filterStatus === "all") {
       list = list.filter((v) => v.status !== "Cancelada");
     } else {
       list = list.filter((v) => v.status === filterStatus);
@@ -566,10 +570,20 @@ export default function Visits() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="rounded-xl border border-border bg-card p-4">
+        <div
+          className="rounded-xl border border-border bg-card p-4 cursor-pointer hover:border-primary/50 transition-colors"
+          onClick={() => {
+            if (filterStatus === "today") {
+              setFilterStatus("all");
+            } else {
+              setFilterStatus("today");
+            }
+          }}
+        >
           <div className="flex items-center gap-2 text-muted-foreground mb-1">
             <CalendarDays size={14} />
             <span className="text-xs font-medium">Visitas Hoje</span>
+            {filterStatus === "today" && <Badge variant="outline" className="text-[9px] px-1.5 py-0 ml-auto">Filtrado</Badge>}
           </div>
           <p className="text-2xl font-bold">{stats.visitsToday}</p>
         </div>
