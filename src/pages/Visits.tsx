@@ -172,8 +172,15 @@ export default function Visits() {
     const spFormatter = new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" });
     const today = spFormatter.format(new Date());
     let list = visits;
+    const toLocalDate = (isoStr: string) => spFormatter.format(new Date(isoStr));
     if (filterStatus === "today") {
       list = list.filter((v) => v.visitDate === today && v.status !== "Cancelada");
+    } else if (filterStatus === "scheduled_today") {
+      list = list.filter((v) => toLocalDate(v.createdAt) === today && v.status !== "Cancelada");
+    } else if (filterStatus === "organic") {
+      list = list.filter((v) => v.leadSource === "Orgânico" && v.status !== "Cancelada");
+    } else if (filterStatus === "paid_traffic") {
+      list = list.filter((v) => v.leadSource === "Tráfego Pago" && v.status !== "Cancelada");
     } else if (filterStatus === "all") {
       list = list.filter((v) => v.status !== "Cancelada");
     } else {
@@ -571,14 +578,8 @@ export default function Visits() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div
-          className="rounded-xl border border-border bg-card p-4 cursor-pointer hover:border-primary/50 transition-colors"
-          onClick={() => {
-            if (filterStatus === "today") {
-              setFilterStatus("all");
-            } else {
-              setFilterStatus("today");
-            }
-          }}
+          className={`rounded-xl border bg-card p-4 cursor-pointer hover:border-primary/50 transition-colors ${filterStatus === "today" ? "border-primary/50 ring-1 ring-primary/20" : "border-border"}`}
+          onClick={() => setFilterStatus(filterStatus === "today" ? "all" : "today")}
         >
           <div className="flex items-center gap-2 text-muted-foreground mb-1">
             <CalendarDays size={14} />
@@ -587,24 +588,36 @@ export default function Visits() {
           </div>
           <p className="text-2xl font-bold">{stats.visitsToday}</p>
         </div>
-        <div className="rounded-xl border border-border bg-card p-4">
+        <div
+          className={`rounded-xl border bg-card p-4 cursor-pointer hover:border-primary/50 transition-colors ${filterStatus === "scheduled_today" ? "border-primary/50 ring-1 ring-primary/20" : "border-border"}`}
+          onClick={() => setFilterStatus(filterStatus === "scheduled_today" ? "all" : "scheduled_today")}
+        >
           <div className="flex items-center gap-2 text-muted-foreground mb-1">
             <Plus size={14} />
             <span className="text-xs font-medium">Agendadas Hoje - {stats.spDayMonth}</span>
+            {filterStatus === "scheduled_today" && <Badge variant="outline" className="text-[9px] px-1.5 py-0 ml-auto">Filtrado</Badge>}
           </div>
           <p className="text-2xl font-bold">{stats.scheduledToday}</p>
         </div>
-        <div className="rounded-xl border border-border bg-card p-4">
+        <div
+          className={`rounded-xl border bg-card p-4 cursor-pointer hover:border-primary/50 transition-colors ${filterStatus === "organic" ? "border-primary/50 ring-1 ring-primary/20" : "border-border"}`}
+          onClick={() => setFilterStatus(filterStatus === "organic" ? "all" : "organic")}
+        >
           <div className="flex items-center gap-2 text-muted-foreground mb-1">
             <Users size={14} />
             <span className="text-xs font-medium">Orgânico</span>
+            {filterStatus === "organic" && <Badge variant="outline" className="text-[9px] px-1.5 py-0 ml-auto">Filtrado</Badge>}
           </div>
           <p className="text-2xl font-bold">{stats.organicCount}<span className="text-sm font-normal text-muted-foreground ml-1">/ {stats.totalLeads}</span></p>
         </div>
-        <div className="rounded-xl border border-border bg-card p-4">
+        <div
+          className={`rounded-xl border bg-card p-4 cursor-pointer hover:border-primary/50 transition-colors ${filterStatus === "paid_traffic" ? "border-primary/50 ring-1 ring-primary/20" : "border-border"}`}
+          onClick={() => setFilterStatus(filterStatus === "paid_traffic" ? "all" : "paid_traffic")}
+        >
           <div className="flex items-center gap-2 text-muted-foreground mb-1">
             <Megaphone size={14} />
             <span className="text-xs font-medium">Tráfego Pago</span>
+            {filterStatus === "paid_traffic" && <Badge variant="outline" className="text-[9px] px-1.5 py-0 ml-auto">Filtrado</Badge>}
           </div>
           <p className="text-2xl font-bold">{stats.paidCount}<span className="text-sm font-normal text-muted-foreground ml-1">/ {stats.totalLeads}</span></p>
         </div>
