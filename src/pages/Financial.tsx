@@ -51,6 +51,7 @@ export default function Financial() {
   const [selectedExpenses, setSelectedExpenses] = useState<Set<string>>(new Set());
   const [funcModalOpen, setFuncModalOpen] = useState(false);
   const [funcValorPago, setFuncValorPago] = useState(0);
+  const [extratoFilter, setExtratoFilter] = useState<string>("all");
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -361,7 +362,10 @@ export default function Financial() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
-        <Card className="p-4 border-warning/30 bg-gradient-to-br from-warning/5 to-transparent">
+        <Card
+          className={`p-4 cursor-pointer hover:shadow-md transition-shadow ${extratoFilter === "a_receber" ? "ring-2 ring-warning/50" : ""} border-warning/30 bg-gradient-to-br from-warning/5 to-transparent`}
+          onClick={() => setExtratoFilter(extratoFilter === "a_receber" ? "all" : "a_receber")}
+        >
           <div className="flex items-center gap-2 mb-2">
             <div className="rounded-full bg-warning/15 p-2">
               <Calendar size={16} className="text-warning" />
@@ -369,10 +373,13 @@ export default function Financial() {
             <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">A Receber (Mês Atual)</p>
           </div>
           <p className="text-2xl lg:text-3xl font-display font-bold text-warning tracking-tight">{fmt(aReceberMesAtual)}</p>
-          <p className="text-[10px] text-muted-foreground mt-1">{monthContracts.length} evento(s) neste mês</p>
+          <p className="text-[10px] text-muted-foreground mt-1">{monthContracts.length} evento(s) neste mês {extratoFilter === "a_receber" && "· Filtrado"}</p>
         </Card>
 
-        <Card className="p-4 border-primary/30 bg-gradient-to-br from-primary/5 to-transparent">
+        <Card
+          className={`p-4 cursor-pointer hover:shadow-md transition-shadow ${extratoFilter === "a_receber_proximo" ? "ring-2 ring-primary/50" : ""} border-primary/30 bg-gradient-to-br from-primary/5 to-transparent`}
+          onClick={() => setExtratoFilter(extratoFilter === "a_receber_proximo" ? "all" : "a_receber_proximo")}
+        >
           <div className="flex items-center gap-2 mb-2">
             <div className="rounded-full bg-primary/15 p-2">
               <Calendar size={16} className="text-primary" />
@@ -380,10 +387,13 @@ export default function Financial() {
             <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">A Receber (Próximo Mês)</p>
           </div>
           <p className="text-2xl lg:text-3xl font-display font-bold text-primary tracking-tight">{fmt(aReceberProximoMes)}</p>
-          <p className="text-[10px] text-muted-foreground mt-1">{nextMonthContracts.length} evento(s) no próximo mês</p>
+          <p className="text-[10px] text-muted-foreground mt-1">{nextMonthContracts.length} evento(s) no próximo mês {extratoFilter === "a_receber_proximo" && "· Filtrado"}</p>
         </Card>
 
-        <Card className="p-4 border-success/30 bg-gradient-to-br from-success/5 to-transparent">
+        <Card
+          className={`p-4 cursor-pointer hover:shadow-md transition-shadow ${extratoFilter === "entradas" ? "ring-2 ring-success/50" : ""} border-success/30 bg-gradient-to-br from-success/5 to-transparent`}
+          onClick={() => setExtratoFilter(extratoFilter === "entradas" ? "all" : "entradas")}
+        >
           <div className="flex items-center gap-2 mb-2">
             <div className="rounded-full bg-success/15 p-2">
               <TrendingUp size={16} className="text-success" />
@@ -391,10 +401,13 @@ export default function Financial() {
             <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Recebido no Mês</p>
           </div>
           <p className="text-2xl lg:text-3xl font-display font-bold text-success tracking-tight">{fmt(recebidoNoMes)}</p>
-          <p className="text-[10px] text-muted-foreground mt-1">Valores já recebidos</p>
+          <p className="text-[10px] text-muted-foreground mt-1">Valores já recebidos {extratoFilter === "entradas" && "· Filtrado"}</p>
         </Card>
 
-        <Card className="p-4 border-danger/30 bg-gradient-to-br from-danger/5 to-transparent">
+        <Card
+          className={`p-4 cursor-pointer hover:shadow-md transition-shadow ${extratoFilter === "despesas" ? "ring-2 ring-danger/50" : ""} border-danger/30 bg-gradient-to-br from-danger/5 to-transparent`}
+          onClick={() => setExtratoFilter(extratoFilter === "despesas" ? "all" : "despesas")}
+        >
           <div className="flex items-center gap-2 mb-2">
             <div className="rounded-full bg-danger/15 p-2">
               <TrendingDown size={16} className="text-danger" />
@@ -402,7 +415,7 @@ export default function Financial() {
             <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Despesas do Mês</p>
           </div>
           <p className="text-2xl lg:text-3xl font-display font-bold text-danger tracking-tight">{fmt(despesasDoMes)}</p>
-          <p className="text-[10px] text-muted-foreground mt-1">Gastos operacionais</p>
+          <p className="text-[10px] text-muted-foreground mt-1">Gastos operacionais {extratoFilter === "despesas" && "· Filtrado"}</p>
         </Card>
 
         <Card className={`p-4 ${lucroDoMes >= 0 ? 'border-success/30 bg-gradient-to-br from-success/5' : 'border-danger/30 bg-gradient-to-br from-danger/5'} to-transparent`}>
