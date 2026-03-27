@@ -1,0 +1,461 @@
+import { useState, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  CheckCircle, CreditCard, Clock, QrCode, Copy, Upload,
+  Loader2, CalendarIcon, ExternalLink, Smartphone
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+
+const fmt = (v: number) => Number(v).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+const PIX_CNPJ = "61.075.137/0001-08";
+const PIX_CNPJ_CLEAN = "61075137000108";
+const WHATSAPP_NUMBER = "5531997111502";
+
+interface Props {
+  clientName: string;
+  totalValue: number;
+  depositPercent: number;
+  contractId: string;
+  token: string;
+  userId: string;
+  onComplete: () => void;
+}
+
+type PaymentMethod = null | "pix" | "card" | "later";
+
+function generatePixPayload(amount: number): string {
+  const formatField = (id: string, value: string) => {
+    return `${id}${value.length.toString().padStart(2, "0")}${value}`;
+  };
+  const merchantAccount = formatField("00", "br.gov.bcb.pix") + formatField("01", PIX_CNPJ_CLEAN);
+  const merchantAccountField = formatField("26", merchantAccount);
+  const amountStr = amount.toFixed(2);
+
+  let payload = "";
+  payload += formatField("00", "01"); // Payload Format
+  payload += merchantAccountField;
+  payload += formatField("52", "0000"); // MCC
+  payload += formatField("53", "986"); // Currency BRL
+  payload += formatField("54", amountStr); // Amount
+  payload += formatField("58", "BR"); // Country
+  payload += formatField("59", "ESPACO LAMONIE"); // Merchant Name
+  payload += formatField("60", "RIBEIRAO NEVES"); // City
+  payload += formatField("62", formatField("05", "***")); // Additional Data
+
+  // CRC16 placeholder
+  payload += "6304";
+  // Calculate CRC16-CCITT
+  const crc = crc16ccitt(payload);
+  payload += crc;
+  return payload;
+}
+
+function crc16ccitt(str: string): string {
+  let crc = 0xFFFF;
+  for (let i = 0; i < str.length; i++) {
+    crc ^= str.charCodeAt(i) << 8;
+    for (let j = 0; j < 8; j++) {
+      if (crc & 0x8000) crc = (crc << 1) ^ 0x1021;
+      else crc <<= 1;
+      crc &= 0xFFFF;
+    }
+  }
+  return crc.toString(16).toUpperCase().padStart(4, "0");
+}
+
+export default function SignContractPayment({
+  clientName, totalValue, depositPercent, contractId, token, userId, onComplete
+}: Props) {
+  const [method, setMethod] = useState<PaymentMethod>(null);
+  const [copied, setCopied] = useState(false);
+  const [installments, setInstallments] = useState<number | null>(null);
+  const [laterDate, setLaterDate] = useState<Date | undefined>(undefined);
+  const [uploading, setUploading] = useState(false);
+  const [receiptSent, setReceiptSent] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const depositValue = (totalValue * depositPercent) / 100;
+  const pixPayload = generatePixPayload(depositValue);
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(pixPayload)}`;
+
+  const FUNC_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sign-contract`;
+
+  const copyPix = async () => {
+    try {
+      await navigator.clipboard.writeText(pixPayload);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    } catch {
+      // fallback
+      const el = document.createElement("textarea");
+      el.value = pixPayload;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    }
+  };
+
+  const handleUploadReceipt = async (file: File) => {
+    setUploading(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64 = (reader.result as string).split(",")[1];
+        const res = await fetch(FUNC_URL, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            token,
+            action: "upload-receipt",
+            file_base64: base64,
+            file_name: file.name,
+            file_type: file.type,
+            payment_method: "pix",
+          }),
+        });
+        const result = await res.json();
+        if (result.success) {
+          setReceiptSent(true);
+        }
+        setUploading(false);
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      setUploading(false);
+    }
+  };
+
+  const openWhatsApp = (message: string) => {
+    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+    window.open(url, "_blank");
+    onComplete();
+  };
+
+  const handleCardPayment = () => {
+    if (!installments) return;
+    const msg = `Olá! Assinei o contrato e quero realizar o pagamento do sinal no cartão de crédito.\n\nNome: ${clientName}\nValor do sinal: ${fmt(depositValue)}\nParcelamento: ${installments}x\n\nPodem me orientar para seguir com o pagamento?`;
+    openWhatsApp(msg);
+  };
+
+  const handleLaterPayment = () => {
+    if (!laterDate) return;
+    const dateStr = format(laterDate, "dd/MM/yyyy");
+    const msg = `Olá! Assinei o contrato e quero combinar o pagamento do sinal para outro dia.\n\nNome: ${clientName}\nValor do sinal: ${fmt(depositValue)}\nData prevista para pagamento: ${dateStr}\n\nPodem confirmar se está tudo certo?`;
+    openWhatsApp(msg);
+  };
+
+  // ═══ METHOD SELECTION ═══
+  if (!method) {
+    return (
+      <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        {/* Success banner */}
+        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-5 text-center">
+          <div className="bg-emerald-500/15 rounded-full h-14 w-14 flex items-center justify-center mx-auto mb-3">
+            <CheckCircle className="h-7 w-7 text-emerald-600" />
+          </div>
+          <h2 className="text-lg font-display font-semibold text-foreground">Contrato assinado com sucesso!</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Agora falta apenas o pagamento do sinal para garantir sua reserva.
+          </p>
+        </div>
+
+        {/* Deposit value highlight */}
+        <div className="bg-card rounded-2xl border border-border shadow-sm p-5 text-center">
+          <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Valor do sinal</p>
+          <p className="text-3xl font-bold text-primary">{fmt(depositValue)}</p>
+          <div className="flex items-center justify-center gap-3 mt-3 text-xs text-muted-foreground">
+            <span>Total: {fmt(totalValue)}</span>
+            <span className="w-1 h-1 rounded-full bg-muted-foreground/40" />
+            <span>Sinal: {depositPercent}%</span>
+          </div>
+        </div>
+
+        {/* Payment options */}
+        <div>
+          <h3 className="text-base font-display font-semibold text-foreground mb-3 text-center">
+            Escolha a forma de pagamento
+          </h3>
+          <div className="grid gap-3">
+            <button
+              onClick={() => setMethod("pix")}
+              className="bg-card rounded-xl border border-border p-4 text-left hover:border-primary/40 hover:shadow-md transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="h-11 w-11 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
+                  <QrCode size={22} className="text-emerald-600" />
+                </div>
+                <div>
+                  <p className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors">PIX</p>
+                  <p className="text-xs text-muted-foreground">Pagamento instantâneo via QR Code ou chave</p>
+                </div>
+              </div>
+            </button>
+            <button
+              onClick={() => setMethod("card")}
+              className="bg-card rounded-xl border border-border p-4 text-left hover:border-primary/40 hover:shadow-md transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="h-11 w-11 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
+                  <CreditCard size={22} className="text-blue-600" />
+                </div>
+                <div>
+                  <p className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors">Cartão de crédito</p>
+                  <p className="text-xs text-muted-foreground">Parcelamento em até 6x via WhatsApp</p>
+                </div>
+              </div>
+            </button>
+            <button
+              onClick={() => setMethod("later")}
+              className="bg-card rounded-xl border border-border p-4 text-left hover:border-primary/40 hover:shadow-md transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="h-11 w-11 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0">
+                  <Clock size={22} className="text-amber-600" />
+                </div>
+                <div>
+                  <p className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors">Pagar depois</p>
+                  <p className="text-xs text-muted-foreground">Combine uma data para realizar o pagamento</p>
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ═══ PIX ═══
+  if (method === "pix") {
+    if (receiptSent) {
+      return (
+        <div className="space-y-5 animate-in fade-in duration-300">
+          <div className="bg-card rounded-2xl border border-border shadow-sm p-8 text-center">
+            <div className="bg-emerald-500/15 rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="h-8 w-8 text-emerald-600" />
+            </div>
+            <h2 className="text-xl font-display font-semibold text-foreground mb-2">Comprovante enviado!</h2>
+            <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+              Recebemos seu comprovante. O Espaço Lamoniê irá confirmar o pagamento e entrar em contato em breve.
+            </p>
+            <Button onClick={onComplete} className="mt-6 w-full h-11 rounded-xl">
+              Concluir
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-400">
+        <button onClick={() => setMethod(null)} className="text-xs text-primary hover:underline">
+          ← Voltar
+        </button>
+
+        <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div className="bg-emerald-500/10 px-5 py-3 border-b border-border flex items-center gap-2">
+            <QrCode size={16} className="text-emerald-600" />
+            <span className="font-semibold text-sm text-foreground">Pagamento via PIX</span>
+          </div>
+          <div className="p-5 space-y-5">
+            {/* Amount */}
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground mb-1">Valor a pagar</p>
+              <p className="text-2xl font-bold text-primary">{fmt(depositValue)}</p>
+            </div>
+
+            {/* QR Code */}
+            <div className="flex justify-center">
+              <div className="bg-white rounded-xl p-3 shadow-sm border">
+                <img src={qrUrl} alt="QR Code PIX" className="w-[200px] h-[200px]" />
+              </div>
+            </div>
+
+            {/* PIX Key */}
+            <div className="bg-secondary rounded-xl p-4">
+              <p className="text-xs text-muted-foreground mb-1">Chave PIX (CNPJ)</p>
+              <div className="flex items-center gap-2">
+                <code className="text-sm font-mono text-foreground flex-1 break-all">{PIX_CNPJ}</code>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={copyPix}
+                  className="shrink-0 gap-1.5"
+                >
+                  {copied ? <CheckCircle size={14} className="text-emerald-600" /> : <Copy size={14} />}
+                  {copied ? "Copiado!" : "Copiar"}
+                </Button>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground text-center">
+              Após realizar o pagamento, envie o comprovante abaixo para confirmar.
+            </p>
+
+            {/* Upload receipt */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,.pdf"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleUploadReceipt(file);
+              }}
+            />
+            <Button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="w-full h-12 rounded-xl text-base font-semibold gap-2"
+            >
+              {uploading ? (
+                <><Loader2 className="h-5 w-5 animate-spin" /> Enviando...</>
+              ) : (
+                <><Upload size={18} /> Já paguei / Enviar comprovante</>
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ═══ CARTÃO ═══
+  if (method === "card") {
+    return (
+      <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-400">
+        <button onClick={() => setMethod(null)} className="text-xs text-primary hover:underline">
+          ← Voltar
+        </button>
+
+        <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div className="bg-blue-500/10 px-5 py-3 border-b border-border flex items-center gap-2">
+            <CreditCard size={16} className="text-blue-600" />
+            <span className="font-semibold text-sm text-foreground">Cartão de crédito</span>
+          </div>
+          <div className="p-5 space-y-5">
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground mb-1">Valor do sinal</p>
+              <p className="text-2xl font-bold text-primary">{fmt(depositValue)}</p>
+            </div>
+
+            <div>
+              <p className="text-sm font-medium text-foreground mb-3 text-center">Em quantas vezes deseja parcelar?</p>
+              <div className="grid grid-cols-3 gap-2">
+                {[1, 2, 3, 4, 5, 6].map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => setInstallments(n)}
+                    className={cn(
+                      "rounded-xl border p-3 text-center transition-all",
+                      installments === n
+                        ? "border-primary bg-primary/10 text-primary font-semibold"
+                        : "border-border bg-card text-foreground hover:border-primary/40"
+                    )}
+                  >
+                    <p className="text-lg font-bold">{n}x</p>
+                    <p className="text-[10px] text-muted-foreground">{fmt(depositValue / n)}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <Button
+              onClick={handleCardPayment}
+              disabled={!installments}
+              className="w-full h-12 rounded-xl text-base font-semibold gap-2 disabled:opacity-40"
+            >
+              <Smartphone size={18} />
+              Solicitar via WhatsApp
+              <ExternalLink size={14} />
+            </Button>
+
+            <p className="text-[11px] text-muted-foreground text-center">
+              Você será redirecionado para o WhatsApp do Espaço Lamoniê para finalizar o pagamento.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ═══ PAGAR DEPOIS ═══
+  if (method === "later") {
+    return (
+      <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-400">
+        <button onClick={() => setMethod(null)} className="text-xs text-primary hover:underline">
+          ← Voltar
+        </button>
+
+        <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div className="bg-amber-500/10 px-5 py-3 border-b border-border flex items-center gap-2">
+            <Clock size={16} className="text-amber-600" />
+            <span className="font-semibold text-sm text-foreground">Pagar depois</span>
+          </div>
+          <div className="p-5 space-y-5">
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground mb-1">Valor do sinal</p>
+              <p className="text-2xl font-bold text-primary">{fmt(depositValue)}</p>
+            </div>
+
+            <div>
+              <p className="text-sm font-medium text-foreground mb-3 text-center">
+                Qual dia você poderá realizar o pagamento?
+              </p>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal h-11 rounded-xl",
+                      !laterDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {laterDate ? format(laterDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : "Selecione uma data"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="center">
+                  <Calendar
+                    mode="single"
+                    selected={laterDate}
+                    onSelect={setLaterDate}
+                    disabled={(date) => date < new Date()}
+                    className={cn("p-3 pointer-events-auto")}
+                    locale={ptBR}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <Button
+              onClick={handleLaterPayment}
+              disabled={!laterDate}
+              className="w-full h-12 rounded-xl text-base font-semibold gap-2 disabled:opacity-40"
+            >
+              <Smartphone size={18} />
+              Confirmar via WhatsApp
+              <ExternalLink size={14} />
+            </Button>
+
+            <p className="text-[11px] text-muted-foreground text-center">
+              Você será redirecionado para o WhatsApp do Espaço Lamoniê para combinar o pagamento.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
