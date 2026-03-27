@@ -597,7 +597,7 @@ export default function SignContract() {
         )}
 
         {/* ═══ MAIN FLOW ═══ */}
-        {data && !signed && !loading && (
+        {data && !signed && !showPayment && !loading && (
           <div className="space-y-5">
             {/* 1 — Contract summary card */}
             <div className="bg-card rounded-2xl shadow-lg border border-border overflow-hidden">

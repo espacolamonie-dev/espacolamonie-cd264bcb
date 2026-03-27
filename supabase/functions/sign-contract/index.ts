@@ -95,6 +95,100 @@ serve(async (req) => {
     });
   }
 
+  // PUT /sign-contract — upload receipt after signing
+  if (req.method === "PUT") {
+    const body = await req.json();
+    const { token, action, file_base64, file_name, file_type, payment_method } = body;
+
+    if (!token || action !== "upload-receipt") {
+      return new Response(JSON.stringify({ error: "Ação inválida" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Fetch signature record
+    const { data: sig, error: fetchErr } = await supabase
+      .from("contract_signatures")
+      .select("*")
+      .eq("token", token)
+      .maybeSingle();
+
+    if (fetchErr || !sig) {
+      return new Response(JSON.stringify({ error: "Contrato não encontrado" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!sig.contract_id) {
+      return new Response(JSON.stringify({ error: "Contrato não vinculado" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    try {
+      const fileBytes = decode(file_base64);
+      const ext = file_name?.split(".")?.pop() || "pdf";
+      const storagePath = `${sig.user_id}/${sig.contract_id}/comprovante_${Date.now()}.${ext}`;
+
+      const { error: uploadErr } = await supabase.storage
+        .from("documents")
+        .upload(storagePath, fileBytes, {
+          contentType: file_type || "application/octet-stream",
+          upsert: false,
+        });
+
+      if (uploadErr) {
+        console.error("Error uploading receipt:", uploadErr);
+        return new Response(JSON.stringify({ error: "Erro ao enviar comprovante" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Save document record
+      await supabase.from("documents").insert({
+        user_id: sig.user_id,
+        contract_id: sig.contract_id,
+        name: `Comprovante Pix - ${sig.client_name}`,
+        type: "comprovante",
+        file_name: storagePath,
+      });
+
+      // Send push notification about receipt
+      try {
+        await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/manage-push`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`
+          },
+          body: JSON.stringify({
+            action: 'send-notification',
+            title: '💰 Comprovante PIX recebido!',
+            body: `${sig.client_name} enviou o comprovante de pagamento do sinal.`,
+            url: '/contracts',
+            tag: `receipt-${sig.contract_id}`
+          })
+        });
+      } catch (e) {
+        console.error("Push notification error:", e);
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    } catch (e) {
+      console.error("Receipt upload error:", e);
+      return new Response(JSON.stringify({ error: "Erro ao processar comprovante" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+  }
+
   // POST /sign-contract — client signs the contract
   if (req.method === "POST") {
     const body = await req.json();
