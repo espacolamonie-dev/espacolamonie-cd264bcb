@@ -541,7 +541,9 @@ export default function SignContract() {
               <div className="flex-1 h-px bg-border" />
               <StepDot step={3} current={currentStep} label="Assinatura" />
               <div className="flex-1 h-px bg-border" />
-              <StepDot step={4} current={currentStep} label="Conclusão" />
+              <StepDot step={4} current={currentStep} label="Pagamento" />
+              <div className="flex-1 h-px bg-border" />
+              <StepDot step={5} current={currentStep} label="Conclusão" />
             </div>
             <Progress value={stepProgress} className="h-1.5" />
           </div>
