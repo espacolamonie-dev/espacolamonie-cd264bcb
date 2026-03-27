@@ -562,15 +562,28 @@ export default function SignContract() {
           </div>
         )}
 
+        {/* ═══ PAYMENT STEP ═══ */}
+        {showPayment && !signed && data && (
+          <SignContractPayment
+            clientName={data.client_name}
+            totalValue={Number(data.total_value)}
+            depositPercent={Number(data.deposit_percent)}
+            contractId={data.contract_id}
+            token={data.token}
+            userId={data.user_id}
+            onComplete={() => setSigned(true)}
+          />
+        )}
+
         {/* ═══ SIGNED STATE ═══ */}
         {signed && data && (
           <div className="bg-card rounded-2xl shadow-lg border border-border p-10 text-center">
-            <div className="bg-success/10 rounded-full h-20 w-20 flex items-center justify-center mx-auto mb-5">
-              <CheckCircle className="h-10 w-10 text-success" />
+            <div className="bg-emerald-500/10 rounded-full h-20 w-20 flex items-center justify-center mx-auto mb-5">
+              <CheckCircle className="h-10 w-10 text-emerald-600" />
             </div>
-            <h2 className="text-2xl font-display font-semibold text-foreground mb-2">Contrato assinado com sucesso</h2>
+            <h2 className="text-2xl font-display font-semibold text-foreground mb-2">Tudo certo!</h2>
             <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
-              Sua assinatura foi registrada. O Espaço Lamoniê entrará em contato para confirmar os detalhes do seu evento.
+              Seu contrato foi assinado e o pagamento está sendo processado. O Espaço Lamoniê entrará em contato para confirmar os detalhes do seu evento.
             </p>
             <div className="bg-secondary rounded-xl p-5 text-left space-y-2 text-sm max-w-sm mx-auto">
               <Row label="Evento" value={data.event_type} />
