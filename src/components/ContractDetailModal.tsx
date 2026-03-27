@@ -14,6 +14,7 @@ import { CalendarDays, Users, DollarSign, FileText, Plus, AlertTriangle, Upload,
 import GenerateContractModal from "@/components/GenerateContractModal";
 import ContractTimeline from "@/components/ContractTimeline";
 import { supabase } from "@/integrations/supabase/client";
+import { triggerGoogleSync } from "@/lib/googleSync";
 import {
   getContracts, getClients, getPayments, getDocuments, addPayment, updateContract,
   addDocument, deleteDocument, getDocumentSignedUrl,
@@ -103,6 +104,7 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
       toast.success("Pagamento registrado com sucesso");
       setPayForm({ amount: 0, date: new Date().toISOString().split("T")[0], description: "", tag: "none" });
       await load();
+      triggerGoogleSync(contractId);
     } catch (e: any) { toast.error(e.message); }
   };
 
@@ -166,6 +168,7 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
           : `${paymentIdsToDelete.length} pagamentos excluídos com sucesso`
       );
       await load();
+      triggerGoogleSync(contractId);
     } catch (e: any) {
       toast.error(e.message || "Erro ao excluir pagamento(s)");
     }

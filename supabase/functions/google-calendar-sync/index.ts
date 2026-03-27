@@ -38,6 +38,140 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Parse body early to check for cron action
+  const body = await req.json().catch(() => ({}));
+  const action = body.action as string;
+
+  // Cron-based sync: no user auth needed, syncs all users
+  if (action === 'sync-all-contracts-cron') {
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    try {
+      // Get all connected google_settings
+      const { data: allSettings } = await supabase
+        .from('google_settings')
+        .select('*')
+        .eq('is_connected', true);
+
+      if (!allSettings || allSettings.length === 0) {
+        return new Response(JSON.stringify({ success: true, message: 'No connected users' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      let totalSynced = 0;
+      for (const settings of allSettings) {
+        try {
+          const { data: contracts } = await supabase
+            .from('contracts')
+            .select('*')
+            .eq('user_id', settings.user_id)
+            .neq('status', 'cancelled');
+
+          if (!contracts || contracts.length === 0) continue;
+
+          const clientIds = [...new Set(contracts.map((c: any) => c.client_id))];
+          const { data: clients } = await supabase.from('clients').select('*').in('id', clientIds);
+          const clientMap: Record<string, any> = {};
+          (clients || []).forEach((c: any) => { clientMap[c.id] = c; });
+
+          // Also fetch payments to update payment_status before syncing
+          const contractIds = contracts.map((c: any) => c.id);
+          const { data: allPayments } = await supabase
+            .from('payments')
+            .select('*')
+            .in('contract_id', contractIds);
+
+          const paymentsByContract: Record<string, number> = {};
+          (allPayments || []).forEach((p: any) => {
+            paymentsByContract[p.contract_id] = (paymentsByContract[p.contract_id] || 0) + Number(p.amount);
+          });
+
+          // Update payment_status based on actual payments
+          for (const contract of contracts) {
+            const totalPaid = paymentsByContract[contract.id] || 0;
+            let newStatus = 'pending';
+            if (totalPaid >= Number(contract.total_value)) newStatus = 'paid_full';
+            else if (totalPaid > 0) newStatus = 'deposit_paid';
+
+            if (newStatus !== contract.payment_status) {
+              const remaining = Math.max(0, Number(contract.total_value) - totalPaid);
+              await supabase.from('contracts').update({
+                payment_status: newStatus,
+                remaining_value: remaining,
+              }).eq('id', contract.id);
+              contract.payment_status = newStatus;
+              contract.remaining_value = remaining;
+            }
+          }
+
+          const token = await getValidToken(supabase, settings.user_id, settings);
+          const calendarId = settings.calendar_id || 'primary';
+
+          for (const contract of contracts) {
+            try {
+              const client = clientMap[contract.client_id];
+              if (!client) continue;
+
+              const title = `Lamoniê — ${client.name} — ${contract.event_type}`;
+              const description = buildDescription(contract, client);
+              const colorId = PAYMENT_COLOR_IDS[contract.payment_status] || '5';
+
+              const baseEndDate = contract.event_date_end || contract.event_date;
+              const endDate = new Date(baseEndDate + 'T12:00:00');
+              endDate.setDate(endDate.getDate() + 1);
+              const endDateStr = endDate.toISOString().split('T')[0];
+
+              const eventBody = {
+                summary: title, description,
+                location: 'Espaço Lamoniê — Endereço do espaço',
+                start: { date: contract.event_date },
+                end: { date: endDateStr },
+                colorId,
+                extendedProperties: { private: { contract_id: contract.id, crm: 'lamonie' } },
+              };
+
+              let googleEventId = contract.google_event_id;
+              let googleRes;
+
+              if (googleEventId) {
+                googleRes = await fetch(
+                  `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${googleEventId}`,
+                  { method: 'PUT', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(eventBody) }
+                );
+                if (!googleRes.ok && googleRes.status === 404) googleEventId = null;
+              }
+
+              if (!googleEventId) {
+                googleRes = await fetch(
+                  `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`,
+                  { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(eventBody) }
+                );
+                const resBody = await googleRes.json();
+                if (googleRes.ok && resBody.id) {
+                  await supabase.from('contracts').update({ google_event_id: resBody.id }).eq('id', contract.id);
+                }
+              }
+
+              if (googleRes?.ok) totalSynced++;
+            } catch (err) {
+              console.error(`Cron: Failed to sync contract ${contract.id}:`, err);
+            }
+          }
+        } catch (userErr) {
+          console.error(`Cron: Failed for user ${settings.user_id}:`, userErr);
+        }
+      }
+
+      return new Response(JSON.stringify({ success: true, synced: totalSynced }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    } catch (err) {
+      console.error('sync-all-contracts-cron error:', err);
+      return new Response(JSON.stringify({ error: String(err) }), { status: 500, headers: corsHeaders });
+    }
+  }
+
+  // Regular user-authenticated actions
   const authHeader = req.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
@@ -52,8 +186,6 @@ Deno.serve(async (req) => {
   }
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-  const body = await req.json().catch(() => ({}));
-  const action = body.action as string;
 
   try {
     // Get user's google settings
