@@ -391,12 +391,12 @@ export default function Financial() {
     return { contratos, manuais };
   }, [allEntradas]);
 
-  const handleAddReserve = () => {
+  const handleAddReserve = (type: ReserveType) => {
     if (reserveAddAmount <= 0) { toast.error("Informe um valor"); return; }
     const updated = { ...reserves };
-    updated[reserveType] = {
-      ...updated[reserveType],
-      saved: updated[reserveType].saved + reserveAddAmount,
+    updated[type] = {
+      ...updated[type],
+      saved: updated[type].saved + reserveAddAmount,
     };
     saveReserves(updated);
     setReserveAddAmount(0);
@@ -875,7 +875,7 @@ export default function Financial() {
 
                 <div className="flex gap-2">
                   <CurrencyInput value={reserveAddAmount} onChange={setReserveAddAmount} placeholder="Valor" className="flex-1" />
-                  <Button size="sm" className="h-10" onClick={() => { setReserveType("melhoria"); handleAddReserve(); }}>
+                  <Button size="sm" className="h-10" onClick={() => handleAddReserve("melhoria")}>
                     <Plus size={14} className="mr-1" /> Adicionar
                   </Button>
                 </div>
@@ -945,7 +945,7 @@ export default function Financial() {
 
                 <div className="flex gap-2">
                   <CurrencyInput value={reserveAddAmount} onChange={setReserveAddAmount} placeholder="Valor" className="flex-1" />
-                  <Button size="sm" className="h-10" onClick={() => { setReserveType("marketing"); handleAddReserve(); }}>
+                  <Button size="sm" className="h-10" onClick={() => handleAddReserve("marketing")}>
                     <Plus size={14} className="mr-1" /> Adicionar
                   </Button>
                 </div>
