@@ -391,12 +391,12 @@ export default function Financial() {
     return { contratos, manuais };
   }, [allEntradas]);
 
-  const handleAddReserve = () => {
+  const handleAddReserve = (type: ReserveType) => {
     if (reserveAddAmount <= 0) { toast.error("Informe um valor"); return; }
     const updated = { ...reserves };
-    updated[reserveType] = {
-      ...updated[reserveType],
-      saved: updated[reserveType].saved + reserveAddAmount,
+    updated[type] = {
+      ...updated[type],
+      saved: updated[type].saved + reserveAddAmount,
     };
     saveReserves(updated);
     setReserveAddAmount(0);
