@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import SignBudget from "@/pages/SignBudget";
+import SignContractPayment from "@/components/SignContractPayment";
 
 const fmt = (v: number) => Number(v).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -379,11 +380,12 @@ export default function SignContract() {
   const [checkedRules, setCheckedRules] = useState<boolean[]>(new Array(RULES.length).fill(false));
   const allRulesChecked = checkedRules.every(Boolean);
 
-  // Step: 1=Leitura, 2=Aceite, 3=Assinatura, 4=Conclusão
+  // Step: 1=Leitura, 2=Aceite, 3=Assinatura, 4=Pagamento, 5=Conclusão
   const [showSignature, setShowSignature] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
 
-  const currentStep = signed ? 4 : showSignature ? 3 : allRulesChecked ? 2 : 1;
-  const stepProgress = signed ? 100 : showSignature ? 75 : allRulesChecked ? 50 : (checkedRules.filter(Boolean).length / RULES.length) * 25 + 0;
+  const currentStep = signed ? 5 : showPayment ? 4 : showSignature ? 3 : allRulesChecked ? 2 : 1;
+  const stepProgress = signed ? 100 : showPayment ? 80 : showSignature ? 60 : allRulesChecked ? 40 : (checkedRules.filter(Boolean).length / RULES.length) * 20;
 
   const FUNC_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sign-contract`;
 
@@ -511,7 +513,7 @@ export default function SignContract() {
       });
       const result = await res.json();
       if (result.error) { setError(result.error); }
-      else { setSigned(true); }
+      else { setShowPayment(true); }
     } catch { setError("Erro ao assinar contrato"); }
     finally { setSigning(false); }
   };
