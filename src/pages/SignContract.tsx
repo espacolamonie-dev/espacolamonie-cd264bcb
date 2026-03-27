@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import SignBudget from "@/pages/SignBudget";
+import SignContractPayment from "@/components/SignContractPayment";
 
 const fmt = (v: number) => Number(v).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -379,11 +380,12 @@ export default function SignContract() {
   const [checkedRules, setCheckedRules] = useState<boolean[]>(new Array(RULES.length).fill(false));
   const allRulesChecked = checkedRules.every(Boolean);
 
-  // Step: 1=Leitura, 2=Aceite, 3=Assinatura, 4=Conclusão
+  // Step: 1=Leitura, 2=Aceite, 3=Assinatura, 4=Pagamento, 5=Conclusão
   const [showSignature, setShowSignature] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
 
-  const currentStep = signed ? 4 : showSignature ? 3 : allRulesChecked ? 2 : 1;
-  const stepProgress = signed ? 100 : showSignature ? 75 : allRulesChecked ? 50 : (checkedRules.filter(Boolean).length / RULES.length) * 25 + 0;
+  const currentStep = signed ? 5 : showPayment ? 4 : showSignature ? 3 : allRulesChecked ? 2 : 1;
+  const stepProgress = signed ? 100 : showPayment ? 80 : showSignature ? 60 : allRulesChecked ? 40 : (checkedRules.filter(Boolean).length / RULES.length) * 20;
 
   const FUNC_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sign-contract`;
 
@@ -511,7 +513,7 @@ export default function SignContract() {
       });
       const result = await res.json();
       if (result.error) { setError(result.error); }
-      else { setSigned(true); }
+      else { setShowPayment(true); }
     } catch { setError("Erro ao assinar contrato"); }
     finally { setSigning(false); }
   };
@@ -539,7 +541,9 @@ export default function SignContract() {
               <div className="flex-1 h-px bg-border" />
               <StepDot step={3} current={currentStep} label="Assinatura" />
               <div className="flex-1 h-px bg-border" />
-              <StepDot step={4} current={currentStep} label="Conclusão" />
+              <StepDot step={4} current={currentStep} label="Pagamento" />
+              <div className="flex-1 h-px bg-border" />
+              <StepDot step={5} current={currentStep} label="Conclusão" />
             </div>
             <Progress value={stepProgress} className="h-1.5" />
           </div>
@@ -558,15 +562,28 @@ export default function SignContract() {
           </div>
         )}
 
+        {/* ═══ PAYMENT STEP ═══ */}
+        {showPayment && !signed && data && (
+          <SignContractPayment
+            clientName={data.client_name}
+            totalValue={Number(data.total_value)}
+            depositPercent={Number(data.deposit_percent)}
+            contractId={data.contract_id}
+            token={data.token}
+            userId={data.user_id}
+            onComplete={() => setSigned(true)}
+          />
+        )}
+
         {/* ═══ SIGNED STATE ═══ */}
         {signed && data && (
           <div className="bg-card rounded-2xl shadow-lg border border-border p-10 text-center">
-            <div className="bg-success/10 rounded-full h-20 w-20 flex items-center justify-center mx-auto mb-5">
-              <CheckCircle className="h-10 w-10 text-success" />
+            <div className="bg-emerald-500/10 rounded-full h-20 w-20 flex items-center justify-center mx-auto mb-5">
+              <CheckCircle className="h-10 w-10 text-emerald-600" />
             </div>
-            <h2 className="text-2xl font-display font-semibold text-foreground mb-2">Contrato assinado com sucesso</h2>
+            <h2 className="text-2xl font-display font-semibold text-foreground mb-2">Tudo certo!</h2>
             <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
-              Sua assinatura foi registrada. O Espaço Lamoniê entrará em contato para confirmar os detalhes do seu evento.
+              Seu contrato foi assinado e o pagamento está sendo processado. O Espaço Lamoniê entrará em contato para confirmar os detalhes do seu evento.
             </p>
             <div className="bg-secondary rounded-xl p-5 text-left space-y-2 text-sm max-w-sm mx-auto">
               <Row label="Evento" value={data.event_type} />
@@ -580,7 +597,7 @@ export default function SignContract() {
         )}
 
         {/* ═══ MAIN FLOW ═══ */}
-        {data && !signed && !loading && (
+        {data && !signed && !showPayment && !loading && (
           <div className="space-y-5">
             {/* 1 — Contract summary card */}
             <div className="bg-card rounded-2xl shadow-lg border border-border overflow-hidden">
