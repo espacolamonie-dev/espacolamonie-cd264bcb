@@ -84,7 +84,8 @@ export default function Financial() {
   // Reserves
   const [reserveModalOpen, setReserveModalOpen] = useState(false);
   const [reserveType, setReserveType] = useState<ReserveType>("melhoria");
-  const [reserveAddAmount, setReserveAddAmount] = useState(0);
+  const [melhoriaAddAmount, setMelhoriaAddAmount] = useState(0);
+  const [marketingAddAmount, setMarketingAddAmount] = useState(0);
   const [reserveGoalEdit, setReserveGoalEdit] = useState(0);
 
   const [selectedMonth, setSelectedMonth] = useState(() => {
@@ -392,14 +393,17 @@ export default function Financial() {
   }, [allEntradas]);
 
   const handleAddReserve = (type: ReserveType) => {
-    if (reserveAddAmount <= 0) { toast.error("Informe um valor"); return; }
-    const updated = { ...reserves };
-    updated[type] = {
-      ...updated[type],
-      saved: updated[type].saved + reserveAddAmount,
-    };
-    saveReserves(updated);
-    setReserveAddAmount(0);
+    const amount = type === "melhoria" ? melhoriaAddAmount : marketingAddAmount;
+    if (amount <= 0) { toast.error("Informe um valor"); return; }
+    saveReserves({
+      ...reserves,
+      [type]: {
+        ...reserves[type],
+        saved: reserves[type].saved + amount,
+      },
+    });
+    if (type === "melhoria") setMelhoriaAddAmount(0);
+    else setMarketingAddAmount(0);
     toast.success("Reserva adicionada");
   };
 
@@ -874,7 +878,7 @@ export default function Financial() {
                 )}
 
                 <div className="flex gap-2">
-                  <CurrencyInput value={reserveAddAmount} onChange={setReserveAddAmount} placeholder="Valor" className="flex-1" />
+                  <CurrencyInput value={melhoriaAddAmount} onChange={setMelhoriaAddAmount} placeholder="Valor" className="flex-1" />
                   <Button size="sm" className="h-10" onClick={() => handleAddReserve("melhoria")}>
                     <Plus size={14} className="mr-1" /> Adicionar
                   </Button>
@@ -944,7 +948,7 @@ export default function Financial() {
                 )}
 
                 <div className="flex gap-2">
-                  <CurrencyInput value={reserveAddAmount} onChange={setReserveAddAmount} placeholder="Valor" className="flex-1" />
+                  <CurrencyInput value={marketingAddAmount} onChange={setMarketingAddAmount} placeholder="Valor" className="flex-1" />
                   <Button size="sm" className="h-10" onClick={() => handleAddReserve("marketing")}>
                     <Plus size={14} className="mr-1" /> Adicionar
                   </Button>
