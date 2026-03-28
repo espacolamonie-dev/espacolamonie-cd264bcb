@@ -6,12 +6,9 @@ import {
   CreditCard,
   CalendarDays,
   BarChart3,
-  Menu,
-  X,
   LogOut,
   Settings,
   ClipboardCheck,
-  
   Calculator,
 } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -22,6 +19,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import MobileTopBar from "@/components/MobileTopBar";
 import IOSInstallBanner from "@/components/IOSInstallBanner";
+import { supabase } from "@/integrations/supabase/client";
 
 const navGroups = [
   {
@@ -56,6 +54,24 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const isMobile = useIsMobile();
   useContractNotifications();
 
+  const [companyName, setCompanyName] = useState("Espaço Lamoniê");
+
+  useEffect(() => {
+    const loadCompanyName = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data } = await supabase
+          .from("company_settings")
+          .select("company_name")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (data?.company_name) setCompanyName(data.company_name);
+      } catch {}
+    };
+    loadCompanyName();
+  }, []);
+
   return (
     <div className="flex min-h-screen">
       {/* Mobile overlay */}
@@ -66,7 +82,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         />
       )}
 
-      {/* Sidebar — hidden on mobile, sticky on desktop */}
+      {/* Sidebar */}
       <aside
         className={`sidebar-gradient z-50 flex w-[260px] shrink-0 flex-col md:sticky md:top-0 md:h-screen ${
           isMobile
@@ -74,23 +90,25 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             : ""
         }`}
       >
-        {/* Logo */}
-        <div className="flex items-center justify-center px-6 pt-7 pb-8 relative shrink-0">
+        {/* Logo + Company Name */}
+        <div className="flex items-center gap-3 px-6 pt-7 pb-6 shrink-0">
           <img
             src={logo}
-            alt="Lamoniê"
-            className="h-16 w-auto object-contain"
+            alt={companyName}
+            className="h-10 w-10 rounded-full object-cover ring-2 ring-white/10 shrink-0"
           />
-          <button
-            className="absolute right-4 text-white/30 hover:text-white transition-colors md:hidden"
-            onClick={() => setMobileOpen(false)}
-          >
-            <X size={18} />
-          </button>
+          <div className="min-w-0">
+            <p className="text-white text-sm font-semibold truncate" style={{ fontFamily: "var(--font-display)" }}>
+              {companyName}
+            </p>
+            <p className="text-white/30 text-[10px] tracking-wide" style={{ fontFamily: "var(--font-body)" }}>
+              CRM
+            </p>
+          </div>
         </div>
 
         {/* Nav groups */}
-        <nav className="flex-1 min-h-0 px-4 overflow-y-auto space-y-6">
+        <nav className="flex-1 min-h-0 px-4 overflow-y-auto space-y-5">
           {navGroups.map((group) => (
             <div key={group.label}>
               <p className="px-4 mb-2 text-[9px] font-semibold uppercase tracking-[0.18em] text-white/25" style={{ fontFamily: "var(--font-body)" }}>
@@ -149,7 +167,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             Sair
           </button>
           <p className="text-[9px] text-white/12 tracking-[0.15em] uppercase mt-4 px-4" style={{ fontFamily: "var(--font-body)" }}>
-            Espaço Lamoniê © 2025
+            {companyName} © {new Date().getFullYear()}
           </p>
         </div>
       </aside>
@@ -157,7 +175,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Main */}
       <main className="flex-1 min-w-0">
         {/* Desktop top bar */}
-        <header className="hidden md:flex items-center gap-4 border-b border-border bg-card/60 backdrop-blur-md px-6 py-3.5 md:px-10 sticky top-0 z-30">
+        <header className="hidden md:flex items-center gap-4 border-b border-border bg-card/60 backdrop-blur-md px-8 py-3 sticky top-0 z-30">
+          <h2 className="text-sm font-medium text-muted-foreground" style={{ fontFamily: "var(--font-body)" }}>
+            {navGroups.flatMap(g => g.items).find(i => i.to === location.pathname)?.label || ""}
+          </h2>
           <div className="flex-1" />
         </header>
 
