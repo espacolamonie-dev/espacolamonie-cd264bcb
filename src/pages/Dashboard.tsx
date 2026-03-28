@@ -44,13 +44,11 @@ export default function Dashboard() {
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [alerts, setAlerts] = useState<{ unsignedCount: number; urgentPayments: number }>({ unsignedCount: 0, urgentPayments: 0 });
 
-  // Conversion metrics
   const [visitToContractRate, setVisitToContractRate] = useState<number | null>(null);
   const [visitToContractDetail, setVisitToContractDetail] = useState({ visits: 0, converted: 0 });
   const [whatsappToVisitRate, setWhatsappToVisitRate] = useState<number | null>(null);
   const [whatsappToVisitDetail, setWhatsappToVisitDetail] = useState({ whatsapp: 0, visits: 0 });
 
-  // Manual WhatsApp input
   const [waDate, setWaDate] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
@@ -108,13 +106,11 @@ export default function Dashboard() {
             .map((c) => ({ ...c, clientName: clientMap[c.clientId] || "—" }))
         );
 
-        // --- Conversion: Visit → Contract ---
         const allVisits = visits.filter((v) => v.status === "Confirmada");
         const normalize = (s: string) => s.replace(/\D/g, "");
         const getFirstName = (name: string) => name.trim().split(/\s+/)[0].toLowerCase();
         const normalizeFullName = (name: string) => name.trim().toLowerCase();
 
-        // Build contract lookup sets from clients
         const contractClients = active.map((c) => {
           const cl = clients.find((cl) => cl.id === c.clientId);
           return {
@@ -127,19 +123,15 @@ export default function Dashboard() {
 
         const contractPhones = new Set(contractClients.map((c) => c.phone).filter(Boolean));
         const contractFullNames = new Set(contractClients.map((c) => c.fullName).filter(Boolean));
-        const contractEventDates = new Set(contractClients.map((c) => c.eventDate).filter(Boolean));
 
         const convertedVisits = allVisits.filter((v) => {
           const vPhone = normalize(v.clientPhone || "");
-          const vFirstName = getFirstName(v.clientName || "");
           const vFullName = normalizeFullName(v.clientName || "");
+          const vFirstName = getFirstName(v.clientName || "");
           const vInterestDate = v.interestEventDate || "";
 
-          // Match by phone number
           const phoneMatch = vPhone && contractPhones.has(vPhone);
-          // Match by full name
           const fullNameMatch = vFullName && contractFullNames.has(vFullName);
-          // Match by first name + interest date matching contract event date
           const firstNameDateMatch = vFirstName && vInterestDate &&
             contractClients.some((cc) => cc.firstName === vFirstName && cc.eventDate === vInterestDate);
 
@@ -151,10 +143,8 @@ export default function Dashboard() {
           setVisitToContractDetail({ visits: allVisits.length, converted: convertedVisits });
         }
 
-        // --- Conversion: WhatsApp → Visit (today by default) ---
         await loadWhatsAppConversion(waDate, visits);
 
-        // Monthly chart data
         const now = new Date();
         const months: MonthlyData[] = [];
         for (let i = 5; i >= 0; i--) {
@@ -194,7 +184,6 @@ export default function Dashboard() {
     loadData();
   }, []);
 
-  // Re-render when returning to tab (picks up localStorage changes from Financial)
   const [, forceUpdate] = useState(0);
   useEffect(() => {
     const onFocus = () => forceUpdate(n => n + 1);
@@ -221,7 +210,6 @@ export default function Dashboard() {
 
       const contactCount = data?.contact_count || 0;
 
-      // Count visits scheduled for this date
       let dayVisits: any[];
       if (visitsData) {
         dayVisits = visitsData;
@@ -291,27 +279,23 @@ export default function Dashboard() {
     return (
       <div className="animate-fade-in space-y-8">
         <div>
-          <Skeleton className="h-10 w-56 rounded-xl" />
-          <Skeleton className="h-4 w-72 mt-3 rounded-lg" />
+          <Skeleton className="h-8 w-48 rounded-xl" />
+          <Skeleton className="h-4 w-64 mt-2 rounded-lg" />
         </div>
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-32 rounded-2xl" />)}
-        </div>
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-32 rounded-2xl" />)}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-28 rounded-2xl" />)}
         </div>
       </div>
     );
   }
 
   const statCards = [
-    { label: "Total de contratos", value: contracts.length, sub: "Contratos ativos", icon: FileText, iconBg: "bg-primary/10", iconColor: "text-primary", onClick: () => navigate("/contracts") },
+    { label: "Contratos", value: contracts.length, sub: "Ativos no total", icon: FileText, iconBg: "bg-primary/10", iconColor: "text-primary", onClick: () => navigate("/contracts") },
     { label: "Confirmados", value: confirmed, sub: "Eventos confirmados", icon: CheckCircle, iconBg: "bg-success/10", iconColor: "text-success", onClick: () => navigate("/contracts") },
-    { label: "Aguardando pagamento", value: awaiting, sub: "Pendentes", icon: Clock, iconBg: "bg-warning/10", iconColor: "text-warning", onClick: () => navigate("/financial") },
-    { label: "Eventos futuros", value: futureCount, sub: "Próximos agendados", icon: CalendarDays, iconBg: "bg-primary/10", iconColor: "text-primary", onClick: () => navigate("/agenda") },
+    { label: "Aguardando", value: awaiting, sub: "Pagamento pendente", icon: Clock, iconBg: "bg-warning/10", iconColor: "text-warning", onClick: () => navigate("/financial") },
+    { label: "Próximos", value: futureCount, sub: "Eventos futuros", icon: CalendarDays, iconBg: "bg-primary/10", iconColor: "text-primary", onClick: () => navigate("/agenda") },
   ];
 
-  // Funcionário calculation
   const VALOR_POR_CONTRATO_FUNCIONARIO = 70;
   const now2 = new Date();
   const currentMonthKey = `${now2.getFullYear()}-${String(now2.getMonth() + 1).padStart(2, '0')}`;
@@ -326,7 +310,7 @@ export default function Dashboard() {
   const funcFaltaDash = Math.max(0, pagamentoFuncTotal - funcPagoDash);
 
   const finCards = [
-    { label: "Receita do mês", value: fmt(financialSummary.totalIn), icon: TrendingUp, iconBg: "bg-success/10", iconColor: "text-success", valueColor: "text-success" },
+    { label: "Receita", value: fmt(financialSummary.totalIn), icon: TrendingUp, iconBg: "bg-success/10", iconColor: "text-success", valueColor: "text-success" },
     { label: "Despesas", value: fmt(financialSummary.totalOut), icon: TrendingDown, iconBg: "bg-danger/10", iconColor: "text-danger", valueColor: "text-danger" },
     { label: "Lucro líquido", value: fmt(financialSummary.balance - funcPagoDash), icon: Wallet, iconBg: "bg-primary/10", iconColor: "text-primary", valueColor: (financialSummary.balance - funcPagoDash) >= 0 ? "text-primary" : "text-danger" },
     { label: "Ticket médio", value: fmt(ticketMedio), icon: Receipt, iconBg: "bg-gold/10", iconColor: "text-gold-dark", valueColor: "text-foreground" },
@@ -334,112 +318,113 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="animate-fade-in space-y-8">
+    <div className="animate-fade-in space-y-6">
       {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl md:text-4xl font-display font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground mt-1.5">Bem-vindo ao painel do Espaço Lamoniê</p>
+          <h1 className="text-2xl md:text-3xl font-display font-bold tracking-tight">Dashboard</h1>
+          <p className="text-sm text-muted-foreground mt-1" style={{ fontFamily: "var(--font-body)" }}>
+            Visão geral do seu espaço
+          </p>
         </div>
-        <div className="flex flex-wrap gap-2.5">
-          <Button onClick={() => navigate("/contracts")} className="gap-2">
-            <Plus size={16} /> Novo contrato
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" onClick={() => navigate("/contracts")} className="gap-1.5 h-9 rounded-xl text-xs">
+            <Plus size={14} /> Novo contrato
           </Button>
-          <Button variant="outline" onClick={() => navigate("/financial")} className="gap-2">
-            <DollarSign size={16} /> Registrar pagamento
+          <Button size="sm" variant="outline" onClick={() => navigate("/financial")} className="gap-1.5 h-9 rounded-xl text-xs">
+            <DollarSign size={14} /> Pagamento
           </Button>
-          <Button variant="outline" onClick={() => navigate("/agenda")} className="gap-2">
-            <CalendarDays size={16} /> Abrir agenda
+          <Button size="sm" variant="outline" onClick={() => navigate("/agenda")} className="gap-1.5 h-9 rounded-xl text-xs">
+            <CalendarDays size={14} /> Agenda
           </Button>
         </div>
       </div>
 
       {/* Alerts */}
       {(alerts.unsignedCount > 0 || alerts.urgentPayments > 0) && (
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-2.5">
           {alerts.unsignedCount > 0 && (
             <button
               onClick={() => navigate("/contracts")}
-              className="flex items-center gap-3 rounded-2xl border border-warning/25 bg-warning/8 px-5 py-3.5 text-sm hover:bg-warning/12 transition-all duration-200 group"
+              className="flex items-center gap-2.5 rounded-xl border border-warning/20 bg-warning/5 px-4 py-2.5 text-xs hover:bg-warning/10 transition-all duration-200 group"
             >
-              <div className="rounded-xl bg-warning/15 p-2">
-                <AlertTriangle size={16} className="text-warning" />
-              </div>
-              <span className="text-warning font-medium">{alerts.unsignedCount} contrato{alerts.unsignedCount > 1 ? "s" : ""} aguardando assinatura</span>
-              <ArrowRight size={14} className="text-warning/50 group-hover:translate-x-0.5 transition-transform" />
+              <AlertTriangle size={14} className="text-warning" />
+              <span className="text-warning font-medium">{alerts.unsignedCount} aguardando assinatura</span>
+              <ArrowRight size={12} className="text-warning/40 group-hover:translate-x-0.5 transition-transform" />
             </button>
           )}
           {alerts.urgentPayments > 0 && (
             <button
               onClick={() => navigate("/contracts?payment=pending_urgent")}
-              className="flex items-center gap-3 rounded-2xl border border-danger/25 bg-danger/8 px-5 py-3.5 text-sm hover:bg-danger/12 transition-all duration-200 group"
+              className="flex items-center gap-2.5 rounded-xl border border-danger/20 bg-danger/5 px-4 py-2.5 text-xs hover:bg-danger/10 transition-all duration-200 group"
             >
-              <div className="rounded-xl bg-danger/15 p-2">
-                <AlertTriangle size={16} className="text-danger" />
-              </div>
-              <span className="text-danger font-medium">{alerts.urgentPayments} pagamento{alerts.urgentPayments > 1 ? "s" : ""} pendente{alerts.urgentPayments > 1 ? "s" : ""} nos próximos 7 dias</span>
-              <ArrowRight size={14} className="text-danger/50 group-hover:translate-x-0.5 transition-transform" />
+              <AlertTriangle size={14} className="text-danger" />
+              <span className="text-danger font-medium">{alerts.urgentPayments} pagamento{alerts.urgentPayments > 1 ? "s" : ""} urgente{alerts.urgentPayments > 1 ? "s" : ""}</span>
+              <ArrowRight size={12} className="text-danger/40 group-hover:translate-x-0.5 transition-transform" />
             </button>
           )}
         </div>
       )}
 
-      {/* Stat cards - Row 1 */}
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 stagger-fade-in">
+      {/* Stat cards */}
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 stagger-fade-in">
         {statCards.map((card) => (
-          <button key={card.label} onClick={card.onClick} className="stat-card text-left group">
-            <div className="flex items-start justify-between">
-              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{card.label}</p>
-              <div className={`rounded-xl ${card.iconBg} p-2.5`}>
-                <card.icon size={20} className={card.iconColor} />
+          <button
+            key={card.label}
+            onClick={card.onClick}
+            className="group rounded-2xl border border-border bg-card p-5 text-left transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className={`rounded-xl ${card.iconBg} p-2`}>
+                <card.icon size={16} className={card.iconColor} />
               </div>
             </div>
-            <p className="text-3xl font-display font-bold mt-3 tracking-tight">{card.value}</p>
-            <p className="text-xs text-muted-foreground mt-1">{card.sub}</p>
+            <p className="text-2xl md:text-3xl font-display font-bold tracking-tight">{card.value}</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5" style={{ fontFamily: "var(--font-body)" }}>{card.sub}</p>
           </button>
         ))}
       </div>
 
-      {/* Financial cards - Row 2 */}
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-5 stagger-fade-in">
+      {/* Financial cards */}
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-5 stagger-fade-in">
         {finCards.map((card) => (
-          <div key={card.label} className="stat-card">
-            <div className="flex items-start justify-between">
-              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{card.label}</p>
-              <div className={`rounded-xl ${card.iconBg} p-2.5`}>
-                <card.icon size={20} className={card.iconColor} />
+          <div key={card.label} className="rounded-2xl border border-border bg-card p-5 transition-all duration-200 hover:shadow-md">
+            <div className="flex items-center justify-between mb-3">
+              <div className={`rounded-xl ${card.iconBg} p-2`}>
+                <card.icon size={16} className={card.iconColor} />
               </div>
             </div>
-            <p className={`text-2xl font-display font-bold mt-3 tracking-tight ${card.valueColor}`}>{card.value}</p>
-            {card.sub && <p className="text-[10px] text-muted-foreground mt-1">{card.sub}</p>}
+            <p className={`text-lg md:text-xl font-display font-bold tracking-tight ${card.valueColor}`}>{card.value}</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5" style={{ fontFamily: "var(--font-body)" }}>{card.label}</p>
+            {card.sub && <p className="text-[10px] text-muted-foreground/70 mt-0.5">{card.sub}</p>}
           </div>
         ))}
       </div>
 
-      {/* Conversion metrics - Row 3 */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      {/* Conversion metrics */}
+      <div className="grid gap-5 lg:grid-cols-2">
         {/* Visit → Contract */}
-        <div className="card-premium p-6">
+        <div className="rounded-2xl border border-border bg-card p-5">
           <div className="flex items-center gap-3 mb-4">
-            <div className="rounded-xl bg-primary/10 p-2.5">
-              <Users size={20} className="text-primary" />
+            <div className="rounded-xl bg-primary/10 p-2">
+              <Users size={16} className="text-primary" />
             </div>
             <div>
-              <h2 className="font-display text-lg font-semibold">Visita → Contrato</h2>
-              <p className="text-xs text-muted-foreground">Taxa de conversão por primeiro nome</p>
+              <h2 className="font-display text-base font-semibold">Visita → Contrato</h2>
+              <p className="text-[11px] text-muted-foreground">Taxa de conversão</p>
             </div>
           </div>
-          <div className="flex items-end gap-6">
+          <div className="flex items-end gap-4">
             <div>
-              <p className="text-4xl font-display font-bold tracking-tight text-primary">
+              <p className="text-3xl font-display font-bold tracking-tight text-primary">
                 {visitToContractRate !== null ? `${visitToContractRate}%` : "—"}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {visitToContractDetail.converted} de {visitToContractDetail.visits} visitas geraram contrato
+              <p className="text-[11px] text-muted-foreground mt-1">
+                {visitToContractDetail.converted} de {visitToContractDetail.visits} visitas
               </p>
             </div>
             {visitToContractRate !== null && (
-              <div className="flex-1 h-3 rounded-full bg-muted overflow-hidden">
+              <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
                 <div
                   className="h-full rounded-full bg-primary transition-all duration-500"
                   style={{ width: `${Math.min(visitToContractRate, 100)}%` }}
@@ -450,28 +435,28 @@ export default function Dashboard() {
         </div>
 
         {/* WhatsApp → Visit */}
-        <div className="card-premium p-6">
+        <div className="rounded-2xl border border-border bg-card p-5">
           <div className="flex items-center gap-3 mb-4">
-            <div className="rounded-xl bg-success/10 p-2.5">
-              <MessageCircle size={20} className="text-success" />
+            <div className="rounded-xl bg-success/10 p-2">
+              <MessageCircle size={16} className="text-success" />
             </div>
             <div>
-              <h2 className="font-display text-lg font-semibold">WhatsApp → Visita</h2>
-              <p className="text-xs text-muted-foreground">Contatos do dia vs agendamentos</p>
+              <h2 className="font-display text-base font-semibold">WhatsApp → Visita</h2>
+              <p className="text-[11px] text-muted-foreground">Contatos vs agendamentos</p>
             </div>
           </div>
 
           <div className="flex items-end gap-4 mb-4">
             <div>
-              <p className="text-4xl font-display font-bold tracking-tight text-success">
+              <p className="text-3xl font-display font-bold tracking-tight text-success">
                 {whatsappToVisitRate !== null ? `${whatsappToVisitRate}%` : "—"}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {whatsappToVisitDetail.visits} agendamento{whatsappToVisitDetail.visits !== 1 ? "s" : ""} de {whatsappToVisitDetail.whatsapp} contato{whatsappToVisitDetail.whatsapp !== 1 ? "s" : ""}
+              <p className="text-[11px] text-muted-foreground mt-1">
+                {whatsappToVisitDetail.visits} de {whatsappToVisitDetail.whatsapp} contatos
               </p>
             </div>
             {whatsappToVisitRate !== null && (
-              <div className="flex-1 h-3 rounded-full bg-muted overflow-hidden">
+              <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
                 <div
                   className="h-full rounded-full bg-success transition-all duration-500"
                   style={{ width: `${Math.min(whatsappToVisitRate, 100)}%` }}
@@ -480,25 +465,25 @@ export default function Dashboard() {
             )}
           </div>
 
-          <div className="border-t border-border pt-4">
-            <p className="text-xs text-muted-foreground font-medium mb-2.5 uppercase tracking-wider">Registrar contatos do dia</p>
+          <div className="border-t border-border pt-3">
+            <p className="text-[10px] text-muted-foreground font-medium mb-2 uppercase tracking-wider">Registrar contatos</p>
             <div className="flex gap-2">
               <Input
                 type="date"
                 value={waDate}
                 onChange={(e) => handleWaDateChange(e.target.value)}
-                className="w-40 h-9 text-sm"
+                className="w-36 h-8 text-xs"
               />
               <Input
                 type="number"
                 min="0"
-                placeholder="Qtd contatos"
+                placeholder="Qtd"
                 value={waCount}
                 onChange={(e) => setWaCount(e.target.value)}
-                className="w-32 h-9 text-sm"
+                className="w-24 h-8 text-xs"
               />
-              <Button size="sm" onClick={handleSaveWhatsAppCount} disabled={waSaving} className="h-9 gap-1.5">
-                <Save size={14} />
+              <Button size="sm" onClick={handleSaveWhatsAppCount} disabled={waSaving} className="h-8 gap-1 text-xs px-3 rounded-xl">
+                <Save size={12} />
                 Salvar
               </Button>
             </div>
@@ -506,87 +491,87 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Charts - Row 4 */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="card-premium p-6">
-          <h2 className="font-display text-lg font-semibold mb-1">Receita vs Despesas</h2>
-          <p className="text-xs text-muted-foreground mb-6">Últimos 6 meses</p>
-          <div className="h-[280px]">
+      {/* Charts */}
+      <div className="grid gap-5 lg:grid-cols-2">
+        <div className="rounded-2xl border border-border bg-card p-5">
+          <h2 className="font-display text-base font-semibold mb-0.5">Receita vs Despesas</h2>
+          <p className="text-[11px] text-muted-foreground mb-5">Últimos 6 meses</p>
+          <div className="h-[260px]">
             {monthlyData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={monthlyData} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)} />
-                  <Tooltip formatter={tooltipFormatter} contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "16px", fontSize: "12px", boxShadow: "0 4px 12px rgb(0 0 0 / 0.08)" }} labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600 }} />
-                  <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "12px" }} />
-                  <Bar dataKey="entradas" name="Entradas" fill="hsl(var(--success))" radius={[8, 8, 0, 0]} barSize={24} />
-                  <Bar dataKey="saidas" name="Saídas" fill="hsl(var(--danger))" radius={[8, 8, 0, 0]} barSize={24} />
+                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)} />
+                  <Tooltip formatter={tooltipFormatter} contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "12px", fontSize: "11px", boxShadow: "0 4px 12px rgb(0 0 0 / 0.08)" }} labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600 }} />
+                  <Legend wrapperStyle={{ fontSize: "10px", paddingTop: "8px" }} />
+                  <Bar dataKey="entradas" name="Entradas" fill="hsl(var(--success))" radius={[6, 6, 0, 0]} barSize={20} />
+                  <Bar dataKey="saidas" name="Saídas" fill="hsl(var(--danger))" radius={[6, 6, 0, 0]} barSize={20} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Sem dados para exibir</div>
+              <div className="flex h-full items-center justify-center text-xs text-muted-foreground">Sem dados</div>
             )}
           </div>
         </div>
 
-        <div className="card-premium p-6">
-          <h2 className="font-display text-lg font-semibold mb-1">Evolução Mensal</h2>
-          <p className="text-xs text-muted-foreground mb-6">Saldo acumulado</p>
-          <div className="h-[280px]">
+        <div className="rounded-2xl border border-border bg-card p-5">
+          <h2 className="font-display text-base font-semibold mb-0.5">Evolução Mensal</h2>
+          <p className="text-[11px] text-muted-foreground mb-5">Saldo acumulado</p>
+          <div className="h-[260px]">
             {monthlyData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={monthlyData} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
                   <defs>
                     <linearGradient id="saldoGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.2} />
+                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.15} />
                       <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)} />
-                  <Tooltip formatter={tooltipFormatter} contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "16px", fontSize: "12px", boxShadow: "0 4px 12px rgb(0 0 0 / 0.08)" }} labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600 }} />
-                  <Area type="monotone" dataKey="saldo" name="Saldo" stroke="hsl(var(--primary))" fill="url(#saldoGradient)" strokeWidth={2.5} />
+                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)} />
+                  <Tooltip formatter={tooltipFormatter} contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "12px", fontSize: "11px", boxShadow: "0 4px 12px rgb(0 0 0 / 0.08)" }} labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600 }} />
+                  <Area type="monotone" dataKey="saldo" name="Saldo" stroke="hsl(var(--primary))" fill="url(#saldoGradient)" strokeWidth={2} />
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
-              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Sem dados para exibir</div>
+              <div className="flex h-full items-center justify-center text-xs text-muted-foreground">Sem dados</div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Bottom grid - Row 5 */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      {/* Bottom lists */}
+      <div className="grid gap-5 lg:grid-cols-2">
         {/* Upcoming events */}
-        <div className="card-premium">
-          <div className="flex items-center justify-between px-6 py-5">
+        <div className="rounded-2xl border border-border bg-card overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4">
             <div>
-              <h2 className="font-display text-lg font-semibold">Próximos eventos</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">Agenda dos próximos dias</p>
+              <h2 className="font-display text-base font-semibold">Próximos eventos</h2>
+              <p className="text-[11px] text-muted-foreground mt-0.5">Agenda dos próximos dias</p>
             </div>
-            <button onClick={() => navigate("/agenda")} className="text-xs text-primary hover:text-primary/80 font-medium transition-colors flex items-center gap-1.5 bg-primary/5 hover:bg-primary/10 rounded-xl px-3.5 py-2">
-              Ver agenda <ArrowRight size={12} />
+            <button onClick={() => navigate("/agenda")} className="text-[11px] text-primary hover:text-primary/80 font-medium transition-colors flex items-center gap-1 bg-primary/5 hover:bg-primary/10 rounded-lg px-3 py-1.5">
+              Ver agenda <ArrowRight size={10} />
             </button>
           </div>
           <div className="border-t border-border">
             {upcoming.length === 0 ? (
-              <p className="px-6 py-14 text-center text-sm text-muted-foreground">Nenhum evento agendado no momento</p>
+              <p className="px-5 py-10 text-center text-xs text-muted-foreground">Nenhum evento agendado</p>
             ) : (
               <div className="divide-y divide-border/50">
                 {upcoming.map((ev) => (
-                  <div key={ev.id} className="flex items-center gap-4 px-6 py-4 hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => navigate("/agenda")}>
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/8">
-                      <CalendarDays size={18} className="text-primary" />
+                  <div key={ev.id} className="flex items-center gap-3 px-5 py-3.5 hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => navigate("/agenda")}>
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/8">
+                      <CalendarDays size={14} className="text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{ev.clientName}</p>
-                      <p className="text-xs text-muted-foreground">{ev.eventType}</p>
+                      <p className="text-[11px] text-muted-foreground">{ev.eventType}</p>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-sm font-medium tabular-nums">{formatDateBR(ev.eventDate)}</p>
-                      <p className="text-xs text-muted-foreground">{ev.eventTime}</p>
+                      <p className="text-xs font-medium tabular-nums">{formatDateBR(ev.eventDate)}</p>
+                      <p className="text-[11px] text-muted-foreground">{ev.eventTime}</p>
                     </div>
                   </div>
                 ))}
@@ -596,30 +581,30 @@ export default function Dashboard() {
         </div>
 
         {/* Pending payments */}
-        <div className="card-premium">
-          <div className="flex items-center justify-between px-6 py-5">
+        <div className="rounded-2xl border border-border bg-card overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4">
             <div>
-              <h2 className="font-display text-lg font-semibold">Pagamentos pendentes</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">Valores aguardando confirmação</p>
+              <h2 className="font-display text-base font-semibold">Pagamentos pendentes</h2>
+              <p className="text-[11px] text-muted-foreground mt-0.5">Aguardando confirmação</p>
             </div>
-            <button onClick={() => navigate("/financial")} className="text-xs text-primary hover:text-primary/80 font-medium transition-colors flex items-center gap-1.5 bg-primary/5 hover:bg-primary/10 rounded-xl px-3.5 py-2">
-              Ver financeiro <ArrowRight size={12} />
+            <button onClick={() => navigate("/financial")} className="text-[11px] text-primary hover:text-primary/80 font-medium transition-colors flex items-center gap-1 bg-primary/5 hover:bg-primary/10 rounded-lg px-3 py-1.5">
+              Financeiro <ArrowRight size={10} />
             </button>
           </div>
           <div className="border-t border-border">
             {pendingPayments.length === 0 ? (
-              <p className="px-6 py-14 text-center text-sm text-muted-foreground">Todos os pagamentos estão em dia</p>
+              <p className="px-5 py-10 text-center text-xs text-muted-foreground">Pagamentos em dia</p>
             ) : (
               <div className="divide-y divide-border/50">
                 {pendingPayments.map((c) => (
-                  <div key={c.id} className="flex items-center gap-4 px-6 py-4 hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => navigate("/financial")}>
+                  <div key={c.id} className="flex items-center gap-3 px-5 py-3.5 hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => navigate("/financial")}>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{c.clientName}</p>
-                      <p className="text-xs text-muted-foreground">{c.eventType}</p>
+                      <p className="text-[11px] text-muted-foreground">{c.eventType}</p>
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-sm font-semibold tabular-nums">{fmt(c.remainingValue)}</p>
-                      <span className={`inline-block rounded-full px-2.5 py-0.5 text-[10px] font-medium border ${PAYMENT_STATUS_COLORS[c.paymentStatus]}`}>
+                      <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium border ${PAYMENT_STATUS_COLORS[c.paymentStatus]}`}>
                         {PAYMENT_STATUS_LABELS[c.paymentStatus]}
                       </span>
                     </div>
