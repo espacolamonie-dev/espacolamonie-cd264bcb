@@ -114,26 +114,27 @@ export default function MetaPixelSettingsTab() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Fetch all sent events (exclude test events)
       const { data: logs } = await supabase
         .from("meta_event_logs" as any)
         .select("*")
-        .eq("user_id", user.id)
-        .eq("status", "sent");
+        .eq("user_id", user.id);
 
       if (!logs) return;
       const arr = (logs as any[]).filter(l => !l.payload?.custom_data?.test);
-      const leads = arr.filter(l => l.event_name === "Lead").length;
-      const visits = arr.filter(l => l.event_name === "Schedule").length;
-      const contracts = arr.filter(l => ["InitiateCheckout", "Purchase", "CompleteRegistration"].includes(l.event_name)).length;
-      const totalValue = arr
+      const sentArr = arr.filter(l => l.status === "sent");
+      const errorCount = arr.filter(l => l.status === "error").length;
+      
+      const leads = sentArr.filter(l => l.event_name === "Lead").length;
+      const visits = sentArr.filter(l => l.event_name === "Schedule").length;
+      const contracts = sentArr.filter(l => ["InitiateCheckout", "Purchase", "CompleteRegistration"].includes(l.event_name)).length;
+      const totalValue = sentArr
         .filter(l => l.event_name === "Purchase")
         .reduce((sum: number, l: any) => {
           const v = l.payload?.custom_data?.value ?? l.payload?.value ?? 0;
           return sum + Number(v);
         }, 0);
 
-      setStats({ leads, visits, contracts, totalValue, errors: errors.length });
+      setStats({ leads, visits, contracts, totalValue, errors: errorCount });
     } catch {}
   };
 
