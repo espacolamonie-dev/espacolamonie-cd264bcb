@@ -41,6 +41,7 @@ interface EventStats {
   visits: number;
   contracts: number;
   totalValue: number;
+  errors: number;
 }
 
 function SectionCard({ icon: Icon, title, description, children }: {
@@ -70,7 +71,7 @@ export default function MetaPixelSettingsTab() {
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<"success" | "error" | null>(null);
-  const [stats, setStats] = useState<EventStats>({ leads: 0, visits: 0, contracts: 0, totalValue: 0 });
+  const [stats, setStats] = useState<EventStats>({ leads: 0, visits: 0, contracts: 0, totalValue: 0, errors: 0 });
   const { toast } = useToast();
 
   useEffect(() => {
@@ -113,26 +114,27 @@ export default function MetaPixelSettingsTab() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Fetch all sent events (exclude test events)
       const { data: logs } = await supabase
         .from("meta_event_logs" as any)
         .select("*")
-        .eq("user_id", user.id)
-        .eq("status", "sent");
+        .eq("user_id", user.id);
 
       if (!logs) return;
       const arr = (logs as any[]).filter(l => !l.payload?.custom_data?.test);
-      const leads = arr.filter(l => l.event_name === "Lead").length;
-      const visits = arr.filter(l => l.event_name === "Schedule").length;
-      const contracts = arr.filter(l => ["InitiateCheckout", "Purchase", "CompleteRegistration"].includes(l.event_name)).length;
-      const totalValue = arr
+      const sentArr = arr.filter(l => l.status === "sent");
+      const errorCount = arr.filter(l => l.status === "error").length;
+      
+      const leads = sentArr.filter(l => l.event_name === "Lead").length;
+      const visits = sentArr.filter(l => l.event_name === "Schedule").length;
+      const contracts = sentArr.filter(l => ["InitiateCheckout", "Purchase", "CompleteRegistration"].includes(l.event_name)).length;
+      const totalValue = sentArr
         .filter(l => l.event_name === "Purchase")
         .reduce((sum: number, l: any) => {
           const v = l.payload?.custom_data?.value ?? l.payload?.value ?? 0;
           return sum + Number(v);
         }, 0);
 
-      setStats({ leads, visits, contracts, totalValue });
+      setStats({ leads, visits, contracts, totalValue, errors: errorCount });
     } catch {}
   };
 
@@ -374,20 +376,22 @@ export default function MetaPixelSettingsTab() {
       {/* Dashboard stats */}
       <div className="lg:col-span-2">
         <SectionCard icon={BarChart3} title="Painel de Eventos" description="Resumo dos eventos enviados para o Meta">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
             {[
-              { label: "Leads enviados", value: stats.leads, color: "text-blue-600 bg-blue-500/10" },
-              { label: "Visitas enviadas", value: stats.visits, color: "text-purple-600 bg-purple-500/10" },
-              { label: "Contratos enviados", value: stats.contracts, color: "text-emerald-600 bg-emerald-500/10" },
+              { label: "Leads enviados", value: stats.leads, color: "text-blue-600 bg-blue-500/10", icon: Eye },
+              { label: "Visitas enviadas", value: stats.visits, color: "text-purple-600 bg-purple-500/10", icon: Eye },
+              { label: "Contratos enviados", value: stats.contracts, color: "text-emerald-600 bg-emerald-500/10", icon: Eye },
               {
                 label: "Valor total enviado",
                 value: stats.totalValue.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }),
                 color: "text-amber-600 bg-amber-500/10",
+                icon: Eye,
               },
+              { label: "Erros", value: stats.errors, color: "text-red-600 bg-red-500/10", icon: AlertCircle },
             ].map((item) => (
               <div key={item.label} className="rounded-xl border border-border p-4 text-center">
                 <div className={`inline-flex rounded-lg p-2 ${item.color} mb-2`}>
-                  <Eye size={16} />
+                  <item.icon size={16} />
                 </div>
                 <p className="text-2xl font-bold font-display">{item.value}</p>
                 <p className="text-xs text-muted-foreground mt-1">{item.label}</p>

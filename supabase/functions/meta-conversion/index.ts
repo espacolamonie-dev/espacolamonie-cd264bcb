@@ -78,6 +78,14 @@ Deno.serve(async (req) => {
     }
     hashedUserData.country = [await sha256("br")];
 
+    // Get client IP for better matching
+    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("x-real-ip") || undefined;
+    if (clientIp) {
+      hashedUserData.client_ip_address = clientIp;
+    }
+    hashedUserData.client_user_agent = req.headers.get("user-agent") || undefined;
+
     const eventPayload = {
       data: [
         {
@@ -85,6 +93,7 @@ Deno.serve(async (req) => {
           event_time: Math.floor(Date.now() / 1000),
           event_id,
           action_source: "website",
+          event_source_url: custom_data?.source_url || `https://espacolamonie.lovable.app`,
           user_data: hashedUserData,
           custom_data: custom_data || {},
         },
