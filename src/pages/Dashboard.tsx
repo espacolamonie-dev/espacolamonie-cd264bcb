@@ -333,7 +333,7 @@ export default function Dashboard() {
   const finCards = [
     { label: "Receita", value: fmt(financialSummary.totalIn), icon: TrendingUp, iconBg: "bg-success/10", iconColor: "text-success", valueColor: "text-success" },
     { label: "Despesas", value: fmt(financialSummary.totalOut), icon: TrendingDown, iconBg: "bg-danger/10", iconColor: "text-danger", valueColor: "text-danger" },
-    { label: "Lucro líquido", value: fmt(financialSummary.balance - funcPagoDash), icon: Wallet, iconBg: "bg-primary/10", iconColor: "text-primary", valueColor: (financialSummary.balance - funcPagoDash) >= 0 ? "text-primary" : "text-danger" },
+    { label: "Lucro líquido", value: fmt(financialSummary.balance - empTotalPaid), icon: Wallet, iconBg: "bg-primary/10", iconColor: "text-primary", valueColor: (financialSummary.balance - empTotalPaid) >= 0 ? "text-primary" : "text-danger" },
     { label: "Ticket médio", value: fmt(ticketMedio), icon: Receipt, iconBg: "bg-gold/10", iconColor: "text-gold-dark", valueColor: "text-foreground" },
   ];
 
@@ -425,9 +425,9 @@ export default function Dashboard() {
               <UserRound size={16} className="text-violet-500" />
             </div>
           </div>
-          <p className="text-lg md:text-xl font-display font-bold tracking-tight text-violet-600 dark:text-violet-400">{fmt(pagamentoFuncTotal)}</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5" style={{ fontFamily: "var(--font-body)" }}>Funcionário ({contratosFechadosDash.length} contratos)</p>
-          <p className="text-[10px] text-muted-foreground/70 mt-0.5">Pago: {fmt(funcPagoDash)} · Falta: {fmt(funcFaltaDash)}</p>
+          <p className="text-lg md:text-xl font-display font-bold tracking-tight text-violet-600 dark:text-violet-400">{fmt(empTotalDue)}</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5" style={{ fontFamily: "var(--font-body)" }}>Funcionários ({contratosFechadosDash.length} contratos)</p>
+          <p className="text-[10px] text-muted-foreground/70 mt-0.5">Pago: {fmt(empTotalPaid)} · Falta: {fmt(funcFaltaDash)}</p>
           <div className="flex items-center gap-1.5 mt-3">
             <input
               type="date"
