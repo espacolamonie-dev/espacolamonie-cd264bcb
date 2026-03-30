@@ -1,4 +1,5 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { CurrencyInput } from "@/components/CurrencyInput";
 import {
   Plus, TrendingUp, TrendingDown, Wallet, Trash2, FileText, HandCoins,
@@ -73,7 +74,8 @@ export default function Financial() {
   const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
   const [selectedExpenses, setSelectedExpenses] = useState<Set<string>>(new Set());
   const [funcModalOpen, setFuncModalOpen] = useState(false);
-  const [funcValorPago, setFuncValorPago] = useState(0);
+  const [empTotalDue, setEmpTotalDue] = useState(0);
+  const [empTotalPaid, setEmpTotalPaid] = useState(0);
   const [activeTab, setActiveTab] = useState("resumo");
 
   // Filters
