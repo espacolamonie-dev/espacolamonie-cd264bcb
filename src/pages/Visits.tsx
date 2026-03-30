@@ -162,7 +162,7 @@ export default function Visits() {
     const toLocalDate = (isoStr: string) => spFormatter.format(new Date(isoStr));
     const activeVisits = visits.filter(v => v.status !== "Cancelada");
     const visitsToday = activeVisits.filter(v => v.visitDate === today).length;
-    const scheduledToday = visits.filter(v => toLocalDate(v.createdAt) === today).length;
+    const scheduledToday = activeVisits.filter(v => toLocalDate(v.createdAt) === today).length;
     const organicCount = activeVisits.filter(v => !v.leadSource || v.leadSource === "Orgânico").length;
     const paidCount = activeVisits.filter(v => ["Tráfego Pago", "Facebook", "Instagram", "Google"].includes(v.leadSource)).length;
     const indicacaoCount = activeVisits.filter(v => v.leadSource === "Indicação").length;
