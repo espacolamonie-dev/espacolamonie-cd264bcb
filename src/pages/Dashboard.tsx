@@ -392,9 +392,28 @@ export default function Dashboard() {
             </div>
             <p className={`text-lg md:text-xl font-display font-bold tracking-tight ${card.valueColor}`}>{card.value}</p>
             <p className="text-[11px] text-muted-foreground mt-0.5" style={{ fontFamily: "var(--font-body)" }}>{card.label}</p>
-            {card.sub && <p className="text-[10px] text-muted-foreground/70 mt-0.5">{card.sub}</p>}
           </div>
         ))}
+        {/* Employee card with month selector */}
+        <div className="rounded-2xl border border-border bg-card p-5 transition-all duration-200 hover:shadow-md">
+          <div className="flex items-center justify-between mb-2">
+            <div className="rounded-xl bg-violet-500/10 p-2">
+              <UserRound size={16} className="text-violet-500" />
+            </div>
+            <select
+              value={funcMonth}
+              onChange={(e) => setFuncMonth(e.target.value)}
+              className="text-[10px] bg-transparent border border-border rounded-md px-1.5 py-0.5 text-muted-foreground cursor-pointer capitalize"
+            >
+              {funcMonthOptions.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+          <p className="text-lg md:text-xl font-display font-bold tracking-tight text-violet-600 dark:text-violet-400">{fmt(pagamentoFuncTotal)}</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5" style={{ fontFamily: "var(--font-body)" }}>Funcionário ({contratosFechadosDash.length} contratos)</p>
+          <p className="text-[10px] text-muted-foreground/70 mt-0.5">Pago: {fmt(funcPagoDash)} · Falta: {fmt(funcFaltaDash)}</p>
+        </div>
       </div>
 
       {/* Conversion metrics */}
