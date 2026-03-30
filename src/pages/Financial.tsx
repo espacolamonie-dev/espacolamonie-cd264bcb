@@ -307,15 +307,10 @@ export default function Financial() {
     }).reduce((s, e) => s + e.amount, 0);
   }, [expenses, monthStart, monthEnd]);
 
-  const VALOR_POR_CONTRATO_FUNCIONARIO = 70;
-  const contratosFechadosNoMes = activeContracts.filter(c => {
-    const d = new Date(c.createdAt); return d >= monthStart && d <= monthEnd;
-  });
-  const pagamentoFuncionario = contratosFechadosNoMes.length * VALOR_POR_CONTRATO_FUNCIONARIO;
-  const funcFalta = Math.max(0, pagamentoFuncionario - funcValorPago);
+  const funcFalta = Math.max(0, empTotalDue - empTotalPaid);
 
   const totalReservas = reserves.melhoria.saved + reserves.marketing.saved;
-  const lucroDoMes = recebidoNoMes - despesasDoMes - funcValorPago - totalReservas;
+  const lucroDoMes = recebidoNoMes - despesasDoMes - empTotalPaid - totalReservas;
 
   // Build full extrato
   const extrato = useMemo((): FinancialTransaction[] => {
