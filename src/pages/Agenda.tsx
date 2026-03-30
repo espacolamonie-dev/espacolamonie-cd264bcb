@@ -237,19 +237,6 @@ export default function Agenda() {
   // Selected day events for side panel
   const selectedDayEvents = selectedDay ? (eventsByDate[selectedDay] || []) : [];
 
-  if (loading) {
-    return (
-      <div className="animate-fade-in space-y-6">
-        <Skeleton className="h-9 w-40" />
-        <Skeleton className="h-8 w-full max-w-xs mx-auto" />
-        <Skeleton className="h-[400px] w-full rounded-xl" />
-      </div>
-    );
-  }
-
-  const totalContracts = activeContracts.length;
-  const totalVisits = visitsList.filter((v) => v.status !== "Cancelada").length;
-
   // Calculate available dates for the rest of the year
   const { availableWeekends, availableThuFri } = useMemo(() => {
     const today = new Date();
