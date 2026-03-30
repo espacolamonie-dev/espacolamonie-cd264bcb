@@ -375,7 +375,7 @@ Deno.serve(async (req) => {
         visit_date: visitDate,
         visit_time: visitTime + ':00',
         notes: notes || '',
-        lead_source: 'Agendamento online',
+        lead_source: 'Orgânico',
         status: 'Agendada',
         event_type_desired: eventTypeDesired || '',
         client_id: clientId,
@@ -421,7 +421,7 @@ Deno.serve(async (req) => {
             `📅 Data de interesse: ${interestEventDate ? interestEventDate.split('-').reverse().join('/') : '—'}`,
             `👥 Quantidade de pessoas: ${guestCount || '—'}`,
             notes ? `📝 Observações: ${notes}` : '',
-            `🌐 Origem: Agendamento online`,
+            `🌐 Origem: Orgânico (agendamento online)`,
             '',
             '— Criado automaticamente pelo CRM Lamoniê',
           ].filter(Boolean).join('\n');
