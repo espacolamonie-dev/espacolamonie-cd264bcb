@@ -27,7 +27,7 @@ export default function Auth() {
     } catch (error: any) {
       toast({
         title: "Erro",
-        description: error.message,
+        description: getSafeErrorMessage(error),
         variant: "destructive",
       });
     } finally {
