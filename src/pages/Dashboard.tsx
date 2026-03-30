@@ -256,6 +256,19 @@ export default function Dashboard() {
 
   const tooltipFormatter = (value: number) => fmt(value);
 
+  const funcMonthOptions = useMemo(() => {
+    const opts: { value: string; label: string }[] = [];
+    for (let i = 0; i < 12; i++) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      opts.push({
+        value: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
+        label: format(d, "MMM yyyy", { locale: ptBR }),
+      });
+    }
+    return opts;
+  }, []);
+
   if (loading) {
     return (
       <div className="animate-fade-in space-y-8">
