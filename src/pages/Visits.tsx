@@ -192,6 +192,7 @@ export default function Visits() {
     const today = spFormatter.format(new Date());
     let list = visits;
     const toLocalDate = (isoStr: string) => spFormatter.format(new Date(isoStr));
+    const contractVisitIds = new Set(contracts.filter(c => c.visit_id).map(c => c.visit_id));
     if (filterStatus === "today") {
       list = list.filter((v) => v.visitDate === today && v.status !== "Cancelada");
     } else if (filterStatus === "scheduled_today") {
@@ -201,7 +202,7 @@ export default function Visits() {
     } else if (filterStatus === "paid_traffic") {
       list = list.filter((v) => v.leadSource === "Tráfego Pago" && v.status !== "Cancelada");
     } else if (filterStatus === "converted") {
-      list = list.filter((v) => v.status === "Convertida em contrato");
+      list = list.filter((v) => v.status === "Convertida em contrato" || contractVisitIds.has(v.id));
     } else if (filterStatus === "all") {
       list = list.filter((v) => v.status !== "Cancelada");
     } else {
