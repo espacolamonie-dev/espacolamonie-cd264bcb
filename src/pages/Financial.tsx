@@ -562,17 +562,17 @@ export default function Financial() {
               <p className="text-[10px] text-muted-foreground mt-1">Recebido - Despesas - Func. - Reservas</p>
             </Card>
 
-            <Card className="p-4 border-violet-500/30 bg-gradient-to-br from-violet-500/5 to-transparent cursor-pointer hover:shadow-md transition-shadow" onClick={() => setFuncModalOpen(true)}>
+            <Card className="p-4 border-violet-500/30 bg-gradient-to-br from-violet-500/5 to-transparent cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab("funcionarios")}>
               <div className="flex items-center gap-2 mb-2">
                 <div className="rounded-full bg-violet-500/15 p-2">
                   <UserRound size={14} className="text-violet-500" />
                 </div>
-                <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider leading-tight">Funcionário</p>
+                <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider leading-tight">Funcionários</p>
               </div>
-              <p className="text-xl lg:text-2xl font-display font-bold text-violet-600 dark:text-violet-400 tracking-tight">{fmt(pagamentoFuncionario)}</p>
+              <p className="text-xl lg:text-2xl font-display font-bold text-violet-600 dark:text-violet-400 tracking-tight">{fmt(empTotalDue)}</p>
               <div className="flex items-center justify-between mt-1">
-                <p className="text-[10px] text-muted-foreground">{contratosFechadosNoMes.length}× R$70</p>
-                <p className="text-[10px] text-success font-medium">Pago: {fmt(funcValorPago)}</p>
+                <p className="text-[10px] text-muted-foreground">A pagar no mês</p>
+                <p className="text-[10px] text-success font-medium">Pago: {fmt(empTotalPaid)}</p>
               </div>
             </Card>
           </div>
@@ -832,7 +832,7 @@ export default function Financial() {
               </div>
               <div>
                 <p className="text-[10px] text-muted-foreground uppercase font-semibold">Funcionário</p>
-                <p className="text-lg font-display font-bold text-violet-600 dark:text-violet-400">{fmt(funcValorPago)}</p>
+                <p className="text-lg font-display font-bold text-violet-600 dark:text-violet-400">{fmt(empTotalPaid)}</p>
               </div>
               <div>
                 <p className="text-[10px] text-muted-foreground uppercase font-semibold">Reservas</p>
