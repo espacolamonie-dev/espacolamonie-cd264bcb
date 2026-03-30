@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getUtmForDb } from "@/lib/utmTracker";
 
 const getUserId = async (): Promise<string> => {
   const { data: { user } } = await supabase.auth.getUser();
@@ -114,6 +115,7 @@ export const addVisit = async (v: {
     }
   }
 
+  const utm = getUtmForDb();
   const { data, error } = await (supabase.from("visits" as any) as any)
     .insert({
       user_id: userId,
@@ -129,6 +131,7 @@ export const addVisit = async (v: {
       deposit_percent: v.depositPercent || 0,
       guest_count: v.guestCount || 0,
       client_id: clientId,
+      ...utm,
     })
     .select()
     .single();
