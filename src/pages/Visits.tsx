@@ -220,7 +220,7 @@ export default function Visits() {
       return (a.visitTime || "23:59").localeCompare(b.visitTime || "23:59");
     });
     return list;
-  }, [visits, filterStatus, search]);
+  }, [visits, contracts, filterStatus, search]);
 
   const resetForm = () => {
     setFormName(""); setFormPhone(""); setFormInterestDate("");
