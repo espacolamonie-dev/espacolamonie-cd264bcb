@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { Plus, Search, Phone, CalendarDays, Clock, Filter, Eye, Check, RotateCcw, X as XIcon, AlertTriangle, Pencil, Users, Megaphone, TrendingUp, Link2, ExternalLink, MessageCircle, DollarSign, Copy } from "lucide-react";
+import { AttributionBadge } from "@/components/AttributionBadge";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -520,6 +521,9 @@ export default function Visits() {
       <div className="flex justify-between"><span className="text-muted-foreground">Horário</span><span>{visit.visitTime.slice(0, 5)}</span></div>
       <div className="flex justify-between"><span className="text-muted-foreground">Status</span><Badge className={`text-[10px] font-medium border rounded-full px-2.5 py-0.5 ${VISIT_STATUS_COLORS[visit.status as VisitStatus] || ""}`}>{visit.status}</Badge></div>
       <div className="flex justify-between"><span className="text-muted-foreground">Fonte do Lead</span><Badge variant="outline" className="text-[10px] font-medium rounded-full px-2.5 py-0.5">{visit.leadSource || "Orgânico"}</Badge></div>
+      {visit.utmSource && (
+        <div className="flex justify-between items-center"><span className="text-muted-foreground">Origem campanha</span><AttributionBadge utmSource={visit.utmSource} utmCampaign={visit.utmCampaign} utmMedium={visit.utmMedium} metaAdId={visit.metaAdId} metaAdsetId={visit.metaAdsetId} compact /></div>
+      )}
       <div className="flex justify-between"><span className="text-muted-foreground">Data de cadastro</span><span className="text-sm">{format(new Date(visit.createdAt), "dd/MM/yyyy 'às' HH:mm")}</span></div>
       {visit.notes && (
         <div><span className="text-muted-foreground block mb-1">Observações</span><p className="text-sm bg-muted/50 rounded-lg p-3">{visit.notes}</p></div>
