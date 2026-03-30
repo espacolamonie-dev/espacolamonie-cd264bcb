@@ -558,6 +558,13 @@ export default function Contracts() {
                   </PopoverContent>
                 </Popover>
               </div>
+              {/* Read-only origin */}
+              <div className="grid gap-1.5">
+                <Label className="text-xs font-medium text-muted-foreground">Origem do Lead</Label>
+                <div className="h-10 flex items-center px-3 rounded-lg border border-border bg-muted/50 text-sm">
+                  {(editing ? (contracts.find(c => c.id === editing.id)?.source || "") : selectedClientOrigin) || "Não definido"}
+                </div>
+              </div>
               <div className="grid gap-1.5">
                 <Label className="text-xs font-medium text-muted-foreground">Tipo de evento</Label>
                 <Select value={form.eventType} onValueChange={(v) => set("eventType", v)}>
