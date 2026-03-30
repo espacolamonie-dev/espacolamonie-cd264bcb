@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import ImportStatementModal from "@/components/ImportStatementModal";
 import ImportBankEntryModal from "@/components/ImportBankEntryModal";
+import EmployeesTab from "@/components/EmployeesTab";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -514,9 +515,10 @@ export default function Financial() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
           <TabsTrigger value="resumo" className="gap-2"><BarChart3 size={14} /> Resumo</TabsTrigger>
           <TabsTrigger value="fluxo" className="gap-2"><ArrowUpDown size={14} /> Fluxo de Caixa</TabsTrigger>
+          <TabsTrigger value="funcionarios" className="gap-2"><UserRound size={14} /> Funcionários</TabsTrigger>
           <TabsTrigger value="reservas" className="gap-2"><PiggyBank size={14} /> Reservas</TabsTrigger>
         </TabsList>
 
