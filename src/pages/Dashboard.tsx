@@ -55,9 +55,14 @@ export default function Dashboard() {
   });
   const [waCount, setWaCount] = useState("");
   const [waSaving, setWaSaving] = useState(false);
-  const [funcMonth, setFuncMonth] = useState(() => {
+  const [funcDateFrom, setFuncDateFrom] = useState(() => {
     const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+  });
+  const [funcDateTo, setFuncDateTo] = useState(() => {
+    const now = new Date();
+    const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return `${last.getFullYear()}-${String(last.getMonth() + 1).padStart(2, "0")}-${String(last.getDate()).padStart(2, "0")}`;
   });
 
   useEffect(() => {
@@ -256,18 +261,7 @@ export default function Dashboard() {
 
   const tooltipFormatter = (value: number) => fmt(value);
 
-  const funcMonthOptions = useMemo(() => {
-    const opts: { value: string; label: string }[] = [];
-    for (let i = 0; i < 12; i++) {
-      const d = new Date();
-      d.setMonth(d.getMonth() - i);
-      opts.push({
-        value: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
-        label: format(d, "MMM yyyy", { locale: ptBR }),
-      });
-    }
-    return opts;
-  }, []);
+
 
   if (loading) {
     return (
@@ -291,16 +285,15 @@ export default function Dashboard() {
   ];
 
   const VALOR_POR_CONTRATO_FUNCIONARIO = 70;
-  const funcMonthDate = new Date(funcMonth + "-01T12:00:00");
-  const funcMonthKey = funcMonth;
-  const funcMsStart = new Date(funcMonthDate.getFullYear(), funcMonthDate.getMonth(), 1);
-  const funcMsEnd = new Date(funcMonthDate.getFullYear(), funcMonthDate.getMonth() + 1, 0, 23, 59, 59);
+  const funcStart = new Date(funcDateFrom + "T00:00:00");
+  const funcEnd = new Date(funcDateTo + "T23:59:59");
+  const funcPeriodKey = `${funcDateFrom}_${funcDateTo}`;
   const contratosFechadosDash = contracts.filter(c => {
     const d = new Date(c.createdAt);
-    return d >= funcMsStart && d <= funcMsEnd;
+    return d >= funcStart && d <= funcEnd;
   });
   const pagamentoFuncTotal = contratosFechadosDash.length * VALOR_POR_CONTRATO_FUNCIONARIO;
-  const funcPagoDash = Number(localStorage.getItem(`func_pago_${funcMonthKey}`) || "0");
+  const funcPagoDash = Number(localStorage.getItem(`func_pago_${funcPeriodKey}`) || "0");
   const funcFaltaDash = Math.max(0, pagamentoFuncTotal - funcPagoDash);
 
   const now2 = new Date();
@@ -394,25 +387,31 @@ export default function Dashboard() {
             <p className="text-[11px] text-muted-foreground mt-0.5" style={{ fontFamily: "var(--font-body)" }}>{card.label}</p>
           </div>
         ))}
-        {/* Employee card with month selector */}
-        <div className="rounded-2xl border border-border bg-card p-5 transition-all duration-200 hover:shadow-md">
-          <div className="flex items-center justify-between mb-2">
+        {/* Employee card with date range selector */}
+        <div className="rounded-2xl border border-border bg-card p-5 transition-all duration-200 hover:shadow-md col-span-2 lg:col-span-1">
+          <div className="flex items-center justify-between mb-3">
             <div className="rounded-xl bg-violet-500/10 p-2">
               <UserRound size={16} className="text-violet-500" />
             </div>
-            <select
-              value={funcMonth}
-              onChange={(e) => setFuncMonth(e.target.value)}
-              className="text-[10px] bg-transparent border border-border rounded-md px-1.5 py-0.5 text-muted-foreground cursor-pointer capitalize"
-            >
-              {funcMonthOptions.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
           </div>
           <p className="text-lg md:text-xl font-display font-bold tracking-tight text-violet-600 dark:text-violet-400">{fmt(pagamentoFuncTotal)}</p>
           <p className="text-[11px] text-muted-foreground mt-0.5" style={{ fontFamily: "var(--font-body)" }}>Funcionário ({contratosFechadosDash.length} contratos)</p>
           <p className="text-[10px] text-muted-foreground/70 mt-0.5">Pago: {fmt(funcPagoDash)} · Falta: {fmt(funcFaltaDash)}</p>
+          <div className="flex items-center gap-1.5 mt-3">
+            <input
+              type="date"
+              value={funcDateFrom}
+              onChange={(e) => setFuncDateFrom(e.target.value)}
+              className="text-[10px] bg-transparent border border-border rounded-md px-1.5 py-1 text-muted-foreground w-[105px]"
+            />
+            <span className="text-[10px] text-muted-foreground">até</span>
+            <input
+              type="date"
+              value={funcDateTo}
+              onChange={(e) => setFuncDateTo(e.target.value)}
+              className="text-[10px] bg-transparent border border-border rounded-md px-1.5 py-1 text-muted-foreground w-[105px]"
+            />
+          </div>
         </div>
       </div>
 
