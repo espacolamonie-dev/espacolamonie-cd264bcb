@@ -25,6 +25,8 @@ export function loadMetaPixel(pixelId: string) {
     s.parentNode.insertBefore(t, s);
   })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js");
 
+  // Disable automatic event tracking (SubscribedButtonClick, etc.)
+  (window as any).fbq("set", "autoConfig", false, pixelId);
   (window as any).fbq("init", pixelId);
   (window as any).fbq("track", "PageView");
 }
