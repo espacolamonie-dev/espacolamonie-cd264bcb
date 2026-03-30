@@ -67,6 +67,9 @@ export default function BookVisit() {
 
   const [confirmData, setConfirmData] = useState<{ clientName: string; visitDate: string; visitTime: string } | null>(null);
 
+  // Capture UTM params on mount
+  useEffect(() => { captureUtmParams(); }, []);
+
   // Fetch schedule settings on mount
   useEffect(() => {
     (async () => {
