@@ -177,18 +177,35 @@ export default function Contracts() {
       } else {
         // Find linked visit for this client
         let visitId: string | undefined;
+        let visitOrigin = "";
         try {
           const { data: visitRows } = await supabase
             .from("visits")
-            .select("id")
+            .select("id, lead_source")
             .eq("client_id", form.clientId)
             .order("created_at", { ascending: false })
             .limit(1);
-          if (visitRows && visitRows.length > 0) visitId = visitRows[0].id;
+          if (visitRows && visitRows.length > 0) {
+            visitId = visitRows[0].id;
+            visitOrigin = (visitRows[0] as any).lead_source || "";
+          }
         } catch {}
-        const newContract = await addContract({ ...form, visitId, source: visitId ? "visita" : "" });
+
+        // Determine origin: client > visit > fallback
+        const clientOrigin = selectedClientOrigin || "";
+        const finalOrigin = clientOrigin || visitOrigin || "Orgânico";
+
+        const newContract = await addContract({ ...form, visitId, source: finalOrigin });
         toast.success("Contrato criado com sucesso");
         triggerGoogleSync(newContract.id);
+
+        // Auto-update visit status to "Convertida em contrato"
+        if (visitId) {
+          try {
+            const { updateVisit } = await import("@/data/visitStore");
+            await updateVisit(visitId, { status: "Convertida em contrato" });
+          } catch {}
+        }
       }
       setOpen(false); await load();
     } catch (e: any) { toast.error(e.message); }
