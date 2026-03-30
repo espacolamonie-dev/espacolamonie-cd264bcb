@@ -64,8 +64,9 @@ export default function Dashboard() {
     const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     return `${last.getFullYear()}-${String(last.getMonth() + 1).padStart(2, "0")}-${String(last.getDate()).padStart(2, "0")}`;
   });
+  const [empTotalDue, setEmpTotalDue] = useState(0);
+  const [empTotalPaid, setEmpTotalPaid] = useState(0);
 
-  useEffect(() => {
     const loadData = async () => {
       try {
         const [allContracts, clients, totalIn, totalOut, balance, activePayments, manualEntries, expenses, visits] = await Promise.all([
