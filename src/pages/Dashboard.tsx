@@ -55,6 +55,10 @@ export default function Dashboard() {
   });
   const [waCount, setWaCount] = useState("");
   const [waSaving, setWaSaving] = useState(false);
+  const [funcMonth, setFuncMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  });
 
   useEffect(() => {
     const loadData = async () => {
