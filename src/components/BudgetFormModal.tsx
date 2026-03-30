@@ -155,12 +155,10 @@ export default function BudgetFormModal({ budgetId, open, onClose, onSaved }: Pr
         if (contract.event_type) setEventType(contract.event_type);
         if (contract.event_date) setEventDate(contract.event_date);
         if (contract.guest_count) setGuestCount(contract.guest_count);
-        if (contract.total_value) setDepositValue(contract.deposit_value || 0);
       } else if (visit) {
         if (visit.event_type_desired) setEventType(visit.event_type_desired);
         if (visit.interest_event_date) setEventDate(visit.interest_event_date);
         if (visit.guest_count) setGuestCount(visit.guest_count);
-        if (visit.event_value) setDepositValue(visit.event_value * (visit.deposit_percent / 100));
       }
     } catch (err) {
       // Silent fail - fields just won't auto-fill
