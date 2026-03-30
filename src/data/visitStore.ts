@@ -133,6 +133,12 @@ export const addVisit = async (v: {
     .select()
     .single();
   if (error) throw error;
+
+  // Track Meta event (non-blocking)
+  import("@/lib/metaPixel").then(({ trackMetaEvent }) => {
+    trackMetaEvent("Schedule", { phone: v.clientPhone, name: v.clientName }).catch(() => {});
+  });
+
   return mapVisit(data);
 };
 

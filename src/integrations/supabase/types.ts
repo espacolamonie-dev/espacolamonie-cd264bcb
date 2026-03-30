@@ -890,6 +890,84 @@ export type Database = {
         }
         Relationships: []
       }
+      meta_event_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          event_id: string
+          event_name: string
+          id: string
+          payload: Json | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          event_id?: string
+          event_name?: string
+          id?: string
+          payload?: Json | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          event_id?: string
+          event_name?: string
+          id?: string
+          payload?: Json | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      meta_pixel_settings: {
+        Row: {
+          access_token: string
+          capi_enabled: boolean
+          conversion_event: string
+          created_at: string
+          id: string
+          pixel_enabled: boolean
+          pixel_id: string
+          send_value: boolean
+          updated_at: string
+          user_id: string
+          value_source: string
+          whatsapp_number: string
+        }
+        Insert: {
+          access_token?: string
+          capi_enabled?: boolean
+          conversion_event?: string
+          created_at?: string
+          id?: string
+          pixel_enabled?: boolean
+          pixel_id?: string
+          send_value?: boolean
+          updated_at?: string
+          user_id: string
+          value_source?: string
+          whatsapp_number?: string
+        }
+        Update: {
+          access_token?: string
+          capi_enabled?: boolean
+          conversion_event?: string
+          created_at?: string
+          id?: string
+          pixel_enabled?: boolean
+          pixel_id?: string
+          send_value?: boolean
+          updated_at?: string
+          user_id?: string
+          value_source?: string
+          whatsapp_number?: string
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           amount: number
