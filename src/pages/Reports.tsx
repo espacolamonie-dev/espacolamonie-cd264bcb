@@ -6,6 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { getContracts, getClients, getActivePayments, getManualEntries, getExpenses } from "@/data/store";
 import { getVisits } from "@/data/visitStore";
 import type { Contract } from "@/types";
+import { CampaignAttribution } from "@/components/CampaignAttribution";
+import { format, parseISO, startOfMonth, endOfMonth, isBefore, isAfter, subMonths } from "date-fns";
 import { format, parseISO, startOfMonth, endOfMonth, isBefore, isAfter, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -394,6 +396,9 @@ export default function Reports() {
           )}
         </div>
       </div>
+
+      {/* Campaign Attribution */}
+      <CampaignAttribution visits={visits} contracts={contracts} />
     </div>
   );
 }
