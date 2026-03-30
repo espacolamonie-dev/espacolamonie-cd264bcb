@@ -15,6 +15,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { getSafeErrorMessage } from "@/lib/errorSanitizer";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { getVisits, addVisit, updateVisit, deleteVisit, type Visit, type LeadSource, LEAD_SOURCE_OPTIONS } from "@/data/visitStore";
@@ -241,7 +242,7 @@ export default function Visits() {
       resetForm();
       loadVisits();
     } catch (e: any) {
-      toast.error(e.message || "Erro ao agendar visita");
+      toast.error(getSafeErrorMessage(e));
     } finally {
       setSaving(false);
     }
@@ -297,7 +298,7 @@ export default function Visits() {
         loadVisits();
       }
     } catch (e: any) {
-      toast.error(e.message || "Erro ao alterar status");
+      toast.error(getSafeErrorMessage(e));
       loadVisits();
     }
   };
@@ -481,7 +482,7 @@ export default function Visits() {
       setDetailVisit(null);
       loadVisits();
     } catch (e: any) {
-      toast.error(e.message || "Erro ao salvar");
+      toast.error(getSafeErrorMessage(e));
     } finally {
       setEditSaving(false);
     }

@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { getSafeErrorMessage } from "@/lib/errorSanitizer";
 import { getClients, addClient, updateClient, deleteClient, getContractsByClient } from "@/data/store";
 import { formatFullAddress } from "@/types";
 import type { Client } from "@/types";
@@ -120,7 +121,7 @@ export default function Clients() {
       if (editing) { await updateClient(editing.id, payload); toast.success("Cliente salvo com sucesso"); }
       else { await addClient(payload as any); toast.success("Cliente cadastrado com sucesso"); }
       setOpen(false); await load();
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e: any) { toast.error(getSafeErrorMessage(e)); }
   };
 
   const handleDeleteRequest = async (c: Client) => {
@@ -131,13 +132,13 @@ export default function Clients() {
         return;
       }
       setDeleteTarget(c);
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e: any) { toast.error(getSafeErrorMessage(e)); }
   };
 
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
     try { await deleteClient(deleteTarget.id); toast.success("Cliente removido"); setDeleteTarget(null); await load(); }
-    catch (e: any) { toast.error(e.message); }
+    catch (e: any) { toast.error(getSafeErrorMessage(e)); }
   };
 
   const set = (field: string, value: string) => setForm((p) => ({ ...p, [field]: value }));

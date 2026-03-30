@@ -14,6 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { getSafeErrorMessage } from "@/lib/errorSanitizer";
 import { getContracts, getClients, addContract, updateContract, deleteContract } from "@/data/store";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { CONTRACT_STATUS_LABELS, CONTRACT_STATUS_COLORS, PAYMENT_STATUS_LABELS, PAYMENT_STATUS_COLORS } from "@/types";
@@ -221,7 +222,7 @@ export default function Contracts() {
         }
       }
       setOpen(false); await load();
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e: any) { toast.error(getSafeErrorMessage(e)); }
   };
 
   const set = (field: string, value: any) => setForm((p) => ({ ...p, [field]: value }));
@@ -717,7 +718,7 @@ export default function Contracts() {
                   setDeleteTarget(null);
                   await load();
                 } catch (e: any) {
-                  toast.error(e.message);
+                  toast.error(getSafeErrorMessage(e));
                 }
               }}
             >

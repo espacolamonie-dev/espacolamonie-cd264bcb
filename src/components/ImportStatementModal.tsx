@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { getSafeErrorMessage } from "@/lib/errorSanitizer";
 import { Upload, FileText, Check, X, Loader2 } from "lucide-react";
 import { addExpense } from "@/data/store";
 
@@ -183,7 +184,7 @@ export default function ImportStatementModal({ open, onOpenChange, onImported }:
       onImported();
       handleClose();
     } catch (err: any) {
-      toast.error(err.message || "Erro ao importar despesas");
+      toast.error(getSafeErrorMessage(err));
       setStep("preview");
     }
   };
