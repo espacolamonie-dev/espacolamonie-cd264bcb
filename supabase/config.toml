@@ -21,3 +21,6 @@ verify_jwt = false
 [functions.manage-push]
 verify_jwt = false
 
+[functions.meta-conversion]
+verify_jwt = false
+
