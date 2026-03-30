@@ -32,13 +32,14 @@ const EVENT_TYPES_OPTIONS = [
 
 const NOTIFICATION_PHONE = "5531998595155";
 
-type VisitStatus = "Agendada" | "Confirmada" | "Remarcada" | "Cancelada";
+type VisitStatus = "Agendada" | "Confirmada" | "Remarcada" | "Cancelada" | "Convertida em contrato";
 
 const VISIT_STATUS_COLORS: Record<VisitStatus, string> = {
   Agendada: "bg-primary/15 text-primary border-primary/30",
   Confirmada: "bg-success/15 text-success border-success/30",
   Remarcada: "bg-warning/15 text-warning border-warning/30",
   Cancelada: "bg-danger/15 text-danger border-danger/30",
+  "Convertida em contrato": "bg-violet-500/15 text-violet-600 border-violet-500/30",
 };
 
 const VISIT_STATUS_BG: Record<VisitStatus, string> = {
@@ -46,6 +47,7 @@ const VISIT_STATUS_BG: Record<VisitStatus, string> = {
   Confirmada: "border-l-success",
   Remarcada: "border-l-warning",
   Cancelada: "border-l-danger",
+  "Convertida em contrato": "border-l-violet-500",
 };
 
 function phoneMask(v: string): string {
@@ -166,8 +168,9 @@ export default function Visits() {
     const organicCount = activeVisits.filter(v => !v.leadSource || v.leadSource === "Orgânico").length;
     const paidCount = activeVisits.filter(v => ["Tráfego Pago", "Facebook", "Instagram", "Google"].includes(v.leadSource)).length;
     const indicacaoCount = activeVisits.filter(v => v.leadSource === "Indicação").length;
+    const convertedCount = visits.filter(v => v.status === "Convertida em contrato").length;
     const totalLeads = activeVisits.length;
-    return { visitsToday, scheduledToday, organicCount, paidCount, indicacaoCount, totalLeads, spDayMonth };
+    return { visitsToday, scheduledToday, organicCount, paidCount, indicacaoCount, convertedCount, totalLeads, spDayMonth };
   }, [visits]);
 
   const filtered = useMemo(() => {
@@ -183,6 +186,8 @@ export default function Visits() {
       list = list.filter((v) => v.leadSource === "Orgânico" && v.status !== "Cancelada");
     } else if (filterStatus === "paid_traffic") {
       list = list.filter((v) => v.leadSource === "Tráfego Pago" && v.status !== "Cancelada");
+    } else if (filterStatus === "converted") {
+      list = list.filter((v) => v.status === "Convertida em contrato");
     } else if (filterStatus === "all") {
       list = list.filter((v) => v.status !== "Cancelada");
     } else {
@@ -417,6 +422,7 @@ export default function Visits() {
               <SelectItem value="Agendada">Agendada</SelectItem>
               <SelectItem value="Confirmada">Confirmada</SelectItem>
               <SelectItem value="Remarcada">Remarcada</SelectItem>
+              <SelectItem value="Convertida em contrato">Convertida em contrato</SelectItem>
               <SelectItem value="Cancelada">Cancelada</SelectItem>
             </SelectContent>
           </Select>
@@ -576,7 +582,7 @@ export default function Visits() {
         )}
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <div
           className={`rounded-xl border bg-card p-4 cursor-pointer hover:border-primary/50 transition-colors ${filterStatus === "today" ? "border-primary/50 ring-1 ring-primary/20" : "border-border"}`}
           onClick={() => setFilterStatus(filterStatus === "today" ? "all" : "today")}
@@ -620,6 +626,17 @@ export default function Visits() {
             {filterStatus === "paid_traffic" && <Badge variant="outline" className="text-[9px] px-1.5 py-0 ml-auto">Filtrado</Badge>}
           </div>
           <p className="text-2xl font-bold">{stats.paidCount}<span className="text-sm font-normal text-muted-foreground ml-1">/ {stats.totalLeads}</span></p>
+        </div>
+        <div
+          className={`rounded-xl border bg-card p-4 cursor-pointer hover:border-violet-500/50 transition-colors ${filterStatus === "converted" ? "border-violet-500/50 ring-1 ring-violet-500/20" : "border-border"}`}
+          onClick={() => setFilterStatus(filterStatus === "converted" ? "all" : "converted")}
+        >
+          <div className="flex items-center gap-2 text-muted-foreground mb-1">
+            <Check size={14} />
+            <span className="text-xs font-medium">Convertidas</span>
+            {filterStatus === "converted" && <Badge variant="outline" className="text-[9px] px-1.5 py-0 ml-auto">Filtrado</Badge>}
+          </div>
+          <p className="text-2xl font-bold text-violet-600">{stats.convertedCount}<span className="text-sm font-normal text-muted-foreground ml-1">/ {stats.totalLeads}</span></p>
         </div>
       </div>
 

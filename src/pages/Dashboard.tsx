@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { parseLocalDate, formatDateBR } from "@/lib/dateUtils";
 import {
   FileText, CheckCircle, Clock, CalendarDays, TrendingUp, TrendingDown, Wallet,
@@ -55,6 +55,10 @@ export default function Dashboard() {
   });
   const [waCount, setWaCount] = useState("");
   const [waSaving, setWaSaving] = useState(false);
+  const [funcMonth, setFuncMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  });
 
   useEffect(() => {
     const loadData = async () => {
@@ -252,6 +256,19 @@ export default function Dashboard() {
 
   const tooltipFormatter = (value: number) => fmt(value);
 
+  const funcMonthOptions = useMemo(() => {
+    const opts: { value: string; label: string }[] = [];
+    for (let i = 0; i < 12; i++) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      opts.push({
+        value: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
+        label: format(d, "MMM yyyy", { locale: ptBR }),
+      });
+    }
+    return opts;
+  }, []);
+
   if (loading) {
     return (
       <div className="animate-fade-in space-y-8">
@@ -274,24 +291,26 @@ export default function Dashboard() {
   ];
 
   const VALOR_POR_CONTRATO_FUNCIONARIO = 70;
-  const now2 = new Date();
-  const currentMonthKey = `${now2.getFullYear()}-${String(now2.getMonth() + 1).padStart(2, '0')}`;
-  const msStart = new Date(now2.getFullYear(), now2.getMonth(), 1);
-  const msEnd = new Date(now2.getFullYear(), now2.getMonth() + 1, 0, 23, 59, 59);
+  const funcMonthDate = new Date(funcMonth + "-01T12:00:00");
+  const funcMonthKey = funcMonth;
+  const funcMsStart = new Date(funcMonthDate.getFullYear(), funcMonthDate.getMonth(), 1);
+  const funcMsEnd = new Date(funcMonthDate.getFullYear(), funcMonthDate.getMonth() + 1, 0, 23, 59, 59);
   const contratosFechadosDash = contracts.filter(c => {
     const d = new Date(c.createdAt);
-    return d >= msStart && d <= msEnd;
+    return d >= funcMsStart && d <= funcMsEnd;
   });
   const pagamentoFuncTotal = contratosFechadosDash.length * VALOR_POR_CONTRATO_FUNCIONARIO;
-  const funcPagoDash = Number(localStorage.getItem(`func_pago_${currentMonthKey}`) || "0");
+  const funcPagoDash = Number(localStorage.getItem(`func_pago_${funcMonthKey}`) || "0");
   const funcFaltaDash = Math.max(0, pagamentoFuncTotal - funcPagoDash);
+
+  const now2 = new Date();
+  const currentMonthKeyFin = `${now2.getFullYear()}-${String(now2.getMonth() + 1).padStart(2, '0')}`;
 
   const finCards = [
     { label: "Receita", value: fmt(financialSummary.totalIn), icon: TrendingUp, iconBg: "bg-success/10", iconColor: "text-success", valueColor: "text-success" },
     { label: "Despesas", value: fmt(financialSummary.totalOut), icon: TrendingDown, iconBg: "bg-danger/10", iconColor: "text-danger", valueColor: "text-danger" },
     { label: "Lucro líquido", value: fmt(financialSummary.balance - funcPagoDash), icon: Wallet, iconBg: "bg-primary/10", iconColor: "text-primary", valueColor: (financialSummary.balance - funcPagoDash) >= 0 ? "text-primary" : "text-danger" },
     { label: "Ticket médio", value: fmt(ticketMedio), icon: Receipt, iconBg: "bg-gold/10", iconColor: "text-gold-dark", valueColor: "text-foreground" },
-    { label: "Funcionário", value: fmt(pagamentoFuncTotal), icon: UserRound, iconBg: "bg-violet-500/10", iconColor: "text-violet-500", valueColor: "text-violet-600 dark:text-violet-400", sub: `Pago: ${fmt(funcPagoDash)} · Falta: ${fmt(funcFaltaDash)}` },
   ];
 
   return (
@@ -373,9 +392,28 @@ export default function Dashboard() {
             </div>
             <p className={`text-lg md:text-xl font-display font-bold tracking-tight ${card.valueColor}`}>{card.value}</p>
             <p className="text-[11px] text-muted-foreground mt-0.5" style={{ fontFamily: "var(--font-body)" }}>{card.label}</p>
-            {card.sub && <p className="text-[10px] text-muted-foreground/70 mt-0.5">{card.sub}</p>}
           </div>
         ))}
+        {/* Employee card with month selector */}
+        <div className="rounded-2xl border border-border bg-card p-5 transition-all duration-200 hover:shadow-md">
+          <div className="flex items-center justify-between mb-2">
+            <div className="rounded-xl bg-violet-500/10 p-2">
+              <UserRound size={16} className="text-violet-500" />
+            </div>
+            <select
+              value={funcMonth}
+              onChange={(e) => setFuncMonth(e.target.value)}
+              className="text-[10px] bg-transparent border border-border rounded-md px-1.5 py-0.5 text-muted-foreground cursor-pointer capitalize"
+            >
+              {funcMonthOptions.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+          <p className="text-lg md:text-xl font-display font-bold tracking-tight text-violet-600 dark:text-violet-400">{fmt(pagamentoFuncTotal)}</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5" style={{ fontFamily: "var(--font-body)" }}>Funcionário ({contratosFechadosDash.length} contratos)</p>
+          <p className="text-[10px] text-muted-foreground/70 mt-0.5">Pago: {fmt(funcPagoDash)} · Falta: {fmt(funcFaltaDash)}</p>
+        </div>
       </div>
 
       {/* Conversion metrics */}
