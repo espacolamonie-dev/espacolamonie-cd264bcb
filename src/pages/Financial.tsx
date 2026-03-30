@@ -139,16 +139,39 @@ export default function Financial() {
 
   useEffect(() => { load(); }, []);
 
-  useEffect(() => {
-    const key = `func_pago_${selectedMonth}`;
-    const saved = localStorage.getItem(key);
-    setFuncValorPago(saved ? Number(saved) : 0);
-  }, [selectedMonth]);
+  const loadEmployeeData = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const [year, month] = selectedMonth.split("-").map(Number);
+    const mStart = new Date(year, month - 1, 1);
+    const mEnd = new Date(year, month, 0, 23, 59, 59);
 
-  const handleFuncValorPagoChange = (val: number) => {
-    setFuncValorPago(val);
-    localStorage.setItem(`func_pago_${selectedMonth}`, String(val));
-  };
+    const { data: empData } = await (supabase.from("employees" as any) as any)
+      .select("*").eq("user_id", user.id).eq("is_active", true);
+    const { data: payData } = await (supabase.from("employee_payments" as any) as any)
+      .select("*").eq("user_id", user.id);
+
+    const employees = empData || [];
+    const empPayments = payData || [];
+    const ac = contracts.filter(c => c.status !== "cancelled");
+    const monthContracts = ac.filter(c => {
+      const d = new Date(c.createdAt); return d >= mStart && d <= mEnd;
+    });
+
+    let totalDue = 0;
+    let totalPaid = 0;
+    for (const emp of employees) {
+      if (emp.payment_type === "por_contrato") totalDue += monthContracts.length * Number(emp.payment_value);
+      else if (emp.payment_type === "fixo_mensal") totalDue += Number(emp.payment_value);
+      totalPaid += empPayments
+        .filter((p: any) => p.employee_id === emp.id && new Date(p.date) >= mStart && new Date(p.date) <= mEnd)
+        .reduce((s: number, p: any) => s + Number(p.amount), 0);
+    }
+    setEmpTotalDue(totalDue);
+    setEmpTotalPaid(totalPaid);
+  }, [selectedMonth, contracts]);
+
+  useEffect(() => { loadEmployeeData(); }, [loadEmployeeData]);
 
   useEffect(() => {
     const handleFocus = () => { load(); };
