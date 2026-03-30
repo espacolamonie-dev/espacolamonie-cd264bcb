@@ -271,6 +271,19 @@ export default function Agenda() {
     return { availableWeekends: weekends, availableThuFri: thuFri };
   }, [activeContracts, visitsList, externalGoogleEvents]);
 
+  const totalContracts = activeContracts.length;
+  const totalVisits = visitsList.filter((v) => v.status !== "Cancelada").length;
+
+  if (loading) {
+    return (
+      <div className="animate-fade-in space-y-6">
+        <Skeleton className="h-9 w-40" />
+        <Skeleton className="h-8 w-full max-w-xs mx-auto" />
+        <Skeleton className="h-[400px] w-full rounded-xl" />
+      </div>
+    );
+  }
+
   return (
     <div className="animate-fade-in space-y-6">
       {/* Summary cards */}
