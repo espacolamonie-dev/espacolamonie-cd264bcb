@@ -133,6 +133,7 @@ export default function Contracts() {
         if (v.interest_event_date) updates.eventDate = v.interest_event_date;
         if (v.guest_count > 0) updates.guestCount = v.guest_count;
         if (Number(v.event_value) > 0) updates.totalValue = Number(v.event_value);
+        if (Number(v.deposit_percent) > 0) updates.depositPercent = Number(v.deposit_percent);
         if (Object.keys(updates).length > 0) {
           setForm(prev => ({ ...prev, ...updates }));
           toast.info("Dados preenchidos automaticamente com base na visita", { duration: 3000 });
