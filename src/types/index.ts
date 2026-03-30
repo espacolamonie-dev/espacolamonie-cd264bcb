@@ -67,6 +67,7 @@ export interface Contract {
   remainingValue: number;
   status: ContractStatus;
   paymentStatus: PaymentStatus;
+  source?: string;
   createdAt: string;
   cancelledAt?: string;
   cancelledBy?: string;
