@@ -16,6 +16,20 @@ import {
 import { Plus, Trash2, UserRound, Phone, DollarSign, Edit, X } from "lucide-react";
 import { toast } from "sonner";
 
+const applyPhoneMask = (value: string): string => {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 2) return digits.length ? `(${digits}` : "";
+  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+};
+
+const formatPhone = (phone: string): string => {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length === 11) return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+  if (digits.length === 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  return phone;
+};
+
 const ROLE_OPTIONS = [
   "Marketing", "Atendimento", "Limpeza", "Decoração", "Cozinha", "Segurança", "Manutenção", "Administrativo",
 ];
