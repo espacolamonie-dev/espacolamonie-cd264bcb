@@ -8,7 +8,6 @@ export function loadMetaPixel(pixelId: string) {
   if (pixelLoaded || !pixelId) return;
   pixelLoaded = true;
 
-  // fbq snippet
   (function (f: any, b: any, e: any, v: any, n?: any, t?: any, s?: any) {
     if (f.fbq) return;
     n = f.fbq = function (...args: any[]) {
@@ -84,10 +83,12 @@ export async function sendConversionEvent(
 }
 
 /**
- * Unified tracker: fires pixel + CAPI with same event_id.
- * Reads settings to determine correct value (sinal vs total).
- * 
- * contractData is optional — only for Purchase events to resolve value_source.
+ * Standard Meta events:
+ * - Lead           → lead/client created
+ * - Schedule       → visit scheduled
+ * - InitiateCheckout → contract created (value = sinal)
+ * - CompleteRegistration → contract signed
+ * - Purchase       → deposit payment confirmed (value = sinal)
  */
 export async function trackMetaEvent(
   eventName: string,
@@ -110,16 +111,15 @@ export async function trackMetaEvent(
     if (!settings) return;
     const s = settings as any;
 
-    // Resolve custom_data value based on settings
+    // Build final custom data — always use deposit value for value-bearing events
     let finalCustomData = { ...customData };
-    if (eventName === "Purchase" && contractData) {
+    const valueEvents = ["InitiateCheckout", "Purchase"];
+    if (valueEvents.includes(eventName) && contractData) {
       if (s.send_value) {
-        const value = s.value_source === "deposit"
-          ? (contractData.depositValue ?? 0)
-          : (contractData.totalValue ?? 0);
+        // Always send deposit (sinal) value — this is the correct business metric
+        const value = contractData.depositValue ?? 0;
         finalCustomData = { ...finalCustomData, value, currency: "BRL" };
       } else {
-        // Remove value if send_value is off
         delete finalCustomData.value;
         delete finalCustomData.currency;
       }

@@ -81,9 +81,12 @@ export const addContract = async (c: {
   } as any).select().single();
   if (error) throw error;
 
-  // Track Meta event (non-blocking) — passes contract data for value_source resolution
+  // Track Meta: InitiateCheckout (contract created) with deposit value
   import("@/lib/metaPixel").then(({ trackMetaEvent }) => {
-    trackMetaEvent("Purchase", undefined, {}, {
+    trackMetaEvent("InitiateCheckout", undefined, {
+      content_name: source || "Direto",
+      content_category: c.eventType,
+    }, {
       totalValue: c.totalValue,
       depositValue: depositValue,
     }).catch(() => {});
