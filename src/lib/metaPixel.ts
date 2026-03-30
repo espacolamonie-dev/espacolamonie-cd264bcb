@@ -83,15 +83,20 @@ export async function sendConversionEvent(
   }
 }
 
-/** Unified tracker: fires pixel + CAPI with same event_id */
+/**
+ * Unified tracker: fires pixel + CAPI with same event_id.
+ * Reads settings to determine correct value (sinal vs total).
+ * 
+ * contractData is optional — only for Purchase events to resolve value_source.
+ */
 export async function trackMetaEvent(
   eventName: string,
   userData?: { phone?: string; email?: string; name?: string },
-  customData?: Record<string, any>
+  customData?: Record<string, any>,
+  contractData?: { totalValue?: number; depositValue?: number }
 ) {
   const eventId = generateEventId();
 
-  // Load settings to check if enabled
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -105,13 +110,28 @@ export async function trackMetaEvent(
     if (!settings) return;
     const s = settings as any;
 
+    // Resolve custom_data value based on settings
+    let finalCustomData = { ...customData };
+    if (eventName === "Purchase" && contractData) {
+      if (s.send_value) {
+        const value = s.value_source === "deposit"
+          ? (contractData.depositValue ?? 0)
+          : (contractData.totalValue ?? 0);
+        finalCustomData = { ...finalCustomData, value, currency: "BRL" };
+      } else {
+        // Remove value if send_value is off
+        delete finalCustomData.value;
+        delete finalCustomData.currency;
+      }
+    }
+
     if (s.pixel_enabled && s.pixel_id) {
       loadMetaPixel(s.pixel_id);
-      trackPixelEvent(eventName, customData, eventId);
+      trackPixelEvent(eventName, finalCustomData, eventId);
     }
 
     if (s.capi_enabled) {
-      await sendConversionEvent(eventName, eventId, userData, customData);
+      await sendConversionEvent(eventName, eventId, userData, finalCustomData);
     }
   } catch (err) {
     console.error("[Meta] trackMetaEvent error:", err);
