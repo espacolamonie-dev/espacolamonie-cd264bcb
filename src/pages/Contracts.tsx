@@ -713,6 +713,10 @@ export default function Contracts() {
               onClick={async () => {
                 if (!deleteTarget) return;
                 try {
+                  // Delete Google Calendar event before deleting the contract
+                  if (deleteTarget.googleEventId) {
+                    try { await deleteGoogleEvent(deleteTarget.id); } catch {}
+                  }
                   await deleteContract(deleteTarget.id);
                   toast.success("Contrato excluído definitivamente");
                   setDeleteTarget(null);
