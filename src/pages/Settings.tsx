@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   CheckCircle2, XCircle, RefreshCw, Calendar, ExternalLink,
-  AlertCircle, Loader2, Building2, CreditCard, Bell, Shield,
+  AlertCircle, Loader2, Building2, CreditCard, Bell, Shield, Megaphone,
   Save, Upload, GitBranch, Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import PipelineSettingsTab from "@/components/PipelineSettingsTab";
 import CatalogSettingsTab from "@/components/CatalogSettingsTab";
 import ScheduleSettingsTab from "@/components/ScheduleSettingsTab";
+import MetaPixelSettingsTab from "@/components/MetaPixelSettingsTab";
 import { supabase } from "@/integrations/supabase/client";
 
 // ─── Masks ───
@@ -321,6 +322,9 @@ export default function Settings() {
           </TabsTrigger>
           <TabsTrigger value="schedule" className="gap-1.5 text-xs">
             <Calendar size={14} /> Horários
+          </TabsTrigger>
+          <TabsTrigger value="meta" className="gap-1.5 text-xs">
+            <Megaphone size={14} /> Meta Pixel
           </TabsTrigger>
         </TabsList>
 
@@ -674,6 +678,10 @@ export default function Settings() {
 
         <TabsContent value="schedule">
           <ScheduleSettingsTab />
+        </TabsContent>
+
+        <TabsContent value="meta">
+          <MetaPixelSettingsTab />
         </TabsContent>
       </Tabs>
     </div>
