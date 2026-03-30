@@ -176,10 +176,16 @@ export default function Visits() {
     const organicCount = activeVisits.filter(v => !v.leadSource || v.leadSource === "Orgânico").length;
     const paidCount = activeVisits.filter(v => ["Tráfego Pago", "Facebook", "Instagram", "Google"].includes(v.leadSource)).length;
     const indicacaoCount = activeVisits.filter(v => v.leadSource === "Indicação").length;
-    const convertedCount = visits.filter(v => v.status === "Convertida em contrato").length;
+    
+    // Cross-reference: visits that have a linked contract via visit_id
+    const contractVisitIds = new Set(contracts.filter(c => c.visit_id).map(c => c.visit_id));
+    const convertedCount = visits.filter(v => 
+      v.status === "Convertida em contrato" || contractVisitIds.has(v.id)
+    ).length;
+    
     const totalLeads = activeVisits.length;
     return { visitsToday, scheduledToday, organicCount, paidCount, indicacaoCount, convertedCount, totalLeads, spDayMonth };
-  }, [visits]);
+  }, [visits, contracts]);
 
   const filtered = useMemo(() => {
     const spFormatter = new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" });
