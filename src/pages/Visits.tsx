@@ -581,7 +581,7 @@ export default function Visits() {
         )}
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <div
           className={`rounded-xl border bg-card p-4 cursor-pointer hover:border-primary/50 transition-colors ${filterStatus === "today" ? "border-primary/50 ring-1 ring-primary/20" : "border-border"}`}
           onClick={() => setFilterStatus(filterStatus === "today" ? "all" : "today")}
@@ -625,6 +625,17 @@ export default function Visits() {
             {filterStatus === "paid_traffic" && <Badge variant="outline" className="text-[9px] px-1.5 py-0 ml-auto">Filtrado</Badge>}
           </div>
           <p className="text-2xl font-bold">{stats.paidCount}<span className="text-sm font-normal text-muted-foreground ml-1">/ {stats.totalLeads}</span></p>
+        </div>
+        <div
+          className={`rounded-xl border bg-card p-4 cursor-pointer hover:border-violet-500/50 transition-colors ${filterStatus === "converted" ? "border-violet-500/50 ring-1 ring-violet-500/20" : "border-border"}`}
+          onClick={() => setFilterStatus(filterStatus === "converted" ? "all" : "converted")}
+        >
+          <div className="flex items-center gap-2 text-muted-foreground mb-1">
+            <Check size={14} />
+            <span className="text-xs font-medium">Convertidas</span>
+            {filterStatus === "converted" && <Badge variant="outline" className="text-[9px] px-1.5 py-0 ml-auto">Filtrado</Badge>}
+          </div>
+          <p className="text-2xl font-bold text-violet-600">{stats.convertedCount}<span className="text-sm font-normal text-muted-foreground ml-1">/ {stats.totalLeads}</span></p>
         </div>
       </div>
 
