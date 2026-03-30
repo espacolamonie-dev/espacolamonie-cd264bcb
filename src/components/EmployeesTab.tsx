@@ -16,6 +16,20 @@ import {
 import { Plus, Trash2, UserRound, Phone, DollarSign, Edit, X } from "lucide-react";
 import { toast } from "sonner";
 
+const applyPhoneMask = (value: string): string => {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 2) return digits.length ? `(${digits}` : "";
+  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+};
+
+const formatPhone = (phone: string): string => {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length === 11) return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+  if (digits.length === 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  return phone;
+};
+
 const ROLE_OPTIONS = [
   "Marketing", "Atendimento", "Limpeza", "Decoração", "Cozinha", "Segurança", "Manutenção", "Administrativo",
 ];
@@ -241,7 +255,7 @@ export default function EmployeesTab({ selectedMonth, contracts, clients }: Prop
                       <h3 className="font-display font-bold text-base truncate">{emp.name}</h3>
                       {emp.phone && (
                         <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Phone size={10} /> {emp.phone}
+                          <Phone size={10} /> {formatPhone(emp.phone)}
                         </p>
                       )}
                     </div>
@@ -342,7 +356,7 @@ export default function EmployeesTab({ selectedMonth, contracts, clients }: Prop
             </div>
             <div className="space-y-2">
               <Label>Telefone</Label>
-              <Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="(31) 99999-9999" className="rounded-lg h-11" />
+              <Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: applyPhoneMask(e.target.value) }))} placeholder="(31) 99999-9999" className="rounded-lg h-11" />
             </div>
             <div className="space-y-2">
               <Label>Cargos *</Label>
