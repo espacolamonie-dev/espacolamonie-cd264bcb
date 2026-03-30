@@ -293,9 +293,6 @@ export default function Dashboard() {
     return d >= funcStart && d <= funcEnd;
   });
 
-  const [empTotalDue, setEmpTotalDue] = useState(0);
-  const [empTotalPaid, setEmpTotalPaid] = useState(0);
-
   useEffect(() => {
     const loadEmpData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
