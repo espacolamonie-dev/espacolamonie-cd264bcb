@@ -15,7 +15,7 @@ interface ContractRow { id: string; client_id: string; source: string; status: s
 interface ClientRow { id: string; name: string; utm_source: string; }
 
 function normalizeOrigin(src: string): "Orgânico" | "Tráfego Pago" {
-  if (!src) return "Orgânico";
+  if (!src || src === "visita") return "Orgânico";
   const l = src.toLowerCase().trim();
   if (["tráfego pago", "trafego pago", "facebook", "instagram ads", "facebook ads", "google ads", "paid", "cpc", "meta"].some(k => l.includes(k))) return "Tráfego Pago";
   return "Orgânico";
