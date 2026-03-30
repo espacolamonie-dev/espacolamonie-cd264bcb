@@ -32,13 +32,14 @@ const EVENT_TYPES_OPTIONS = [
 
 const NOTIFICATION_PHONE = "5531998595155";
 
-type VisitStatus = "Agendada" | "Confirmada" | "Remarcada" | "Cancelada";
+type VisitStatus = "Agendada" | "Confirmada" | "Remarcada" | "Cancelada" | "Convertida em contrato";
 
 const VISIT_STATUS_COLORS: Record<VisitStatus, string> = {
   Agendada: "bg-primary/15 text-primary border-primary/30",
   Confirmada: "bg-success/15 text-success border-success/30",
   Remarcada: "bg-warning/15 text-warning border-warning/30",
   Cancelada: "bg-danger/15 text-danger border-danger/30",
+  "Convertida em contrato": "bg-violet-500/15 text-violet-600 border-violet-500/30",
 };
 
 const VISIT_STATUS_BG: Record<VisitStatus, string> = {
@@ -46,6 +47,7 @@ const VISIT_STATUS_BG: Record<VisitStatus, string> = {
   Confirmada: "border-l-success",
   Remarcada: "border-l-warning",
   Cancelada: "border-l-danger",
+  "Convertida em contrato": "border-l-violet-500",
 };
 
 function phoneMask(v: string): string {
