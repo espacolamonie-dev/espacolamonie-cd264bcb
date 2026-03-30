@@ -186,6 +186,8 @@ export default function Visits() {
       list = list.filter((v) => v.leadSource === "Orgânico" && v.status !== "Cancelada");
     } else if (filterStatus === "paid_traffic") {
       list = list.filter((v) => v.leadSource === "Tráfego Pago" && v.status !== "Cancelada");
+    } else if (filterStatus === "converted") {
+      list = list.filter((v) => v.status === "Convertida em contrato");
     } else if (filterStatus === "all") {
       list = list.filter((v) => v.status !== "Cancelada");
     } else {
