@@ -95,10 +95,17 @@ export default function Visits() {
   const [formGuestCount, setFormGuestCount] = useState(0);
   const [dateConflicts, setDateConflicts] = useState<{ name: string; phone: string; stage: string; type: string }[]>([]);
   
+  const [contracts, setContracts] = useState<any[]>([]);
+
   const loadVisits = useCallback(async () => {
     setLoading(true);
     try {
-      setVisits(await getVisits());
+      const [visitsData, contractsRes] = await Promise.all([
+        getVisits(),
+        supabase.from("contracts").select("id, visit_id, client_id, status").neq("status", "cancelled"),
+      ]);
+      setVisits(visitsData);
+      setContracts(contractsRes.data || []);
     } finally {
       setLoading(false);
     }
@@ -169,16 +176,23 @@ export default function Visits() {
     const organicCount = activeVisits.filter(v => !v.leadSource || v.leadSource === "Orgânico").length;
     const paidCount = activeVisits.filter(v => ["Tráfego Pago", "Facebook", "Instagram", "Google"].includes(v.leadSource)).length;
     const indicacaoCount = activeVisits.filter(v => v.leadSource === "Indicação").length;
-    const convertedCount = visits.filter(v => v.status === "Convertida em contrato").length;
+    
+    // Cross-reference: visits that have a linked contract via visit_id
+    const contractVisitIds = new Set(contracts.filter(c => c.visit_id).map(c => c.visit_id));
+    const convertedCount = visits.filter(v => 
+      v.status === "Convertida em contrato" || contractVisitIds.has(v.id)
+    ).length;
+    
     const totalLeads = activeVisits.length;
     return { visitsToday, scheduledToday, organicCount, paidCount, indicacaoCount, convertedCount, totalLeads, spDayMonth };
-  }, [visits]);
+  }, [visits, contracts]);
 
   const filtered = useMemo(() => {
     const spFormatter = new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" });
     const today = spFormatter.format(new Date());
     let list = visits;
     const toLocalDate = (isoStr: string) => spFormatter.format(new Date(isoStr));
+    const contractVisitIds = new Set(contracts.filter(c => c.visit_id).map(c => c.visit_id));
     if (filterStatus === "today") {
       list = list.filter((v) => v.visitDate === today && v.status !== "Cancelada");
     } else if (filterStatus === "scheduled_today") {
@@ -188,7 +202,7 @@ export default function Visits() {
     } else if (filterStatus === "paid_traffic") {
       list = list.filter((v) => v.leadSource === "Tráfego Pago" && v.status !== "Cancelada");
     } else if (filterStatus === "converted") {
-      list = list.filter((v) => v.status === "Convertida em contrato");
+      list = list.filter((v) => v.status === "Convertida em contrato" || contractVisitIds.has(v.id));
     } else if (filterStatus === "all") {
       list = list.filter((v) => v.status !== "Cancelada");
     } else {
@@ -206,7 +220,7 @@ export default function Visits() {
       return (a.visitTime || "23:59").localeCompare(b.visitTime || "23:59");
     });
     return list;
-  }, [visits, filterStatus, search]);
+  }, [visits, contracts, filterStatus, search]);
 
   const resetForm = () => {
     setFormName(""); setFormPhone(""); setFormInterestDate("");
