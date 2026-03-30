@@ -422,6 +422,7 @@ export default function Visits() {
               <SelectItem value="Agendada">Agendada</SelectItem>
               <SelectItem value="Confirmada">Confirmada</SelectItem>
               <SelectItem value="Remarcada">Remarcada</SelectItem>
+              <SelectItem value="Convertida em contrato">Convertida em contrato</SelectItem>
               <SelectItem value="Cancelada">Cancelada</SelectItem>
             </SelectContent>
           </Select>
