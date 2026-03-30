@@ -17,7 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { getVisits, addVisit, updateVisit, deleteVisit, type Visit, type LeadSource } from "@/data/visitStore";
+import { getVisits, addVisit, updateVisit, deleteVisit, type Visit, type LeadSource, LEAD_SOURCE_OPTIONS } from "@/data/visitStore";
 import { syncVisitToGoogle, deleteVisitGoogleEvent } from "@/lib/visitGoogleSync";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
@@ -360,12 +360,11 @@ export default function Visits() {
           <Input type="time" value={formVisitTime} onChange={(e) => setFormVisitTime(e.target.value)} className={inputH} />
         </div>
         <div>
-          <Label>Fonte do Lead *</Label>
+          <Label>Origem do Lead *</Label>
           <Select value={formLeadSource} onValueChange={(v) => setFormLeadSource(v as LeadSource)}>
             <SelectTrigger className={inputH}><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="Orgânico">Orgânico</SelectItem>
-              <SelectItem value="Tráfego Pago">Tráfego Pago</SelectItem>
+              {LEAD_SOURCE_OPTIONS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -422,12 +421,11 @@ export default function Visits() {
           </Select>
         </div>
         <div>
-          <Label>Fonte do Lead</Label>
+          <Label>Origem do Lead</Label>
           <Select value={editForm.leadSource} onValueChange={(v) => setEditForm(p => ({ ...p, leadSource: v as LeadSource }))}>
             <SelectTrigger className={inputH}><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="Orgânico">Orgânico</SelectItem>
-              <SelectItem value="Tráfego Pago">Tráfego Pago</SelectItem>
+              {LEAD_SOURCE_OPTIONS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>

@@ -105,7 +105,7 @@ export const addVisit = async (v: {
   // Check if client with same phone exists
   const { data: existingClients } = await supabase
     .from("clients")
-    .select("id, name, phone, notes")
+    .select("id, name, phone, notes, utm_source")
     .eq("user_id", userId);
   
   const matchingClient = (existingClients || []).find(
