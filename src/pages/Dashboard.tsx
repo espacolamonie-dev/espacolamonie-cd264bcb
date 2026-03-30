@@ -293,12 +293,24 @@ export default function Dashboard() {
   const now2 = new Date();
   const currentMonthKeyFin = `${now2.getFullYear()}-${String(now2.getMonth() + 1).padStart(2, '0')}`;
 
+  const funcMonthOptions = useMemo(() => {
+    const opts: { value: string; label: string }[] = [];
+    for (let i = 0; i < 12; i++) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      opts.push({
+        value: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
+        label: format(d, "MMM yyyy", { locale: ptBR }),
+      });
+    }
+    return opts;
+  }, []);
+
   const finCards = [
     { label: "Receita", value: fmt(financialSummary.totalIn), icon: TrendingUp, iconBg: "bg-success/10", iconColor: "text-success", valueColor: "text-success" },
     { label: "Despesas", value: fmt(financialSummary.totalOut), icon: TrendingDown, iconBg: "bg-danger/10", iconColor: "text-danger", valueColor: "text-danger" },
     { label: "Lucro líquido", value: fmt(financialSummary.balance - funcPagoDash), icon: Wallet, iconBg: "bg-primary/10", iconColor: "text-primary", valueColor: (financialSummary.balance - funcPagoDash) >= 0 ? "text-primary" : "text-danger" },
     { label: "Ticket médio", value: fmt(ticketMedio), icon: Receipt, iconBg: "bg-gold/10", iconColor: "text-gold-dark", valueColor: "text-foreground" },
-    { label: "Funcionário", value: fmt(pagamentoFuncTotal), icon: UserRound, iconBg: "bg-violet-500/10", iconColor: "text-violet-500", valueColor: "text-violet-600 dark:text-violet-400", sub: `Pago: ${fmt(funcPagoDash)} · Falta: ${fmt(funcFaltaDash)}` },
   ];
 
   return (
