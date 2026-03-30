@@ -111,9 +111,11 @@ export default function Contracts() {
 
   const openNew = () => {
     if (clients.length === 0) { toast.error("Cadastre um cliente antes de criar um contrato"); return; }
-    setEditing(null); setForm({ ...emptyForm, clientId: clients[0].id, rentalType: "Locação (1 dia)", eventDateEnd: "" }); setOpen(true);
-    setSelectedClientOrigin(clients[0].utmSource || "");
-    autoFillFromClient(clients[0].id);
+    // clients already sorted by created_at desc — pick most recent
+    const mostRecent = clients[0];
+    setEditing(null); setForm({ ...emptyForm, clientId: mostRecent.id, rentalType: "Locação (1 dia)", eventDateEnd: "" }); setOpen(true);
+    setSelectedClientOrigin(mostRecent.utmSource || "");
+    autoFillFromClient(mostRecent.id);
   };
 
   const autoFillFromClient = async (clientId: string) => {

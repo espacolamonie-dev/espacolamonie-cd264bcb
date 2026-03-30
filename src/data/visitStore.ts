@@ -99,44 +99,48 @@ export const addVisit = async (v: {
   const userId = await getUserId();
 
   // Auto-create or update client
-  const normalizedPhone = v.clientPhone.replace(/\D/g, "");
+  const phoneClean = v.clientPhone.replace(/\D/g, "").trim();
   let clientId: string | null = null;
-  
-  // Check if client with same phone exists
-  const { data: existingClients } = await supabase
-    .from("clients")
-    .select("id, name, phone, notes, utm_source")
-    .eq("user_id", userId);
-  
-  const matchingClient = (existingClients || []).find(
-    (c) => c.phone.replace(/\D/g, "") === normalizedPhone
-  );
-  
-   if (matchingClient) {
-    clientId = matchingClient.id;
-    // Update client if visit has more data — copy origin if client doesn't have one
-    const updates: Record<string, any> = {};
-    if (!matchingClient.notes && v.notes) updates.notes = v.notes;
-    if (!(matchingClient as any).utm_source && v.leadSource) updates.utm_source = v.leadSource;
-    if (Object.keys(updates).length > 0) {
-      await supabase.from("clients").update(updates).eq("id", clientId);
-    }
-  } else {
-    // Create new client — copy origin from visit
-    const { data: newClient, error: clientError } = await supabase
+
+  try {
+    // Try exact match first (faster than fetching all)
+    const { data: exactMatch } = await supabase
       .from("clients")
-      .insert({
-        user_id: userId,
-        name: v.clientName.trim(),
-        phone: v.clientPhone.trim(),
-        notes: v.notes || "",
-        utm_source: v.leadSource || "Orgânico",
-      })
-      .select()
-      .single();
-    if (!clientError && newClient) {
-      clientId = newClient.id;
+      .select("id, notes, utm_source")
+      .eq("user_id", userId)
+      .eq("phone", v.clientPhone.trim())
+      .limit(1)
+      .maybeSingle();
+
+    if (exactMatch) {
+      clientId = exactMatch.id;
+      const updates: Record<string, any> = {};
+      if (!exactMatch.notes && v.notes) updates.notes = v.notes;
+      if (!exactMatch.utm_source && v.leadSource) updates.utm_source = v.leadSource;
+      if (Object.keys(updates).length > 0) {
+        await supabase.from("clients").update(updates).eq("id", clientId);
+      }
+    } else {
+      // Create new client
+      const { data: newClient, error: clientError } = await supabase
+        .from("clients")
+        .insert({
+          user_id: userId,
+          name: v.clientName.trim(),
+          phone: v.clientPhone.trim(),
+          notes: v.notes || "",
+          utm_source: v.leadSource || "Orgânico",
+        })
+        .select("id")
+        .single();
+      if (clientError) {
+        console.error("Erro ao criar cliente:", clientError);
+      } else if (newClient) {
+        clientId = newClient.id;
+      }
     }
+  } catch (err) {
+    console.error("Erro ao buscar/criar cliente:", err);
   }
 
   const utm = getUtmForDb();
