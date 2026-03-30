@@ -7,7 +7,11 @@ const getUserId = async (): Promise<string> => {
   return user.id;
 };
 
-export type LeadSource = "Orgânico" | "Tráfego Pago";
+export type LeadSource = "Orgânico" | "Tráfego Pago" | "Instagram" | "Facebook" | "Google" | "Indicação" | "Outro";
+
+export const LEAD_SOURCE_OPTIONS: LeadSource[] = [
+  "Instagram", "Facebook", "Google", "Tráfego Pago", "Indicação", "Orgânico", "Outro",
+];
 
 export interface Visit {
   id: string;
@@ -108,16 +112,17 @@ export const addVisit = async (v: {
     (c) => c.phone.replace(/\D/g, "") === normalizedPhone
   );
   
-  if (matchingClient) {
+   if (matchingClient) {
     clientId = matchingClient.id;
-    // Update client if visit has more data
+    // Update client if visit has more data — copy origin if client doesn't have one
     const updates: Record<string, any> = {};
     if (!matchingClient.notes && v.notes) updates.notes = v.notes;
+    if (!(matchingClient as any).utm_source && v.leadSource) updates.utm_source = v.leadSource;
     if (Object.keys(updates).length > 0) {
       await supabase.from("clients").update(updates).eq("id", clientId);
     }
   } else {
-    // Create new client
+    // Create new client — copy origin from visit
     const { data: newClient, error: clientError } = await supabase
       .from("clients")
       .insert({
@@ -125,6 +130,7 @@ export const addVisit = async (v: {
         name: v.clientName.trim(),
         phone: v.clientPhone.trim(),
         notes: v.notes || "",
+        utm_source: v.leadSource || "Orgânico",
       })
       .select()
       .single();
