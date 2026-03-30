@@ -128,9 +128,9 @@ export default function Reports() {
 
     const totalRevenue = sinaisRecebidos + allPaymentsInMonth;
 
-    // Ticket médio baseado nos contratos do mês
+    // Ticket médio baseado no valor TOTAL dos contratos do mês
     const avgTicket = totalEvents > 0
-      ? monthContracts.reduce((s, c) => s + c.depositValue, 0) / totalEvents
+      ? monthContracts.reduce((s, c) => s + c.totalValue, 0) / totalEvents
       : 0;
 
     const eventTypeCount: Record<string, number> = {};
