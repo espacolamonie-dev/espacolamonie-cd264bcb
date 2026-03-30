@@ -306,19 +306,6 @@ export default function Dashboard() {
   const now2 = new Date();
   const currentMonthKeyFin = `${now2.getFullYear()}-${String(now2.getMonth() + 1).padStart(2, '0')}`;
 
-  const funcMonthOptions = useMemo(() => {
-    const opts: { value: string; label: string }[] = [];
-    for (let i = 0; i < 12; i++) {
-      const d = new Date();
-      d.setMonth(d.getMonth() - i);
-      opts.push({
-        value: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
-        label: format(d, "MMM yyyy", { locale: ptBR }),
-      });
-    }
-    return opts;
-  }, []);
-
   const finCards = [
     { label: "Receita", value: fmt(financialSummary.totalIn), icon: TrendingUp, iconBg: "bg-success/10", iconColor: "text-success", valueColor: "text-success" },
     { label: "Despesas", value: fmt(financialSummary.totalOut), icon: TrendingDown, iconBg: "bg-danger/10", iconColor: "text-danger", valueColor: "text-danger" },
