@@ -77,38 +77,44 @@ export default function Reports() {
 
     const active = contracts.filter((c) => c.status !== "cancelled");
 
+    // Contratos com evento no mês selecionado
     const monthContracts = active.filter((c) => {
       const d = parseISO(c.eventDate);
       return !isBefore(d, monthStart) && !isAfter(d, monthEnd);
     });
 
+    // Visitas no mês selecionado
     const monthVisits = visits.filter((v) => {
       const d = new Date(v.visitDate + "T12:00:00");
       return !isBefore(d, monthStart) && !isAfter(d, monthEnd);
     });
 
-    const confirmedVisits = visits.filter((v) => v.status === "Confirmada");
-    const normalize = (s: string) => s.replace(/\D/g, "");
-    const contractPhones = new Set(
-      active.map((c) => {
-        const cl = Object.entries(clientMap).find(([id]) => id === c.clientId);
-        return cl ? cl[1] : "";
-      }).filter(Boolean)
+    // Conversão: visitas do mês que viraram contrato (via visit_id no contrato)
+    const activeVisitIds = new Set(
+      active.filter((c) => c.visitId).map((c) => c.visitId)
     );
-    const converted = confirmedVisits.filter((v) => {
-      const vPhone = normalize(v.clientPhone || "");
-      const vName = (v.clientName || "").trim().toLowerCase();
-      return active.some((c) => {
-        const cName = (clientMap[c.clientId] || "").trim().toLowerCase();
-        return cName === vName;
-      });
-    }).length;
-    const conversionRate = confirmedVisits.length > 0
-      ? Math.round((converted / confirmedVisits.length) * 100)
+    const monthVisitsConfirmed = monthVisits.filter(
+      (v) => v.status !== "Cancelada"
+    );
+    const converted = monthVisitsConfirmed.filter(
+      (v) => activeVisitIds.has(v.id) || v.status === "Convertida em contrato"
+    ).length;
+    const conversionBase = monthVisitsConfirmed.length;
+    const conversionRate = conversionBase > 0
+      ? Math.round((converted / conversionBase) * 100)
       : 0;
 
     const totalEvents = monthContracts.length;
-    // Revenue = sinais dos contratos criados no mês + entradas manuais
+
+    // Faturamento = todos os pagamentos recebidos no mês (sinais + entradas manuais)
+    const allPaymentsInMonth = payments
+      .filter((p) => {
+        const d = parseISO(p.date);
+        return !isBefore(d, monthStart) && !isAfter(d, monthEnd);
+      })
+      .reduce((s, p) => s + p.amount, 0);
+
+    // Sinais de contratos criados no mês com pagamento confirmado
     const contractsCreatedThisMonth = active.filter((c) => {
       const d = new Date(c.createdAt);
       return !isBefore(d, monthStart) && !isAfter(d, monthEnd);
@@ -119,15 +125,12 @@ export default function Reports() {
       }
       return sum;
     }, 0);
-    const manualEntriesRevenue = payments
-      .filter((p) => {
-        const d = parseISO(p.date);
-        return !isBefore(d, monthStart) && !isAfter(d, monthEnd);
-      })
-      .reduce((s, p) => s + p.amount, 0);
-    const totalRevenue = sinaisRecebidos + manualEntriesRevenue;
+
+    const totalRevenue = sinaisRecebidos + allPaymentsInMonth;
+
+    // Ticket médio baseado nos contratos do mês
     const avgTicket = totalEvents > 0
-      ? monthContracts.reduce((s, c) => s + c.totalValue, 0) / totalEvents
+      ? monthContracts.reduce((s, c) => s + c.depositValue, 0) / totalEvents
       : 0;
 
     const eventTypeCount: Record<string, number> = {};
@@ -151,10 +154,10 @@ export default function Reports() {
 
     return {
       totalEvents, totalRevenue, avgTicket, topDays, monthContracts,
-      monthVisits: monthVisits.length, conversionRate, confirmedVisits: confirmedVisits.length,
+      monthVisits: monthVisits.length, conversionRate, confirmedVisits: conversionBase,
       converted, eventTypes,
     };
-  }, [selectedMonth, contracts, payments, visits, clientMap]);
+  }, [selectedMonth, contracts, payments, visits]);
 
   const chartData = useMemo(() => {
     const now = new Date();
