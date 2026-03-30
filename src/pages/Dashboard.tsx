@@ -263,29 +263,6 @@ export default function Dashboard() {
 
   const tooltipFormatter = (value: number) => fmt(value);
 
-
-
-  if (loading) {
-    return (
-      <div className="animate-fade-in space-y-8">
-        <div>
-          <Skeleton className="h-8 w-48 rounded-xl" />
-          <Skeleton className="h-4 w-64 mt-2 rounded-lg" />
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-28 rounded-2xl" />)}
-        </div>
-      </div>
-    );
-  }
-
-  const statCards = [
-    { label: "Contratos", value: contracts.length, sub: "Ativos no total", icon: FileText, iconBg: "bg-primary/10", iconColor: "text-primary", onClick: () => navigate("/contracts") },
-    { label: "Confirmados", value: confirmed, sub: "Eventos confirmados", icon: CheckCircle, iconBg: "bg-success/10", iconColor: "text-success", onClick: () => navigate("/contracts") },
-    { label: "Aguardando", value: awaiting, sub: "Pagamento pendente", icon: Clock, iconBg: "bg-warning/10", iconColor: "text-warning", onClick: () => navigate("/financial") },
-    { label: "Próximos", value: futureCount, sub: "Eventos futuros", icon: CalendarDays, iconBg: "bg-primary/10", iconColor: "text-primary", onClick: () => navigate("/agenda") },
-  ];
-
   const funcStart = new Date(funcDateFrom + "T00:00:00");
   const funcEnd = new Date(funcDateTo + "T23:59:59");
   const contratosFechadosDash = contracts.filter(c => {
@@ -325,6 +302,27 @@ export default function Dashboard() {
   }, [funcDateFrom, funcDateTo, contracts]);
 
   const funcFaltaDash = Math.max(0, empTotalDue - empTotalPaid);
+
+  if (loading) {
+    return (
+      <div className="animate-fade-in space-y-8">
+        <div>
+          <Skeleton className="h-8 w-48 rounded-xl" />
+          <Skeleton className="h-4 w-64 mt-2 rounded-lg" />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-28 rounded-2xl" />)}
+        </div>
+      </div>
+    );
+  }
+
+  const statCards = [
+    { label: "Contratos", value: contracts.length, sub: "Ativos no total", icon: FileText, iconBg: "bg-primary/10", iconColor: "text-primary", onClick: () => navigate("/contracts") },
+    { label: "Confirmados", value: confirmed, sub: "Eventos confirmados", icon: CheckCircle, iconBg: "bg-success/10", iconColor: "text-success", onClick: () => navigate("/contracts") },
+    { label: "Aguardando", value: awaiting, sub: "Pagamento pendente", icon: Clock, iconBg: "bg-warning/10", iconColor: "text-warning", onClick: () => navigate("/financial") },
+    { label: "Próximos", value: futureCount, sub: "Eventos futuros", icon: CalendarDays, iconBg: "bg-primary/10", iconColor: "text-primary", onClick: () => navigate("/agenda") },
+  ];
 
   const now2 = new Date();
   const currentMonthKeyFin = `${now2.getFullYear()}-${String(now2.getMonth() + 1).padStart(2, '0')}`;
