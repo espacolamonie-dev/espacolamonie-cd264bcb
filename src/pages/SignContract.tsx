@@ -513,7 +513,13 @@ export default function SignContract() {
       });
       const result = await res.json();
       if (result.error) { setError(result.error); }
-      else { setShowPayment(true); }
+      else {
+        setShowPayment(true);
+        // Track Meta: CompleteRegistration (contract signed)
+        import("@/lib/metaPixel").then(({ trackPixelEvent, generateEventId }) => {
+          trackPixelEvent("CompleteRegistration", { content_name: data.event_type }, generateEventId());
+        }).catch(() => {});
+      }
     } catch { setError("Erro ao assinar contrato"); }
     finally { setSigning(false); }
   };
