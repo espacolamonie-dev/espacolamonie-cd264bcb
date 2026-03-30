@@ -56,6 +56,7 @@ export default function Contracts() {
   const [importOpen, setImportOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Contract | null>(null);
   const [clientSearchOpen, setClientSearchOpen] = useState(false);
+  const [selectedClientOrigin, setSelectedClientOrigin] = useState("");
 
   const load = async () => {
     try {
@@ -110,7 +111,7 @@ export default function Contracts() {
   const openNew = () => {
     if (clients.length === 0) { toast.error("Cadastre um cliente antes de criar um contrato"); return; }
     setEditing(null); setForm({ ...emptyForm, clientId: clients[0].id, rentalType: "Locação (1 dia)", eventDateEnd: "" }); setOpen(true);
-    // Auto-fill from most recent visit of first client
+    setSelectedClientOrigin(clients[0].utmSource || "");
     autoFillFromClient(clients[0].id);
   };
 
