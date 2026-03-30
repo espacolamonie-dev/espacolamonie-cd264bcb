@@ -94,7 +94,7 @@ export default function Reports() {
       active.filter((c) => c.visitId).map((c) => c.visitId)
     );
     const monthVisitsConfirmed = monthVisits.filter(
-      (v) => v.status !== "Cancelada"
+      (v) => v.status === "Confirmada" || v.status === "Convertida em contrato"
     );
     const converted = monthVisitsConfirmed.filter(
       (v) => activeVisitIds.has(v.id) || v.status === "Convertida em contrato"
