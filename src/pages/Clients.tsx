@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Plus, Search, Pencil, Trash2, Loader2, Phone, Users, Megaphone } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,11 +14,13 @@ import { formatFullAddress } from "@/types";
 import type { Client } from "@/types";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
+const ORIGIN_OPTIONS = ["Orgânico", "Tráfego Pago"];
+
 const emptyForm = {
   name: "", cpf: "", phone: "",
   addressStreet: "", addressNumber: "", addressComplement: "",
   addressNeighborhood: "", addressCity: "", addressState: "", addressZip: "",
-  notes: "",
+  notes: "", utmSource: "",
 };
 
 function formatCPF(value: string): string {
@@ -71,7 +74,7 @@ export default function Clients() {
       addressStreet: c.addressStreet, addressNumber: c.addressNumber,
       addressComplement: c.addressComplement, addressNeighborhood: c.addressNeighborhood,
       addressCity: c.addressCity, addressState: c.addressState, addressZip: c.addressZip,
-      notes: c.notes,
+      notes: c.notes, utmSource: c.utmSource || "",
     });
     setOpen(true);
   };
@@ -117,6 +120,7 @@ export default function Clients() {
         address_street: form.addressStreet, address_number: form.addressNumber,
         address_complement: form.addressComplement, address_neighborhood: form.addressNeighborhood,
         address_city: form.addressCity, address_state: form.addressState, address_zip: form.addressZip,
+        utm_source: form.utmSource,
       };
       if (editing) { await updateClient(editing.id, payload); toast.success("Cliente salvo com sucesso"); }
       else { await addClient(payload as any); toast.success("Cliente cadastrado com sucesso"); }
@@ -319,6 +323,19 @@ export default function Clients() {
                   <Label className="text-xs font-medium text-muted-foreground">Telefone</Label>
                   <Input value={form.phone} onChange={(e) => set("phone", formatPhone(e.target.value))} placeholder="(00) 00000-0000" maxLength={15} className="rounded-lg tabular-nums" />
                 </div>
+              </div>
+              <div className="grid gap-1.5">
+                <Label className="text-xs font-medium text-muted-foreground">Origem do lead</Label>
+                <Select value={form.utmSource} onValueChange={(v) => set("utmSource", v)}>
+                  <SelectTrigger className="rounded-lg">
+                    <SelectValue placeholder="Selecione a origem" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ORIGIN_OPTIONS.map((o) => (
+                      <SelectItem key={o} value={o}>{o}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
