@@ -67,6 +67,7 @@ export default function Dashboard() {
   const [empTotalDue, setEmpTotalDue] = useState(0);
   const [empTotalPaid, setEmpTotalPaid] = useState(0);
 
+  useEffect(() => {
     const loadData = async () => {
       try {
         const [allContracts, clients, totalIn, totalOut, balance, activePayments, manualEntries, expenses, visits] = await Promise.all([
