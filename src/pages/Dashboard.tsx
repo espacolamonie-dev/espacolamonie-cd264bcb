@@ -64,6 +64,8 @@ export default function Dashboard() {
     const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     return `${last.getFullYear()}-${String(last.getMonth() + 1).padStart(2, "0")}-${String(last.getDate()).padStart(2, "0")}`;
   });
+  const [empTotalDue, setEmpTotalDue] = useState(0);
+  const [empTotalPaid, setEmpTotalPaid] = useState(0);
 
   useEffect(() => {
     const loadData = async () => {
@@ -261,7 +263,45 @@ export default function Dashboard() {
 
   const tooltipFormatter = (value: number) => fmt(value);
 
+  const funcStart = new Date(funcDateFrom + "T00:00:00");
+  const funcEnd = new Date(funcDateTo + "T23:59:59");
+  const contratosFechadosDash = contracts.filter(c => {
+    const d = new Date(c.createdAt);
+    return d >= funcStart && d <= funcEnd;
+  });
 
+  useEffect(() => {
+    const loadEmpData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: empData } = await (supabase.from("employees" as any) as any)
+        .select("*").eq("user_id", user.id).eq("is_active", true);
+      const { data: payData } = await (supabase.from("employee_payments" as any) as any)
+        .select("*").eq("user_id", user.id);
+
+      const employees = empData || [];
+      const empPayments = payData || [];
+
+      let totalDue = 0;
+      let totalPaid = 0;
+      for (const emp of employees) {
+        if (emp.payment_type === "por_contrato") {
+          totalDue += contratosFechadosDash.length * Number(emp.payment_value);
+        } else if (emp.payment_type === "fixo_mensal") {
+          totalDue += Number(emp.payment_value);
+        }
+        totalPaid += empPayments
+          .filter((p: any) => p.employee_id === emp.id && new Date(p.date) >= funcStart && new Date(p.date) <= funcEnd)
+          .reduce((s: number, p: any) => s + Number(p.amount), 0);
+      }
+      setEmpTotalDue(totalDue);
+      setEmpTotalPaid(totalPaid);
+    };
+    loadEmpData();
+  }, [funcDateFrom, funcDateTo, contracts]);
+
+  const funcFaltaDash = Math.max(0, empTotalDue - empTotalPaid);
 
   if (loading) {
     return (
@@ -284,25 +324,13 @@ export default function Dashboard() {
     { label: "Próximos", value: futureCount, sub: "Eventos futuros", icon: CalendarDays, iconBg: "bg-primary/10", iconColor: "text-primary", onClick: () => navigate("/agenda") },
   ];
 
-  const VALOR_POR_CONTRATO_FUNCIONARIO = 70;
-  const funcStart = new Date(funcDateFrom + "T00:00:00");
-  const funcEnd = new Date(funcDateTo + "T23:59:59");
-  const funcPeriodKey = `${funcDateFrom}_${funcDateTo}`;
-  const contratosFechadosDash = contracts.filter(c => {
-    const d = new Date(c.createdAt);
-    return d >= funcStart && d <= funcEnd;
-  });
-  const pagamentoFuncTotal = contratosFechadosDash.length * VALOR_POR_CONTRATO_FUNCIONARIO;
-  const funcPagoDash = Number(localStorage.getItem(`func_pago_${funcPeriodKey}`) || "0");
-  const funcFaltaDash = Math.max(0, pagamentoFuncTotal - funcPagoDash);
-
   const now2 = new Date();
   const currentMonthKeyFin = `${now2.getFullYear()}-${String(now2.getMonth() + 1).padStart(2, '0')}`;
 
   const finCards = [
     { label: "Receita", value: fmt(financialSummary.totalIn), icon: TrendingUp, iconBg: "bg-success/10", iconColor: "text-success", valueColor: "text-success" },
     { label: "Despesas", value: fmt(financialSummary.totalOut), icon: TrendingDown, iconBg: "bg-danger/10", iconColor: "text-danger", valueColor: "text-danger" },
-    { label: "Lucro líquido", value: fmt(financialSummary.balance - funcPagoDash), icon: Wallet, iconBg: "bg-primary/10", iconColor: "text-primary", valueColor: (financialSummary.balance - funcPagoDash) >= 0 ? "text-primary" : "text-danger" },
+    { label: "Lucro líquido", value: fmt(financialSummary.balance - empTotalPaid), icon: Wallet, iconBg: "bg-primary/10", iconColor: "text-primary", valueColor: (financialSummary.balance - empTotalPaid) >= 0 ? "text-primary" : "text-danger" },
     { label: "Ticket médio", value: fmt(ticketMedio), icon: Receipt, iconBg: "bg-gold/10", iconColor: "text-gold-dark", valueColor: "text-foreground" },
   ];
 
@@ -394,9 +422,9 @@ export default function Dashboard() {
               <UserRound size={16} className="text-violet-500" />
             </div>
           </div>
-          <p className="text-lg md:text-xl font-display font-bold tracking-tight text-violet-600 dark:text-violet-400">{fmt(pagamentoFuncTotal)}</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5" style={{ fontFamily: "var(--font-body)" }}>Funcionário ({contratosFechadosDash.length} contratos)</p>
-          <p className="text-[10px] text-muted-foreground/70 mt-0.5">Pago: {fmt(funcPagoDash)} · Falta: {fmt(funcFaltaDash)}</p>
+          <p className="text-lg md:text-xl font-display font-bold tracking-tight text-violet-600 dark:text-violet-400">{fmt(empTotalDue)}</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5" style={{ fontFamily: "var(--font-body)" }}>Funcionários ({contratosFechadosDash.length} contratos)</p>
+          <p className="text-[10px] text-muted-foreground/70 mt-0.5">Pago: {fmt(empTotalPaid)} · Falta: {fmt(funcFaltaDash)}</p>
           <div className="flex items-center gap-1.5 mt-3">
             <input
               type="date"

@@ -1,4 +1,5 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { CurrencyInput } from "@/components/CurrencyInput";
 import {
   Plus, TrendingUp, TrendingDown, Wallet, Trash2, FileText, HandCoins,
@@ -15,6 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import ImportStatementModal from "@/components/ImportStatementModal";
 import ImportBankEntryModal from "@/components/ImportBankEntryModal";
+import EmployeesTab from "@/components/EmployeesTab";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -72,7 +74,8 @@ export default function Financial() {
   const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
   const [selectedExpenses, setSelectedExpenses] = useState<Set<string>>(new Set());
   const [funcModalOpen, setFuncModalOpen] = useState(false);
-  const [funcValorPago, setFuncValorPago] = useState(0);
+  const [empTotalDue, setEmpTotalDue] = useState(0);
+  const [empTotalPaid, setEmpTotalPaid] = useState(0);
   const [activeTab, setActiveTab] = useState("resumo");
 
   // Filters
@@ -136,16 +139,39 @@ export default function Financial() {
 
   useEffect(() => { load(); }, []);
 
-  useEffect(() => {
-    const key = `func_pago_${selectedMonth}`;
-    const saved = localStorage.getItem(key);
-    setFuncValorPago(saved ? Number(saved) : 0);
-  }, [selectedMonth]);
+  const loadEmployeeData = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const [year, month] = selectedMonth.split("-").map(Number);
+    const mStart = new Date(year, month - 1, 1);
+    const mEnd = new Date(year, month, 0, 23, 59, 59);
 
-  const handleFuncValorPagoChange = (val: number) => {
-    setFuncValorPago(val);
-    localStorage.setItem(`func_pago_${selectedMonth}`, String(val));
-  };
+    const { data: empData } = await (supabase.from("employees" as any) as any)
+      .select("*").eq("user_id", user.id).eq("is_active", true);
+    const { data: payData } = await (supabase.from("employee_payments" as any) as any)
+      .select("*").eq("user_id", user.id);
+
+    const employees = empData || [];
+    const empPayments = payData || [];
+    const ac = contracts.filter(c => c.status !== "cancelled");
+    const monthContracts = ac.filter(c => {
+      const d = new Date(c.createdAt); return d >= mStart && d <= mEnd;
+    });
+
+    let totalDue = 0;
+    let totalPaid = 0;
+    for (const emp of employees) {
+      if (emp.payment_type === "por_contrato") totalDue += monthContracts.length * Number(emp.payment_value);
+      else if (emp.payment_type === "fixo_mensal") totalDue += Number(emp.payment_value);
+      totalPaid += empPayments
+        .filter((p: any) => p.employee_id === emp.id && new Date(p.date) >= mStart && new Date(p.date) <= mEnd)
+        .reduce((s: number, p: any) => s + Number(p.amount), 0);
+    }
+    setEmpTotalDue(totalDue);
+    setEmpTotalPaid(totalPaid);
+  }, [selectedMonth, contracts]);
+
+  useEffect(() => { loadEmployeeData(); }, [loadEmployeeData]);
 
   useEffect(() => {
     const handleFocus = () => { load(); };
@@ -281,15 +307,10 @@ export default function Financial() {
     }).reduce((s, e) => s + e.amount, 0);
   }, [expenses, monthStart, monthEnd]);
 
-  const VALOR_POR_CONTRATO_FUNCIONARIO = 70;
-  const contratosFechadosNoMes = activeContracts.filter(c => {
-    const d = new Date(c.createdAt); return d >= monthStart && d <= monthEnd;
-  });
-  const pagamentoFuncionario = contratosFechadosNoMes.length * VALOR_POR_CONTRATO_FUNCIONARIO;
-  const funcFalta = Math.max(0, pagamentoFuncionario - funcValorPago);
+  const funcFalta = Math.max(0, empTotalDue - empTotalPaid);
 
   const totalReservas = reserves.melhoria.saved + reserves.marketing.saved;
-  const lucroDoMes = recebidoNoMes - despesasDoMes - funcValorPago - totalReservas;
+  const lucroDoMes = recebidoNoMes - despesasDoMes - empTotalPaid - totalReservas;
 
   // Build full extrato
   const extrato = useMemo((): FinancialTransaction[] => {
@@ -514,9 +535,10 @@ export default function Financial() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
           <TabsTrigger value="resumo" className="gap-2"><BarChart3 size={14} /> Resumo</TabsTrigger>
           <TabsTrigger value="fluxo" className="gap-2"><ArrowUpDown size={14} /> Fluxo de Caixa</TabsTrigger>
+          <TabsTrigger value="funcionarios" className="gap-2"><UserRound size={14} /> Funcionários</TabsTrigger>
           <TabsTrigger value="reservas" className="gap-2"><PiggyBank size={14} /> Reservas</TabsTrigger>
         </TabsList>
 
@@ -540,17 +562,17 @@ export default function Financial() {
               <p className="text-[10px] text-muted-foreground mt-1">Recebido - Despesas - Func. - Reservas</p>
             </Card>
 
-            <Card className="p-4 border-violet-500/30 bg-gradient-to-br from-violet-500/5 to-transparent cursor-pointer hover:shadow-md transition-shadow" onClick={() => setFuncModalOpen(true)}>
+            <Card className="p-4 border-violet-500/30 bg-gradient-to-br from-violet-500/5 to-transparent cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab("funcionarios")}>
               <div className="flex items-center gap-2 mb-2">
                 <div className="rounded-full bg-violet-500/15 p-2">
                   <UserRound size={14} className="text-violet-500" />
                 </div>
-                <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider leading-tight">Funcionário</p>
+                <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider leading-tight">Funcionários</p>
               </div>
-              <p className="text-xl lg:text-2xl font-display font-bold text-violet-600 dark:text-violet-400 tracking-tight">{fmt(pagamentoFuncionario)}</p>
+              <p className="text-xl lg:text-2xl font-display font-bold text-violet-600 dark:text-violet-400 tracking-tight">{fmt(empTotalDue)}</p>
               <div className="flex items-center justify-between mt-1">
-                <p className="text-[10px] text-muted-foreground">{contratosFechadosNoMes.length}× R$70</p>
-                <p className="text-[10px] text-success font-medium">Pago: {fmt(funcValorPago)}</p>
+                <p className="text-[10px] text-muted-foreground">A pagar no mês</p>
+                <p className="text-[10px] text-success font-medium">Pago: {fmt(empTotalPaid)}</p>
               </div>
             </Card>
           </div>
@@ -810,7 +832,7 @@ export default function Financial() {
               </div>
               <div>
                 <p className="text-[10px] text-muted-foreground uppercase font-semibold">Funcionário</p>
-                <p className="text-lg font-display font-bold text-violet-600 dark:text-violet-400">{fmt(funcValorPago)}</p>
+                <p className="text-lg font-display font-bold text-violet-600 dark:text-violet-400">{fmt(empTotalPaid)}</p>
               </div>
               <div>
                 <p className="text-[10px] text-muted-foreground uppercase font-semibold">Reservas</p>
@@ -822,6 +844,11 @@ export default function Financial() {
               </div>
             </div>
           </Card>
+        </TabsContent>
+
+        {/* ====== TAB FUNCIONÁRIOS ====== */}
+        <TabsContent value="funcionarios" className="mt-4">
+          <EmployeesTab selectedMonth={selectedMonth} contracts={contracts} clients={clients} />
         </TabsContent>
 
         {/* ====== TAB RESERVAS ====== */}
@@ -994,56 +1021,6 @@ export default function Financial() {
           </Card>
         </TabsContent>
       </Tabs>
-
-      {/* Func Modal */}
-      <Dialog open={funcModalOpen} onOpenChange={setFuncModalOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <UserRound size={20} className="text-violet-500" /> Pagamento Funcionário
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-3 gap-3">
-              <div className="p-3 rounded-lg bg-violet-500/10 border border-violet-500/20">
-                <p className="text-[10px] text-muted-foreground uppercase font-semibold">Total</p>
-                <p className="text-lg font-bold text-violet-600 dark:text-violet-400">{fmt(pagamentoFuncionario)}</p>
-                <p className="text-[10px] text-muted-foreground">{contratosFechadosNoMes.length} × R$70</p>
-              </div>
-              <div className="p-3 rounded-lg bg-success/10 border border-success/20">
-                <p className="text-[10px] text-muted-foreground uppercase font-semibold">Pago</p>
-                <p className="text-lg font-bold text-success">{fmt(funcValorPago)}</p>
-              </div>
-              <div className="p-3 rounded-lg bg-warning/10 border border-warning/20">
-                <p className="text-[10px] text-muted-foreground uppercase font-semibold">Falta</p>
-                <p className="text-lg font-bold text-warning">{fmt(funcFalta)}</p>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Valor já pago</Label>
-              <CurrencyInput value={funcValorPago} onChange={handleFuncValorPagoChange} />
-            </div>
-            <div className="space-y-2">
-              <p className="text-xs text-muted-foreground font-medium">Contratos do mês:</p>
-              <div className="space-y-2 max-h-48 overflow-y-auto">
-                {contratosFechadosNoMes.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">Nenhum contrato</p>}
-                {contratosFechadosNoMes.map(c => {
-                  const clientName = clients.find(cl => cl.id === c.clientId)?.name || "—";
-                  return (
-                    <div key={c.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{clientName}</p>
-                        <p className="text-[10px] text-muted-foreground">{c.eventType} — {new Date(c.eventDate).toLocaleDateString("pt-BR")}</p>
-                      </div>
-                      <p className="text-sm font-bold">{fmt(VALOR_POR_CONTRATO_FUNCIONARIO)}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Expense Modal */}
       <Dialog open={expOpen} onOpenChange={setExpOpen}>
