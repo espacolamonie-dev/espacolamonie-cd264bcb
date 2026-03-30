@@ -45,7 +45,7 @@ function normalizeOrigin(raw: string): string {
   if (lower === "google") return "Google";
   if (lower === "tráfego pago" || lower === "trafego pago") return "Tráfego Pago";
   if (lower === "indicação" || lower === "indicacao") return "Indicação";
-  if (lower === "orgânico" || lower === "organico") return "Orgânico";
+  if (lower === "orgânico" || lower === "organico" || lower === "agendamento online") return "Orgânico";
   if (lower === "outro") return "Outro";
   if (!raw || lower === "não identificado") return "Não identificado";
   return raw;
