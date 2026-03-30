@@ -70,6 +70,15 @@ export interface Contract {
   createdAt: string;
   cancelledAt?: string;
   cancelledBy?: string;
+  utmSource?: string;
+  utmCampaign?: string;
+  utmMedium?: string;
+  utmContent?: string;
+  utmTerm?: string;
+  fbclid?: string;
+  metaCampaignId?: string;
+  metaAdsetId?: string;
+  metaAdId?: string;
 }
 
 export interface Payment {
