@@ -541,8 +541,9 @@ export default function Contracts() {
                             <CommandItem
                               key={c.id}
                               value={c.name}
-                              onSelect={() => {
+                            onSelect={() => {
                                 set("clientId", c.id);
+                                setSelectedClientOrigin(c.utmSource || "");
                                 if (!editing) autoFillFromClient(c.id);
                                 setClientSearchOpen(false);
                               }}
