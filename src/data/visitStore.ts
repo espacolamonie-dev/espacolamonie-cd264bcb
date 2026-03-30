@@ -165,13 +165,15 @@ export const addVisit = async (v: {
     .single();
   if (error) throw error;
 
-  // Track Meta: Schedule (visit created)
-  import("@/lib/metaPixel").then(({ trackMetaEvent }) => {
-    trackMetaEvent("Schedule", { phone: v.clientPhone, name: v.clientName }, {
-      content_name: "Visita agendada",
-      content_category: v.eventTypeDesired || "",
-    }).catch(() => {});
-  });
+  // Track Meta: Schedule — only for paid traffic leads
+  if (v.leadSource === "Tráfego Pago") {
+    import("@/lib/metaPixel").then(({ trackMetaEvent }) => {
+      trackMetaEvent("Schedule", { phone: v.clientPhone, name: v.clientName }, {
+        content_name: "Visita agendada",
+        content_category: v.eventTypeDesired || "",
+      }).catch(() => {});
+    });
+  }
 
   return mapVisit(data);
 };

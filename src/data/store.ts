@@ -88,24 +88,26 @@ export const addContract = async (c: {
   } as any).select().single();
   if (error) throw error;
 
-  // Track Meta: InitiateCheckout (contract created) with deposit value + client data for matching
-  (async () => {
-    try {
-      const { data: clientData } = await supabase.from("clients").select("name, phone, email").eq("id", c.clientId).single();
-      const { trackMetaEvent } = await import("@/lib/metaPixel");
-      await trackMetaEvent("InitiateCheckout", {
-        phone: clientData?.phone,
-        email: clientData?.email,
-        name: clientData?.name,
-      }, {
-        content_name: source || "Direto",
-        content_category: c.eventType,
-      }, {
-        totalValue: c.totalValue,
-        depositValue: depositValue,
-      });
-    } catch {}
-  })();
+  // Track Meta: InitiateCheckout — only for paid traffic
+  if (source === "Tráfego Pago") {
+    (async () => {
+      try {
+        const { data: clientData } = await supabase.from("clients").select("name, phone, email").eq("id", c.clientId).single();
+        const { trackMetaEvent } = await import("@/lib/metaPixel");
+        await trackMetaEvent("InitiateCheckout", {
+          phone: clientData?.phone,
+          email: clientData?.email,
+          name: clientData?.name,
+        }, {
+          content_name: source || "Direto",
+          content_category: c.eventType,
+        }, {
+          totalValue: c.totalValue,
+          depositValue: depositValue,
+        });
+      } catch {}
+    })();
+  }
 
   return mapContract(data);
 };
