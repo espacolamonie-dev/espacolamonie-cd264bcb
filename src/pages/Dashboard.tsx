@@ -278,17 +278,20 @@ export default function Dashboard() {
   ];
 
   const VALOR_POR_CONTRATO_FUNCIONARIO = 70;
-  const now2 = new Date();
-  const currentMonthKey = `${now2.getFullYear()}-${String(now2.getMonth() + 1).padStart(2, '0')}`;
-  const msStart = new Date(now2.getFullYear(), now2.getMonth(), 1);
-  const msEnd = new Date(now2.getFullYear(), now2.getMonth() + 1, 0, 23, 59, 59);
+  const funcMonthDate = new Date(funcMonth + "-01T12:00:00");
+  const funcMonthKey = funcMonth;
+  const funcMsStart = new Date(funcMonthDate.getFullYear(), funcMonthDate.getMonth(), 1);
+  const funcMsEnd = new Date(funcMonthDate.getFullYear(), funcMonthDate.getMonth() + 1, 0, 23, 59, 59);
   const contratosFechadosDash = contracts.filter(c => {
     const d = new Date(c.createdAt);
-    return d >= msStart && d <= msEnd;
+    return d >= funcMsStart && d <= funcMsEnd;
   });
   const pagamentoFuncTotal = contratosFechadosDash.length * VALOR_POR_CONTRATO_FUNCIONARIO;
-  const funcPagoDash = Number(localStorage.getItem(`func_pago_${currentMonthKey}`) || "0");
+  const funcPagoDash = Number(localStorage.getItem(`func_pago_${funcMonthKey}`) || "0");
   const funcFaltaDash = Math.max(0, pagamentoFuncTotal - funcPagoDash);
+
+  const now2 = new Date();
+  const currentMonthKeyFin = `${now2.getFullYear()}-${String(now2.getMonth() + 1).padStart(2, '0')}`;
 
   const finCards = [
     { label: "Receita", value: fmt(financialSummary.totalIn), icon: TrendingUp, iconBg: "bg-success/10", iconColor: "text-success", valueColor: "text-success" },
