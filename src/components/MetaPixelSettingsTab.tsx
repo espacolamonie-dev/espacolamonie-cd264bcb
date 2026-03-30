@@ -133,7 +133,7 @@ export default function MetaPixelSettingsTab() {
           return sum + Number(v);
         }, 0);
 
-      setStats({ leads, visits, contracts, totalValue });
+      setStats({ leads, visits, contracts, totalValue, errors: errors.length });
     } catch {}
   };
 
