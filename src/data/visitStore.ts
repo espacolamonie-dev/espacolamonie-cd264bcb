@@ -27,6 +27,15 @@ export interface Visit {
   googleEventId: string | null;
   createdAt: string;
   updatedAt: string;
+  utmSource: string;
+  utmCampaign: string;
+  utmMedium: string;
+  utmContent: string;
+  utmTerm: string;
+  fbclid: string;
+  metaCampaignId: string;
+  metaAdsetId: string;
+  metaAdId: string;
 }
 
 function mapVisit(row: any): Visit {
@@ -48,6 +57,15 @@ function mapVisit(row: any): Visit {
     googleEventId: row.google_event_id,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    utmSource: row.utm_source || "",
+    utmCampaign: row.utm_campaign || "",
+    utmMedium: row.utm_medium || "",
+    utmContent: row.utm_content || "",
+    utmTerm: row.utm_term || "",
+    fbclid: row.fbclid || "",
+    metaCampaignId: row.meta_campaign_id || "",
+    metaAdsetId: row.meta_adset_id || "",
+    metaAdId: row.meta_ad_id || "",
   };
 }
 
