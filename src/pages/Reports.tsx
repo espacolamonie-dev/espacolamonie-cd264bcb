@@ -1,12 +1,14 @@
 import { useEffect, useState, useMemo } from "react";
 import { formatDateBR } from "@/lib/dateUtils";
-import { CalendarDays, DollarSign, Users, TrendingUp, Target, Percent } from "lucide-react";
+import { CalendarDays, DollarSign, Users, TrendingUp, Target, Percent, Globe } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getContracts, getClients, getActivePayments, getManualEntries, getExpenses } from "@/data/store";
-import { getVisits } from "@/data/visitStore";
+import { getVisits, type Visit } from "@/data/visitStore";
 import type { Contract } from "@/types";
 import { CampaignAttribution } from "@/components/CampaignAttribution";
+import OriginReports from "@/components/OriginReports";
 import { format, parseISO, startOfMonth, endOfMonth, isBefore, isAfter, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -217,187 +219,204 @@ export default function Reports() {
           <h1 className="text-3xl font-display font-semibold tracking-tight">Relatórios</h1>
           <p className="text-sm text-muted-foreground mt-1">Indicadores de desempenho do espaço</p>
         </div>
-        <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-          <SelectTrigger className="w-[200px] h-9 text-sm rounded-lg">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {monthOptions.map((o) => (
-              <SelectItem key={o.value} value={o.value} className="capitalize">{o.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 stagger-fade-in">
-        <div className="stat-card">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="rounded-full bg-primary/10 p-2"><CalendarDays size={14} className="text-primary" /></div>
-            <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Visitas no mês</p>
-          </div>
-          <p className="text-3xl font-display font-bold tracking-tight">{stats.monthVisits}</p>
-        </div>
-        <div className="stat-card">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="rounded-full bg-success/10 p-2"><Percent size={14} className="text-success" /></div>
-            <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Conversão</p>
-          </div>
-          <p className="text-3xl font-display font-bold text-success tracking-tight">{stats.conversionRate}%</p>
-          <p className="text-[10px] text-muted-foreground mt-1">{stats.converted} de {stats.confirmedVisits} visitas</p>
-        </div>
-        <div className="stat-card">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="rounded-full bg-success/10 p-2"><DollarSign size={14} className="text-success" /></div>
-            <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Faturamento</p>
-          </div>
-          <p className="text-2xl font-display font-bold text-success tracking-tight">{fmt(stats.totalRevenue)}</p>
-        </div>
-        <div className="stat-card">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="rounded-full bg-accent p-2"><TrendingUp size={14} className="text-foreground" /></div>
-            <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Ticket médio</p>
-          </div>
-          <p className="text-2xl font-display font-bold tracking-tight">{fmt(stats.avgTicket)}</p>
-        </div>
-      </div>
+      <Tabs defaultValue="geral" className="space-y-6">
+        <TabsList className="grid w-full max-w-md grid-cols-3">
+          <TabsTrigger value="geral">Geral</TabsTrigger>
+          <TabsTrigger value="origem" className="gap-1.5"><Globe size={14} /> Origem</TabsTrigger>
+          <TabsTrigger value="campanhas">Campanhas</TabsTrigger>
+        </TabsList>
 
-      {/* Charts */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Revenue chart */}
-        <div className="card-premium p-6">
-          <h2 className="font-display text-lg font-semibold mb-1">Receita mensal</h2>
-          <p className="text-xs text-muted-foreground mb-6">Últimos 6 meses</p>
-          <div className="h-[280px]">
-            {chartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)} />
-                  <Tooltip formatter={(value: number) => fmt(value)} contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "12px", fontSize: "12px" }} />
-                  <Bar dataKey="receita" name="Receita" fill="hsl(var(--success))" radius={[8, 8, 0, 0]} barSize={28} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Sem dados</div>
-            )}
+        {/* ══════ ABA GERAL ══════ */}
+        <TabsContent value="geral" className="space-y-6">
+          <div className="flex justify-end">
+            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+              <SelectTrigger className="w-[200px] h-9 text-sm rounded-lg">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {monthOptions.map((o) => (
+                  <SelectItem key={o.value} value={o.value} className="capitalize">{o.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-        </div>
 
-        {/* Visitas & Contratos chart */}
-        <div className="card-premium p-6">
-          <h2 className="font-display text-lg font-semibold mb-1">Visitas vs Contratos</h2>
-          <p className="text-xs text-muted-foreground mb-6">Últimos 6 meses</p>
-          <div className="h-[280px]">
-            {chartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                  <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "12px", fontSize: "12px" }} />
-                  <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "12px" }} />
-                  <Bar dataKey="visitas" name="Visitas" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} barSize={20} />
-                  <Bar dataKey="contratos" name="Contratos" fill="hsl(var(--success))" radius={[8, 8, 0, 0]} barSize={20} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Sem dados</div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Events by type + Top days */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Events by type */}
-        <div className="card-premium p-6">
-          <h2 className="font-display text-lg font-semibold mb-5">Eventos por tipo</h2>
-          {stats.eventTypes.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-8 text-center">Nenhum evento neste mês</p>
-          ) : (
-            <div className="space-y-3">
-              {stats.eventTypes.map((et, i) => (
-                <div key={et.type} className="flex items-center gap-3">
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-sm font-medium">{et.type}</span>
-                      <span className="text-xs text-muted-foreground">{et.count} evento{et.count > 1 ? "s" : ""}</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-secondary overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{
-                          width: `${Math.min(100, (et.count / stats.totalEvents) * 100)}%`,
-                          backgroundColor: COLORS[i % COLORS.length],
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
+          {/* KPI Cards */}
+          <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 stagger-fade-in">
+            <div className="stat-card">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="rounded-full bg-primary/10 p-2"><CalendarDays size={14} className="text-primary" /></div>
+                <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Visitas no mês</p>
+              </div>
+              <p className="text-3xl font-display font-bold tracking-tight">{stats.monthVisits}</p>
             </div>
-          )}
-        </div>
-
-        {/* Top days */}
-        <div className="card-premium p-6">
-          <h2 className="font-display text-lg font-semibold mb-5">Dias mais utilizados</h2>
-          {stats.topDays.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-8 text-center">Nenhum evento neste mês</p>
-          ) : (
-            <div className="space-y-4">
-              {stats.topDays.map((d) => (
-                <div key={d.day} className="flex items-center gap-3">
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-sm font-medium">{d.day}</span>
-                      <span className="text-xs text-muted-foreground">{d.count} evento{d.count > 1 ? "s" : ""}</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-secondary overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-primary transition-all duration-500"
-                        style={{ width: `${Math.min(100, (d.count / stats.totalEvents) * 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <div className="stat-card">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="rounded-full bg-success/10 p-2"><Percent size={14} className="text-success" /></div>
+                <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Conversão</p>
+              </div>
+              <p className="text-3xl font-display font-bold text-success tracking-tight">{stats.conversionRate}%</p>
+              <p className="text-[10px] text-muted-foreground mt-1">{stats.converted} de {stats.confirmedVisits} visitas</p>
             </div>
-          )}
-        </div>
-      </div>
-
-      {/* Events list */}
-      <div className="card-premium">
-        <div className="px-6 py-4">
-          <h2 className="font-display text-lg font-semibold">Eventos do mês</h2>
-        </div>
-        <div className="border-t border-border">
-          {stats.monthContracts.length === 0 ? (
-            <p className="px-6 py-12 text-center text-sm text-muted-foreground">Nenhum evento agendado neste mês</p>
-          ) : (
-            <div className="divide-y divide-border/60">
-              {stats.monthContracts.map((c) => (
-                <div key={c.id} className="flex items-center gap-4 px-6 py-4 hover:bg-secondary/30 transition-colors">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{clientMap[c.clientId] || "—"}</p>
-                    <p className="text-xs text-muted-foreground">{c.eventType}</p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-sm font-medium tabular-nums">{formatDateBR(c.eventDate)}</p>
-                    <p className="text-xs text-muted-foreground tabular-nums">{fmt(c.totalValue)}</p>
-                  </div>
-                </div>
-              ))}
+            <div className="stat-card">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="rounded-full bg-success/10 p-2"><DollarSign size={14} className="text-success" /></div>
+                <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Faturamento</p>
+              </div>
+              <p className="text-2xl font-display font-bold text-success tracking-tight">{fmt(stats.totalRevenue)}</p>
             </div>
-          )}
-        </div>
-      </div>
+            <div className="stat-card">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="rounded-full bg-accent p-2"><TrendingUp size={14} className="text-foreground" /></div>
+                <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Ticket médio</p>
+              </div>
+              <p className="text-2xl font-display font-bold tracking-tight">{fmt(stats.avgTicket)}</p>
+            </div>
+          </div>
 
-      {/* Campaign Attribution */}
-      <CampaignAttribution visits={visits} contracts={contracts} />
+          {/* Charts */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="card-premium p-6">
+              <h2 className="font-display text-lg font-semibold mb-1">Receita mensal</h2>
+              <p className="text-xs text-muted-foreground mb-6">Últimos 6 meses</p>
+              <div className="h-[280px]">
+                {chartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                      <XAxis dataKey="label" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)} />
+                      <Tooltip formatter={(value: number) => fmt(value)} contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "12px", fontSize: "12px" }} />
+                      <Bar dataKey="receita" name="Receita" fill="hsl(var(--success))" radius={[8, 8, 0, 0]} barSize={28} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Sem dados</div>
+                )}
+              </div>
+            </div>
+
+            <div className="card-premium p-6">
+              <h2 className="font-display text-lg font-semibold mb-1">Visitas vs Contratos</h2>
+              <p className="text-xs text-muted-foreground mb-6">Últimos 6 meses</p>
+              <div className="h-[280px]">
+                {chartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                      <XAxis dataKey="label" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                      <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "12px", fontSize: "12px" }} />
+                      <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "12px" }} />
+                      <Bar dataKey="visitas" name="Visitas" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} barSize={20} />
+                      <Bar dataKey="contratos" name="Contratos" fill="hsl(var(--success))" radius={[8, 8, 0, 0]} barSize={20} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Sem dados</div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Events by type + Top days */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="card-premium p-6">
+              <h2 className="font-display text-lg font-semibold mb-5">Eventos por tipo</h2>
+              {stats.eventTypes.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-8 text-center">Nenhum evento neste mês</p>
+              ) : (
+                <div className="space-y-3">
+                  {stats.eventTypes.map((et, i) => (
+                    <div key={et.type} className="flex items-center gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-sm font-medium">{et.type}</span>
+                          <span className="text-xs text-muted-foreground">{et.count} evento{et.count > 1 ? "s" : ""}</span>
+                        </div>
+                        <div className="h-2 rounded-full bg-secondary overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{
+                              width: `${Math.min(100, (et.count / stats.totalEvents) * 100)}%`,
+                              backgroundColor: COLORS[i % COLORS.length],
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="card-premium p-6">
+              <h2 className="font-display text-lg font-semibold mb-5">Dias mais utilizados</h2>
+              {stats.topDays.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-8 text-center">Nenhum evento neste mês</p>
+              ) : (
+                <div className="space-y-4">
+                  {stats.topDays.map((d) => (
+                    <div key={d.day} className="flex items-center gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-sm font-medium">{d.day}</span>
+                          <span className="text-xs text-muted-foreground">{d.count} evento{d.count > 1 ? "s" : ""}</span>
+                        </div>
+                        <div className="h-2 rounded-full bg-secondary overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-primary transition-all duration-500"
+                            style={{ width: `${Math.min(100, (d.count / stats.totalEvents) * 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Events list */}
+          <div className="card-premium">
+            <div className="px-6 py-4">
+              <h2 className="font-display text-lg font-semibold">Eventos do mês</h2>
+            </div>
+            <div className="border-t border-border">
+              {stats.monthContracts.length === 0 ? (
+                <p className="px-6 py-12 text-center text-sm text-muted-foreground">Nenhum evento agendado neste mês</p>
+              ) : (
+                <div className="divide-y divide-border/60">
+                  {stats.monthContracts.map((c) => (
+                    <div key={c.id} className="flex items-center gap-4 px-6 py-4 hover:bg-secondary/30 transition-colors">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{clientMap[c.clientId] || "—"}</p>
+                        <p className="text-xs text-muted-foreground">{c.eventType}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-sm font-medium tabular-nums">{formatDateBR(c.eventDate)}</p>
+                        <p className="text-xs text-muted-foreground tabular-nums">{fmt(c.totalValue)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* ══════ ABA ORIGEM ══════ */}
+        <TabsContent value="origem">
+          <OriginReports visits={visits as Visit[]} contracts={contracts} />
+        </TabsContent>
+
+        {/* ══════ ABA CAMPANHAS ══════ */}
+        <TabsContent value="campanhas">
+          <CampaignAttribution visits={visits} contracts={contracts} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
