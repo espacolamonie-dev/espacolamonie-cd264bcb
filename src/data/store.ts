@@ -88,11 +88,12 @@ export const addContract = async (c: {
   } as any).select().single();
   if (error) throw error;
 
-  // Track Meta: InitiateCheckout (contract created) with deposit value
-  // Fetch client data for user matching
-  supabase.from("clients").select("name, phone, email").eq("id", c.clientId).single().then(({ data: clientData }) => {
-    import("@/lib/metaPixel").then(({ trackMetaEvent }) => {
-      trackMetaEvent("InitiateCheckout", {
+  // Track Meta: InitiateCheckout (contract created) with deposit value + client data for matching
+  (async () => {
+    try {
+      const { data: clientData } = await supabase.from("clients").select("name, phone, email").eq("id", c.clientId).single();
+      const { trackMetaEvent } = await import("@/lib/metaPixel");
+      await trackMetaEvent("InitiateCheckout", {
         phone: clientData?.phone,
         email: clientData?.email,
         name: clientData?.name,
@@ -102,9 +103,9 @@ export const addContract = async (c: {
       }, {
         totalValue: c.totalValue,
         depositValue: depositValue,
-      }).catch(() => {});
-    });
-  }).catch(() => {});
+      });
+    } catch {}
+  })();
 
   return mapContract(data);
 };
