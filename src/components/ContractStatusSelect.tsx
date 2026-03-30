@@ -15,6 +15,7 @@ import {
 import type { ContractStatus, PaymentStatus } from "@/types";
 import { updateContract } from "@/data/store";
 import { toast } from "sonner";
+import { getSafeErrorMessage } from "@/lib/errorSanitizer";
 import { triggerGoogleSync, deleteGoogleEvent } from "@/lib/googleSync";
 
 
@@ -46,7 +47,7 @@ export function ContractStatusSelect({ contractId, value, onChanged }: ContractS
       }
       onChanged();
     } catch (e: any) {
-      toast.error(e.message || "Erro ao alterar status");
+      toast.error(getSafeErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -99,7 +100,7 @@ export function PaymentStatusSelect({ contractId, value, isCancelled, onChanged 
       triggerGoogleSync(contractId);
       onChanged();
     } catch (e: any) {
-      toast.error(e.message || "Erro ao alterar pagamento");
+      toast.error(getSafeErrorMessage(e));
     } finally {
       setLoading(false);
     }

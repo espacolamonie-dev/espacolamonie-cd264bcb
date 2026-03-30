@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { getSafeErrorMessage } from "@/lib/errorSanitizer";
 import { supabase } from "@/integrations/supabase/client";
 import { addClient, addContract, getClients, addDocument } from "@/data/store";
 import type { EventType } from "@/types";
@@ -193,7 +194,7 @@ export default function ImportContractModal({ open, onOpenChange, onImported }: 
       onOpenChange(false);
       reset();
     } catch (e: any) {
-      toast.error(e.message || "Erro ao salvar contrato");
+      toast.error(getSafeErrorMessage(e));
     } finally {
       setSaving(false);
     }

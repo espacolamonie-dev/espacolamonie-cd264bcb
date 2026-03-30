@@ -25,6 +25,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
+import { getSafeErrorMessage } from "@/lib/errorSanitizer";
 import {
   getPayments, getExpenses, addExpense, deleteExpense,
   getManualEntries, addManualEntry, deleteManualEntry,
@@ -167,7 +168,7 @@ export default function Financial() {
       setExpOpen(false);
       setExpForm({ description: "", category: "Outros", amount: 0, date: new Date().toISOString().split("T")[0] });
       await load();
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e: any) { toast.error(getSafeErrorMessage(e)); }
   };
 
   const handleAddEntry = async () => {
@@ -178,17 +179,17 @@ export default function Financial() {
       setEntryOpen(false);
       setEntryForm({ description: "", category: "Outro", amount: 0, date: new Date().toISOString().split("T")[0], paymentMethod: "Pix", notes: "" });
       await load();
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e: any) { toast.error(getSafeErrorMessage(e)); }
   };
 
   const handleDeleteExpense = async (id: string) => {
     try { await deleteExpense(id); toast.success("Despesa removida"); await load(); }
-    catch (e: any) { toast.error(e.message); }
+    catch (e: any) { toast.error(getSafeErrorMessage(e)); }
   };
 
   const handleDeleteManualEntry = async (id: string) => {
     try { await deleteManualEntry(id); toast.success("Entrada removida"); await load(); }
-    catch (e: any) { toast.error(e.message); }
+    catch (e: any) { toast.error(getSafeErrorMessage(e)); }
   };
 
   const setExp = (field: string, value: any) => setExpForm((p) => ({ ...p, [field]: value }));
@@ -206,7 +207,7 @@ export default function Financial() {
       toast.success(`${selectedEntries.size} entrada(s) excluída(s)`);
       setSelectedEntries(new Set());
       await load();
-    } catch (e: any) { toast.error(e.message || "Erro ao excluir"); }
+    } catch (e: any) { toast.error(getSafeErrorMessage(e)); }
   };
 
   const handleDeleteSelectedExpenses = async () => {
@@ -215,7 +216,7 @@ export default function Financial() {
       toast.success(`${selectedExpenses.size} despesa(s) excluída(s)`);
       setSelectedExpenses(new Set());
       await load();
-    } catch (e: any) { toast.error(e.message || "Erro ao excluir"); }
+    } catch (e: any) { toast.error(getSafeErrorMessage(e)); }
   };
 
   const handleDeleteSingleEntry = async (item: FinancialTransaction) => {
@@ -224,7 +225,7 @@ export default function Financial() {
       else if (item.source === "expense") await deleteExpense(item.id);
       toast.success("Item excluído");
       await load();
-    } catch (e: any) { toast.error(e.message || "Erro ao excluir"); }
+    } catch (e: any) { toast.error(getSafeErrorMessage(e)); }
   };
 
   const cancelledContractIds = new Set(contracts.filter((c) => c.status === "cancelled").map((c) => c.id));

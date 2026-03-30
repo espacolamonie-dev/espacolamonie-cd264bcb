@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import logo from "@/assets/logo.png";
 import { Lock, Mail } from "lucide-react";
+import { getSafeErrorMessage } from "@/lib/errorSanitizer";
 
 export default function Auth() {
   const [email, setEmail] = useState("");
@@ -26,7 +27,7 @@ export default function Auth() {
     } catch (error: any) {
       toast({
         title: "Erro",
-        description: error.message,
+        description: getSafeErrorMessage(error),
         variant: "destructive",
       });
     } finally {

@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { getSafeErrorMessage } from "@/lib/errorSanitizer";
 import { Upload, FileText, Check, Loader2, Landmark } from "lucide-react";
 import { addManualEntry } from "@/data/store";
 
@@ -192,7 +193,7 @@ export default function ImportBankEntryModal({ open, onOpenChange, onImported }:
       onImported();
       handleClose();
     } catch (err: any) {
-      toast.error(err.message || "Erro ao importar entradas");
+      toast.error(getSafeErrorMessage(err));
       setStep("preview");
     }
   };

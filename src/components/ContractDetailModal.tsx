@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { getSafeErrorMessage } from "@/lib/errorSanitizer";
 import { CalendarDays, Users, DollarSign, FileText, Plus, AlertTriangle, Upload, Trash2, Download, FileOutput, ShieldCheck, Monitor, Smartphone, Globe, Hash, Clock, Pencil, X } from "lucide-react";
 import { AttributionBadge } from "@/components/AttributionBadge";
 import GenerateContractModal from "@/components/GenerateContractModal";
@@ -106,7 +107,7 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
       setPayForm({ amount: 0, date: new Date().toISOString().split("T")[0], description: "", tag: "none" });
       await load();
       triggerGoogleSync(contractId);
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e: any) { toast.error(getSafeErrorMessage(e)); }
   };
 
   const handleTagChange = (tag: string) => {
@@ -171,7 +172,7 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
       await load();
       triggerGoogleSync(contractId);
     } catch (e: any) {
-      toast.error(e.message || "Erro ao excluir pagamento(s)");
+      toast.error(getSafeErrorMessage(e));
     }
   };
 
@@ -179,7 +180,7 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
     try {
       await updateContract(contractId, { status: "cancelled", cancelledAt: new Date().toISOString(), cancelledBy: "Administrador" });
       toast.success("Contrato cancelado"); await load();
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e: any) { toast.error(getSafeErrorMessage(e)); }
   };
 
   const handleUploadDoc = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -192,7 +193,7 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
       setDocType("outro");
       await load();
     } catch (err: any) {
-      toast.error(err.message || "Erro ao enviar documento");
+      toast.error(getSafeErrorMessage(err));
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -204,14 +205,14 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
       await deleteDocument(doc.id, doc.fileName);
       toast.success("Documento removido");
       await load();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err: any) { toast.error(getSafeErrorMessage(err)); }
   };
 
   const handleDownloadDoc = async (doc: Document) => {
     try {
       const url = await getDocumentSignedUrl(doc.fileName);
       window.open(url, "_blank");
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err: any) { toast.error(getSafeErrorMessage(err)); }
   };
 
   const docStatus = docs.length === 0 ? "Nenhum documento" : docs.length < 3 ? "Documentos pendentes" : "Documentos completos";
