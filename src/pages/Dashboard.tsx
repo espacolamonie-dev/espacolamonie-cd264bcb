@@ -107,7 +107,7 @@ export default function Dashboard() {
         );
 
         // Conversão via visit_id (mais confiável)
-        const allVisits = visits.filter((v) => v.status !== "Cancelada");
+        const allVisits = visits.filter((v) => v.status === "Confirmada" || v.status === "Convertida em contrato");
         const activeVisitIds = new Set(
           active.filter((c) => c.visitId).map((c) => c.visitId)
         );
