@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Trash2, Search, ChevronRight, ChevronLeft, Package } from "lucide-react";
 import { toast } from "sonner";
 import { getClients } from "@/data/store";
+import { supabase } from "@/integrations/supabase/client";
 import {
   addBudget, updateBudget, getBudgetById, getBudgetItems, addBudgetItem,
   updateBudgetItem, deleteBudgetItem, getCatalogItems,
