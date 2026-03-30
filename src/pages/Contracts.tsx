@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { parseLocalDate, formatDateBR } from "@/lib/dateUtils";
 import { useSearchParams } from "react-router-dom";
-import { Plus, Search, Eye, Pencil, Upload, Trash2, CalendarDays, Link2, ExternalLink, FileText, CalendarCheck, Activity, Check, ChevronsUpDown } from "lucide-react";
+import { Plus, Search, Eye, Pencil, Upload, Trash2, CalendarDays, Link2, ExternalLink, FileText, CalendarCheck, Activity, Check, ChevronsUpDown, MapPin } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,7 @@ import { triggerGoogleSync } from "@/lib/googleSync";
 import { NumericInput } from "@/components/NumericInput";
 import ImportContractModal from "@/components/ImportContractModal";
 import { supabase } from "@/integrations/supabase/client";
+import { AttributionBadge } from "@/components/AttributionBadge";
 
 const EVENT_TYPES: EventType[] = [
   "Aniversário 15 anos", "Aniversário Adulto", "Aniversário Infantil", "Casamento",
