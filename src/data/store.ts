@@ -251,11 +251,6 @@ export const addDocument = async (d: { contractId: string; name: string; type: s
   return mapDocument(data);
 };
 
-export const getDocumentUrl = (filePath: string) => {
-  const { data } = supabase.storage.from("documents").getPublicUrl(filePath);
-  return data.publicUrl;
-};
-
 export const getDocumentSignedUrl = async (filePath: string) => {
   const { data, error } = await supabase.storage
     .from("documents")
