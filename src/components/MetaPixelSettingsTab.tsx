@@ -376,20 +376,22 @@ export default function MetaPixelSettingsTab() {
       {/* Dashboard stats */}
       <div className="lg:col-span-2">
         <SectionCard icon={BarChart3} title="Painel de Eventos" description="Resumo dos eventos enviados para o Meta">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
             {[
-              { label: "Leads enviados", value: stats.leads, color: "text-blue-600 bg-blue-500/10" },
-              { label: "Visitas enviadas", value: stats.visits, color: "text-purple-600 bg-purple-500/10" },
-              { label: "Contratos enviados", value: stats.contracts, color: "text-emerald-600 bg-emerald-500/10" },
+              { label: "Leads enviados", value: stats.leads, color: "text-blue-600 bg-blue-500/10", icon: Eye },
+              { label: "Visitas enviadas", value: stats.visits, color: "text-purple-600 bg-purple-500/10", icon: Eye },
+              { label: "Contratos enviados", value: stats.contracts, color: "text-emerald-600 bg-emerald-500/10", icon: Eye },
               {
                 label: "Valor total enviado",
                 value: stats.totalValue.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }),
                 color: "text-amber-600 bg-amber-500/10",
+                icon: Eye,
               },
+              { label: "Erros", value: stats.errors, color: "text-red-600 bg-red-500/10", icon: AlertCircle },
             ].map((item) => (
               <div key={item.label} className="rounded-xl border border-border p-4 text-center">
                 <div className={`inline-flex rounded-lg p-2 ${item.color} mb-2`}>
-                  <Eye size={16} />
+                  <item.icon size={16} />
                 </div>
                 <p className="text-2xl font-bold font-display">{item.value}</p>
                 <p className="text-xs text-muted-foreground mt-1">{item.label}</p>
