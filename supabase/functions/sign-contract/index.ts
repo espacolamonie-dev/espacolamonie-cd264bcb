@@ -246,6 +246,22 @@ serve(async (req) => {
       });
     }
 
+    // Check if contract is cancelled before allowing signature
+    if (sig.contract_id) {
+      const { data: contractCheck } = await supabase
+        .from("contracts")
+        .select("status")
+        .eq("id", sig.contract_id)
+        .maybeSingle();
+      
+      if (contractCheck && contractCheck.status === "cancelled") {
+        return new Response(JSON.stringify({ error: "Este contrato foi cancelado" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     const now = new Date().toISOString();
     const isBudget = !sig.contract_id && sig.budget_id;
     const docLabel = isBudget ? "Orçamento" : "Contrato";
