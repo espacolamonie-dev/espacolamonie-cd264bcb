@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { parseLocalDate, formatDateBR } from "@/lib/dateUtils";
 import { useSearchParams } from "react-router-dom";
-import { Plus, Search, Eye, Pencil, Upload, Trash2, CalendarDays, Link2, ExternalLink, FileText, CalendarCheck, Activity, Check, ChevronsUpDown } from "lucide-react";
+import { Plus, Search, Eye, Pencil, Upload, Trash2, CalendarDays, Link2, ExternalLink, FileText, CalendarCheck, Activity, Check, ChevronsUpDown, MapPin } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,7 @@ import { triggerGoogleSync } from "@/lib/googleSync";
 import { NumericInput } from "@/components/NumericInput";
 import ImportContractModal from "@/components/ImportContractModal";
 import { supabase } from "@/integrations/supabase/client";
+import { AttributionBadge } from "@/components/AttributionBadge";
 
 const EVENT_TYPES: EventType[] = [
   "Aniversário 15 anos", "Aniversário Adulto", "Aniversário Infantil", "Casamento",
@@ -177,18 +178,35 @@ export default function Contracts() {
       } else {
         // Find linked visit for this client
         let visitId: string | undefined;
+        let visitOrigin = "";
         try {
           const { data: visitRows } = await supabase
             .from("visits")
-            .select("id")
+            .select("id, lead_source")
             .eq("client_id", form.clientId)
             .order("created_at", { ascending: false })
             .limit(1);
-          if (visitRows && visitRows.length > 0) visitId = visitRows[0].id;
+          if (visitRows && visitRows.length > 0) {
+            visitId = visitRows[0].id;
+            visitOrigin = (visitRows[0] as any).lead_source || "";
+          }
         } catch {}
-        const newContract = await addContract({ ...form, visitId, source: visitId ? "visita" : "" });
+
+        // Determine origin: client > visit > fallback
+        const clientOrigin = selectedClientOrigin || "";
+        const finalOrigin = clientOrigin || visitOrigin || "Orgânico";
+
+        const newContract = await addContract({ ...form, visitId, source: finalOrigin });
         toast.success("Contrato criado com sucesso");
         triggerGoogleSync(newContract.id);
+
+        // Auto-update visit status to "Convertida em contrato"
+        if (visitId) {
+          try {
+            const { updateVisit } = await import("@/data/visitStore");
+            await updateVisit(visitId, { status: "Convertida em contrato" });
+          } catch {}
+        }
       }
       setOpen(false); await load();
     } catch (e: any) { toast.error(e.message); }
@@ -362,7 +380,10 @@ export default function Contracts() {
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1 min-w-0">
                         <p className="font-display font-semibold text-base truncate">{clientMap[c.clientId]?.name || "—"}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{c.eventType}</p>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <p className="text-xs text-muted-foreground">{c.eventType}</p>
+                          <AttributionBadge origin={c.source} compact />
+                        </div>
                       </div>
                       <div className="flex flex-col items-end gap-1 shrink-0">
                         <Badge className={`text-[10px] font-semibold border rounded-full px-3 py-1 ${statusColor}`}>
@@ -452,7 +473,11 @@ export default function Contracts() {
                     <td>
                       <div>
                         <p className="font-semibold text-sm">{clientMap[c.clientId]?.name || "—"}</p>
-                        <p className="text-xs text-muted-foreground">{c.eventType}</p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-xs text-muted-foreground">{c.eventType}</p>
+                          <AttributionBadge origin={c.source} compact />
+                        </div>
+                         {c.visitId && <p className="text-[10px] text-muted-foreground mt-0.5">📋 Veio de visita</p>}
                       </div>
                     </td>
                     <td className="hidden sm:table-cell text-muted-foreground tabular-nums text-sm">{formatDateBR(c.eventDate)}{c.eventDateEnd && ` – ${formatDateBR(c.eventDateEnd)}`}</td>
