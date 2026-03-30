@@ -291,16 +291,30 @@ export default function EmployeesTab({ selectedMonth, contracts, clients }: Prop
                     <div className="mt-3 space-y-1.5">
                       <p className="text-[10px] text-muted-foreground font-semibold uppercase">Pagamentos no mês</p>
                       {empPayments.map(p => (
-                        <div key={p.id} className="flex items-center justify-between p-2 rounded-lg border bg-card text-sm group">
+                        <div key={p.id} className="flex items-center justify-between p-2 rounded-lg border bg-card text-sm">
                           <div>
                             <p className="text-xs font-medium">{p.description}</p>
                             <p className="text-[10px] text-muted-foreground">{new Date(p.date).toLocaleDateString("pt-BR")}</p>
                           </div>
                           <div className="flex items-center gap-2">
                             <p className="text-xs font-bold text-success">{fmt(p.amount)}</p>
-                            <Button size="icon" variant="ghost" className="h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => handleDeletePayment(p.id)}>
-                              <Trash2 size={12} className="text-muted-foreground hover:text-destructive" />
-                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-destructive">
+                                  <Trash2 size={12} />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Excluir pagamento?</AlertDialogTitle>
+                                  <AlertDialogDescription>"{p.description}" de {fmt(p.amount)} será removido permanentemente.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeletePayment(p.id)} className="bg-destructive text-destructive-foreground">Excluir</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </div>
                         </div>
                       ))}
