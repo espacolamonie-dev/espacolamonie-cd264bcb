@@ -229,16 +229,6 @@ export default function Contracts() {
 
   const depositValue = (form.totalValue * form.depositPercent) / 100;
 
-  const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
-  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-
-  const getLocalDateStr = (isoStr: string) => {
-    const d = new Date(isoStr);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  };
-
   const contractsThisMonth = contracts.filter((c) => {
     const d = new Date(c.createdAt || c.eventDate);
     return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
