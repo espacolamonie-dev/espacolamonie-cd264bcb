@@ -241,7 +241,7 @@ export default function EmployeesTab({ selectedMonth, contracts, clients }: Prop
                       <h3 className="font-display font-bold text-base truncate">{emp.name}</h3>
                       {emp.phone && (
                         <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Phone size={10} /> {emp.phone}
+                          <Phone size={10} /> {formatPhone(emp.phone)}
                         </p>
                       )}
                     </div>
@@ -342,7 +342,7 @@ export default function EmployeesTab({ selectedMonth, contracts, clients }: Prop
             </div>
             <div className="space-y-2">
               <Label>Telefone</Label>
-              <Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="(31) 99999-9999" className="rounded-lg h-11" />
+              <Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: applyPhoneMask(e.target.value) }))} placeholder="(31) 99999-9999" className="rounded-lg h-11" />
             </div>
             <div className="space-y-2">
               <Label>Cargos *</Label>
