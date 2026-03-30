@@ -15,7 +15,7 @@ interface ContractRow { id: string; client_id: string; source: string; status: s
 interface ClientRow { id: string; name: string; utm_source: string; }
 
 function normalizeOrigin(src: string): "Orgânico" | "Tráfego Pago" {
-  if (!src) return "Orgânico";
+  if (!src || src === "visita") return "Orgânico";
   const l = src.toLowerCase().trim();
   if (["tráfego pago", "trafego pago", "facebook", "instagram ads", "facebook ads", "google ads", "paid", "cpc", "meta"].some(k => l.includes(k))) return "Tráfego Pago";
   return "Orgânico";
@@ -70,13 +70,19 @@ export default function Marketing() {
   }, [visits, from, to, originFilter]);
 
   const filteredContracts = useMemo(() => {
+    const clientMap = Object.fromEntries(clients.map(c => [c.id, c]));
     let list = contracts.filter(c => {
       const d = (c.created_at || c.event_date || "").slice(0, 10);
       return d >= from && d <= to && c.status !== "cancelled";
     });
-    if (originFilter !== "all") list = list.filter(c => normalizeOrigin(c.source) === originFilter);
-    return list;
-  }, [contracts, from, to, originFilter]);
+    // Resolve origin: contract.source > client.utm_source > "Orgânico"
+    const resolvedList = list.map(c => ({
+      ...c,
+      source: c.source && c.source !== "visita" ? c.source : (clientMap[c.client_id]?.utm_source || "Orgânico"),
+    }));
+    if (originFilter !== "all") return resolvedList.filter(c => normalizeOrigin(c.source) === originFilter);
+    return resolvedList;
+  }, [contracts, clients, from, to, originFilter]);
 
   const paidContracts = useMemo(() => filteredContracts.filter(c => c.payment_status === "deposit_paid" || c.payment_status === "paid_full"), [filteredContracts]);
 

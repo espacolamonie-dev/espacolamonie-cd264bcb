@@ -51,7 +51,7 @@ export const addContract = async (c: {
   const depositValue = (c.totalValue * c.depositPercent) / 100;
   const utm = getUtmForDb();
 
-  // Auto-copy origin from client if no source provided
+  // Auto-copy origin: source param > client.utm_source > visit.lead_source > "Orgânico"
   let source = c.source || "";
   if (!source && c.clientId) {
     try {
@@ -59,6 +59,13 @@ export const addContract = async (c: {
       if (clientData?.utm_source) source = clientData.utm_source;
     } catch {}
   }
+  if (!source && c.visitId) {
+    try {
+      const { data: visitData } = await supabase.from("visits" as any).select("lead_source").eq("id", c.visitId).single() as any;
+      if (visitData?.lead_source) source = visitData.lead_source;
+    } catch {}
+  }
+  if (!source) source = "Orgânico";
 
   const { data, error } = await supabase.from("contracts").insert({
     user_id: userId,
