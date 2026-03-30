@@ -124,7 +124,7 @@ export default function MetaPixelSettingsTab() {
       const arr = (logs as any[]).filter(l => !l.payload?.custom_data?.test);
       const leads = arr.filter(l => l.event_name === "Lead").length;
       const visits = arr.filter(l => l.event_name === "Schedule").length;
-      const contracts = arr.filter(l => l.event_name === "Purchase").length;
+      const contracts = arr.filter(l => ["InitiateCheckout", "Purchase", "CompleteRegistration"].includes(l.event_name)).length;
       const totalValue = arr
         .filter(l => l.event_name === "Purchase")
         .reduce((sum: number, l: any) => {
