@@ -106,37 +106,14 @@ export default function Dashboard() {
             .map((c) => ({ ...c, clientName: clientMap[c.clientId] || "—" }))
         );
 
-        const allVisits = visits.filter((v) => v.status === "Confirmada");
-        const normalize = (s: string) => s.replace(/\D/g, "");
-        const getFirstName = (name: string) => name.trim().split(/\s+/)[0].toLowerCase();
-        const normalizeFullName = (name: string) => name.trim().toLowerCase();
-
-        const contractClients = active.map((c) => {
-          const cl = clients.find((cl) => cl.id === c.clientId);
-          return {
-            phone: normalize(cl?.phone || ""),
-            firstName: getFirstName(cl?.name || ""),
-            fullName: normalizeFullName(cl?.name || ""),
-            eventDate: c.eventDate,
-          };
-        });
-
-        const contractPhones = new Set(contractClients.map((c) => c.phone).filter(Boolean));
-        const contractFullNames = new Set(contractClients.map((c) => c.fullName).filter(Boolean));
-
-        const convertedVisits = allVisits.filter((v) => {
-          const vPhone = normalize(v.clientPhone || "");
-          const vFullName = normalizeFullName(v.clientName || "");
-          const vFirstName = getFirstName(v.clientName || "");
-          const vInterestDate = v.interestEventDate || "";
-
-          const phoneMatch = vPhone && contractPhones.has(vPhone);
-          const fullNameMatch = vFullName && contractFullNames.has(vFullName);
-          const firstNameDateMatch = vFirstName && vInterestDate &&
-            contractClients.some((cc) => cc.firstName === vFirstName && cc.eventDate === vInterestDate);
-
-          return phoneMatch || fullNameMatch || firstNameDateMatch;
-        }).length;
+        // Conversão via visit_id (mais confiável)
+        const allVisits = visits.filter((v) => v.status !== "Cancelada");
+        const activeVisitIds = new Set(
+          active.filter((c) => c.visitId).map((c) => c.visitId)
+        );
+        const convertedVisits = allVisits.filter((v) =>
+          activeVisitIds.has(v.id) || v.status === "Convertida em contrato"
+        ).length;
 
         if (allVisits.length > 0) {
           setVisitToContractRate(Math.round((convertedVisits / allVisits.length) * 100));
