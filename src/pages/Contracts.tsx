@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { getSafeErrorMessage } from "@/lib/errorSanitizer";
 import { getContracts, getClients, addContract, updateContract, deleteContract } from "@/data/store";
+import { deleteGoogleEvent } from "@/lib/googleSync";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { CONTRACT_STATUS_LABELS, CONTRACT_STATUS_COLORS, PAYMENT_STATUS_LABELS, PAYMENT_STATUS_COLORS } from "@/types";
 import type { Contract, ContractStatus, EventType, Client, RentalType } from "@/types";
@@ -714,9 +715,7 @@ export default function Contracts() {
                 if (!deleteTarget) return;
                 try {
                   // Delete Google Calendar event before deleting the contract
-                  if (deleteTarget.googleEventId) {
-                    try { await deleteGoogleEvent(deleteTarget.id); } catch {}
-                  }
+                  try { await deleteGoogleEvent(deleteTarget.id); } catch {}
                   await deleteContract(deleteTarget.id);
                   toast.success("Contrato excluído definitivamente");
                   setDeleteTarget(null);
