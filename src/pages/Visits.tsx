@@ -478,14 +478,20 @@ export default function Visits() {
         guestCount: editForm.guestCount,
       };
       await updateVisit(detailVisit.id, updates);
-      try {
-        await syncVisitToGoogle(detailVisit.id);
-        toast.success("Visita atualizada e sincronizada!");
-      } catch {
-        toast.warning("Salvo no CRM, mas falhou sincronizar com Google Agenda.");
-      }
       if (editForm.status === "Cancelada" && detailVisit.googleEventId) {
-        try { await deleteVisitGoogleEvent(detailVisit.id); } catch {}
+        try {
+          await deleteVisitGoogleEvent(detailVisit.id);
+          toast.success("Visita cancelada e removida do Google Agenda!");
+        } catch {
+          toast.warning("Salvo no CRM, mas falhou remover do Google Agenda.");
+        }
+      } else {
+        try {
+          await syncVisitToGoogle(detailVisit.id);
+          toast.success("Visita atualizada e sincronizada!");
+        } catch {
+          toast.warning("Salvo no CRM, mas falhou sincronizar com Google Agenda.");
+        }
       }
       // If status changed to Confirmada, show WhatsApp message
       if (editForm.status === "Confirmada" && detailVisit.status !== "Confirmada") {
