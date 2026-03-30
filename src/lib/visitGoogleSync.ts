@@ -37,10 +37,15 @@ export async function deleteVisitGoogleEvent(visitId: string): Promise<void> {
   try {
     const ctx = await getSessionHeaders();
     if (!ctx) return;
-    fetch(EDGE_URL, {
+    const res = await fetch(EDGE_URL, {
       method: "POST",
       headers: ctx.headers,
       body: JSON.stringify({ action: "delete-visit-event", visit_id: visitId }),
-    }).catch(() => {});
-  } catch {}
+    });
+    if (!res.ok) {
+      console.warn("deleteVisitGoogleEvent failed:", await res.text().catch(() => ""));
+    }
+  } catch (e) {
+    console.warn("deleteVisitGoogleEvent error:", e);
+  }
 }
