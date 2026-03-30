@@ -67,9 +67,12 @@ export const addContract = async (c: {
   } as any).select().single();
   if (error) throw error;
 
-  // Track Meta event (non-blocking)
+  // Track Meta event (non-blocking) — passes contract data for value_source resolution
   import("@/lib/metaPixel").then(({ trackMetaEvent }) => {
-    trackMetaEvent("Purchase", undefined, { value: c.totalValue, currency: "BRL" }).catch(() => {});
+    trackMetaEvent("Purchase", undefined, {}, {
+      totalValue: c.totalValue,
+      depositValue: depositValue,
+    }).catch(() => {});
   });
 
   return mapContract(data);
