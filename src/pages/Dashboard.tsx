@@ -284,17 +284,48 @@ export default function Dashboard() {
     { label: "Próximos", value: futureCount, sub: "Eventos futuros", icon: CalendarDays, iconBg: "bg-primary/10", iconColor: "text-primary", onClick: () => navigate("/agenda") },
   ];
 
-  const VALOR_POR_CONTRATO_FUNCIONARIO = 70;
   const funcStart = new Date(funcDateFrom + "T00:00:00");
   const funcEnd = new Date(funcDateTo + "T23:59:59");
-  const funcPeriodKey = `${funcDateFrom}_${funcDateTo}`;
   const contratosFechadosDash = contracts.filter(c => {
     const d = new Date(c.createdAt);
     return d >= funcStart && d <= funcEnd;
   });
-  const pagamentoFuncTotal = contratosFechadosDash.length * VALOR_POR_CONTRATO_FUNCIONARIO;
-  const funcPagoDash = Number(localStorage.getItem(`func_pago_${funcPeriodKey}`) || "0");
-  const funcFaltaDash = Math.max(0, pagamentoFuncTotal - funcPagoDash);
+
+  const [empTotalDue, setEmpTotalDue] = useState(0);
+  const [empTotalPaid, setEmpTotalPaid] = useState(0);
+
+  useEffect(() => {
+    const loadEmpData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: empData } = await (supabase.from("employees" as any) as any)
+        .select("*").eq("user_id", user.id).eq("is_active", true);
+      const { data: payData } = await (supabase.from("employee_payments" as any) as any)
+        .select("*").eq("user_id", user.id);
+
+      const employees = empData || [];
+      const empPayments = payData || [];
+
+      let totalDue = 0;
+      let totalPaid = 0;
+      for (const emp of employees) {
+        if (emp.payment_type === "por_contrato") {
+          totalDue += contratosFechadosDash.length * Number(emp.payment_value);
+        } else if (emp.payment_type === "fixo_mensal") {
+          totalDue += Number(emp.payment_value);
+        }
+        totalPaid += empPayments
+          .filter((p: any) => p.employee_id === emp.id && new Date(p.date) >= funcStart && new Date(p.date) <= funcEnd)
+          .reduce((s: number, p: any) => s + Number(p.amount), 0);
+      }
+      setEmpTotalDue(totalDue);
+      setEmpTotalPaid(totalPaid);
+    };
+    loadEmpData();
+  }, [funcDateFrom, funcDateTo, contracts]);
+
+  const funcFaltaDash = Math.max(0, empTotalDue - empTotalPaid);
 
   const now2 = new Date();
   const currentMonthKeyFin = `${now2.getFullYear()}-${String(now2.getMonth() + 1).padStart(2, '0')}`;
