@@ -66,6 +66,12 @@ export const addContract = async (c: {
     source: c.source || "",
   } as any).select().single();
   if (error) throw error;
+
+  // Track Meta event (non-blocking)
+  import("@/lib/metaPixel").then(({ trackMetaEvent }) => {
+    trackMetaEvent("Purchase", undefined, { value: c.totalValue, currency: "BRL" }).catch(() => {});
+  });
+
   return mapContract(data);
 };
 
