@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { CalendarDays, Users, DollarSign, FileText, Plus, AlertTriangle, Upload, Trash2, Download, FileOutput, ShieldCheck, Monitor, Smartphone, Globe, Hash, Clock, Pencil, X } from "lucide-react";
+import { AttributionBadge } from "@/components/AttributionBadge";
 import GenerateContractModal from "@/components/GenerateContractModal";
 import ContractTimeline from "@/components/ContractTimeline";
 import { supabase } from "@/integrations/supabase/client";
@@ -337,6 +338,13 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
                   <InfoRow icon={DollarSign} label="Valor Total" value={fmt(contract.totalValue)} />
                   <InfoRow icon={DollarSign} label="Sinal" value={`${contract.depositPercent}% = ${fmt(contract.depositValue)}`} />
                   <InfoRow icon={DollarSign} label="Restante" value={fmt(contract.remainingValue)} />
+                  {contract.utmSource && (
+                    <div className="flex items-center gap-2 py-2">
+                      <Globe size={14} className="text-muted-foreground shrink-0" />
+                      <span className="text-xs text-muted-foreground w-20 shrink-0">Origem</span>
+                      <AttributionBadge utmSource={contract.utmSource} utmCampaign={contract.utmCampaign} utmMedium={contract.utmMedium} metaAdId={contract.metaAdId} metaAdsetId={contract.metaAdsetId} compact />
+                    </div>
+                  )}
                 </div>
               )}
 

@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getUtmForDb } from "@/lib/utmTracker";
 
 // Helper to get current user id
 const getUserId = async (): Promise<string> => {
@@ -16,7 +17,8 @@ export const getClients = async () => {
 
 export const addClient = async (c: { name: string; cpf: string; phone: string; email?: string; address: string; notes: string; address_street?: string; address_number?: string; address_complement?: string; address_neighborhood?: string; address_city?: string; address_state?: string; address_zip?: string }) => {
   const userId = await getUserId();
-  const { data, error } = await supabase.from("clients").insert({ ...c, user_id: userId }).select().single();
+  const utm = getUtmForDb();
+  const { data, error } = await supabase.from("clients").insert({ ...c, user_id: userId, ...utm } as any).select().single();
   if (error) throw error;
   return mapClient(data);
 };
@@ -47,6 +49,7 @@ export const addContract = async (c: {
 }) => {
   const userId = await getUserId();
   const depositValue = (c.totalValue * c.depositPercent) / 100;
+  const utm = getUtmForDb();
   const { data, error } = await supabase.from("contracts").insert({
     user_id: userId,
     client_id: c.clientId,
@@ -64,6 +67,7 @@ export const addContract = async (c: {
     payment_status: c.paymentStatus,
     visit_id: c.visitId || null,
     source: c.source || "",
+    ...utm,
   } as any).select().single();
   if (error) throw error;
 
@@ -349,6 +353,15 @@ function mapContract(row: any) {
     createdAt: row.created_at,
     cancelledAt: row.cancelled_at,
     cancelledBy: row.cancelled_by,
+    utmSource: row.utm_source || "",
+    utmCampaign: row.utm_campaign || "",
+    utmMedium: row.utm_medium || "",
+    utmContent: row.utm_content || "",
+    utmTerm: row.utm_term || "",
+    fbclid: row.fbclid || "",
+    metaCampaignId: row.meta_campaign_id || "",
+    metaAdsetId: row.meta_adset_id || "",
+    metaAdId: row.meta_ad_id || "",
   };
 }
 

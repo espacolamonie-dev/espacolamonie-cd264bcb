@@ -270,7 +270,8 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'book-visit') {
-      const { clientName, clientPhone, interestEventDate, guestCount, visitDate, visitTime, notes, eventTypeDesired } = body;
+      const { clientName, clientPhone, interestEventDate, guestCount, visitDate, visitTime, notes, eventTypeDesired,
+        utm_source, utm_medium, utm_campaign, utm_content, utm_term, fbclid, meta_campaign_id, meta_adset_id, meta_ad_id } = body;
 
       // Validations
       if (!clientName || !clientPhone || !visitDate || !visitTime) {
@@ -349,6 +350,15 @@ Deno.serve(async (req) => {
             name: clientName.trim(),
             phone: clientPhone.trim(),
             notes: notes || '',
+            utm_source: utm_source || '',
+            utm_medium: utm_medium || '',
+            utm_campaign: utm_campaign || '',
+            utm_content: utm_content || '',
+            utm_term: utm_term || '',
+            fbclid: fbclid || '',
+            meta_campaign_id: meta_campaign_id || '',
+            meta_adset_id: meta_adset_id || '',
+            meta_ad_id: meta_ad_id || '',
           })
           .select()
           .single();
@@ -369,6 +379,15 @@ Deno.serve(async (req) => {
         status: 'Agendada',
         event_type_desired: eventTypeDesired || '',
         client_id: clientId,
+        utm_source: utm_source || '',
+        utm_medium: utm_medium || '',
+        utm_campaign: utm_campaign || '',
+        utm_content: utm_content || '',
+        utm_term: utm_term || '',
+        fbclid: fbclid || '',
+        meta_campaign_id: meta_campaign_id || '',
+        meta_adset_id: meta_adset_id || '',
+        meta_ad_id: meta_ad_id || '',
       }).select().single();
 
       if (insertError) {

@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getUtmForDb } from "@/lib/utmTracker";
 
 const getUserId = async (): Promise<string> => {
   const { data: { user } } = await supabase.auth.getUser();
@@ -26,6 +27,15 @@ export interface Visit {
   googleEventId: string | null;
   createdAt: string;
   updatedAt: string;
+  utmSource: string;
+  utmCampaign: string;
+  utmMedium: string;
+  utmContent: string;
+  utmTerm: string;
+  fbclid: string;
+  metaCampaignId: string;
+  metaAdsetId: string;
+  metaAdId: string;
 }
 
 function mapVisit(row: any): Visit {
@@ -47,6 +57,15 @@ function mapVisit(row: any): Visit {
     googleEventId: row.google_event_id,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    utmSource: row.utm_source || "",
+    utmCampaign: row.utm_campaign || "",
+    utmMedium: row.utm_medium || "",
+    utmContent: row.utm_content || "",
+    utmTerm: row.utm_term || "",
+    fbclid: row.fbclid || "",
+    metaCampaignId: row.meta_campaign_id || "",
+    metaAdsetId: row.meta_adset_id || "",
+    metaAdId: row.meta_ad_id || "",
   };
 }
 
@@ -114,6 +133,7 @@ export const addVisit = async (v: {
     }
   }
 
+  const utm = getUtmForDb();
   const { data, error } = await (supabase.from("visits" as any) as any)
     .insert({
       user_id: userId,
@@ -129,6 +149,7 @@ export const addVisit = async (v: {
       deposit_percent: v.depositPercent || 0,
       guest_count: v.guestCount || 0,
       client_id: clientId,
+      ...utm,
     })
     .select()
     .single();

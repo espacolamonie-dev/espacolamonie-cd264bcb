@@ -302,11 +302,20 @@ export type Database = {
           cpf: string
           created_at: string
           email: string
+          fbclid: string
           id: string
+          meta_ad_id: string
+          meta_adset_id: string
+          meta_campaign_id: string
           name: string
           notes: string
           phone: string
           user_id: string
+          utm_campaign: string
+          utm_content: string
+          utm_medium: string
+          utm_source: string
+          utm_term: string
         }
         Insert: {
           address?: string
@@ -320,11 +329,20 @@ export type Database = {
           cpf?: string
           created_at?: string
           email?: string
+          fbclid?: string
           id?: string
+          meta_ad_id?: string
+          meta_adset_id?: string
+          meta_campaign_id?: string
           name: string
           notes?: string
           phone?: string
           user_id: string
+          utm_campaign?: string
+          utm_content?: string
+          utm_medium?: string
+          utm_source?: string
+          utm_term?: string
         }
         Update: {
           address?: string
@@ -338,11 +356,20 @@ export type Database = {
           cpf?: string
           created_at?: string
           email?: string
+          fbclid?: string
           id?: string
+          meta_ad_id?: string
+          meta_adset_id?: string
+          meta_campaign_id?: string
           name?: string
           notes?: string
           phone?: string
           user_id?: string
+          utm_campaign?: string
+          utm_content?: string
+          utm_medium?: string
+          utm_source?: string
+          utm_term?: string
         }
         Relationships: []
       }
@@ -502,9 +529,13 @@ export type Database = {
           event_date_end: string | null
           event_time: string
           event_type: string
+          fbclid: string
           google_event_id: string | null
           guest_count: number
           id: string
+          meta_ad_id: string
+          meta_adset_id: string
+          meta_campaign_id: string
           payment_status: string
           remaining_value: number
           rental_type: string
@@ -512,6 +543,11 @@ export type Database = {
           status: string
           total_value: number
           user_id: string
+          utm_campaign: string
+          utm_content: string
+          utm_medium: string
+          utm_source: string
+          utm_term: string
           visit_id: string | null
         }
         Insert: {
@@ -525,9 +561,13 @@ export type Database = {
           event_date_end?: string | null
           event_time?: string
           event_type: string
+          fbclid?: string
           google_event_id?: string | null
           guest_count?: number
           id?: string
+          meta_ad_id?: string
+          meta_adset_id?: string
+          meta_campaign_id?: string
           payment_status?: string
           remaining_value?: number
           rental_type?: string
@@ -535,6 +575,11 @@ export type Database = {
           status?: string
           total_value?: number
           user_id: string
+          utm_campaign?: string
+          utm_content?: string
+          utm_medium?: string
+          utm_source?: string
+          utm_term?: string
           visit_id?: string | null
         }
         Update: {
@@ -548,9 +593,13 @@ export type Database = {
           event_date_end?: string | null
           event_time?: string
           event_type?: string
+          fbclid?: string
           google_event_id?: string | null
           guest_count?: number
           id?: string
+          meta_ad_id?: string
+          meta_adset_id?: string
+          meta_campaign_id?: string
           payment_status?: string
           remaining_value?: number
           rental_type?: string
@@ -558,6 +607,11 @@ export type Database = {
           status?: string
           total_value?: number
           user_id?: string
+          utm_campaign?: string
+          utm_content?: string
+          utm_medium?: string
+          utm_source?: string
+          utm_term?: string
           visit_id?: string | null
         }
         Relationships: [
@@ -1250,15 +1304,24 @@ export type Database = {
           deposit_percent: number
           event_type_desired: string
           event_value: number
+          fbclid: string
           google_event_id: string | null
           guest_count: number
           id: string
           interest_event_date: string | null
           lead_source: string
+          meta_ad_id: string
+          meta_adset_id: string
+          meta_campaign_id: string
           notes: string | null
           status: string
           updated_at: string
           user_id: string
+          utm_campaign: string
+          utm_content: string
+          utm_medium: string
+          utm_source: string
+          utm_term: string
           visit_date: string
           visit_time: string
         }
@@ -1270,15 +1333,24 @@ export type Database = {
           deposit_percent?: number
           event_type_desired?: string
           event_value?: number
+          fbclid?: string
           google_event_id?: string | null
           guest_count?: number
           id?: string
           interest_event_date?: string | null
           lead_source?: string
+          meta_ad_id?: string
+          meta_adset_id?: string
+          meta_campaign_id?: string
           notes?: string | null
           status?: string
           updated_at?: string
           user_id: string
+          utm_campaign?: string
+          utm_content?: string
+          utm_medium?: string
+          utm_source?: string
+          utm_term?: string
           visit_date: string
           visit_time: string
         }
@@ -1290,15 +1362,24 @@ export type Database = {
           deposit_percent?: number
           event_type_desired?: string
           event_value?: number
+          fbclid?: string
           google_event_id?: string | null
           guest_count?: number
           id?: string
           interest_event_date?: string | null
           lead_source?: string
+          meta_ad_id?: string
+          meta_adset_id?: string
+          meta_campaign_id?: string
           notes?: string | null
           status?: string
           updated_at?: string
           user_id?: string
+          utm_campaign?: string
+          utm_content?: string
+          utm_medium?: string
+          utm_source?: string
+          utm_term?: string
           visit_date?: string
           visit_time?: string
         }

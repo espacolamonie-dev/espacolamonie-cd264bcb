@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { captureUtmParams, getUtmForDb } from "@/lib/utmTracker";
 import { format, startOfDay, isBefore } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
@@ -66,6 +67,9 @@ export default function BookVisit() {
 
   const [confirmData, setConfirmData] = useState<{ clientName: string; visitDate: string; visitTime: string } | null>(null);
 
+  // Capture UTM params on mount
+  useEffect(() => { captureUtmParams(); }, []);
+
   // Fetch schedule settings on mount
   useEffect(() => {
     (async () => {
@@ -124,6 +128,7 @@ export default function BookVisit() {
     setSubmitting(true);
     setError(null);
     try {
+      const utm = getUtmForDb();
       const data = await callBooking("book-visit", {
         clientName: name.trim(),
         clientPhone: phone.trim(),
@@ -133,6 +138,7 @@ export default function BookVisit() {
         visitTime: selectedTime,
         notes: notes.trim(),
         eventTypeDesired: eventType || "",
+        ...utm,
       });
       setConfirmData(data.visit);
       setStep("success");

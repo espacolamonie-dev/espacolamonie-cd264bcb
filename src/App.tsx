@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,6 +8,7 @@ import Layout from "@/components/Layout";
 import { useAuth } from "@/hooks/useAuth";
 import { useContractNotifications } from "@/hooks/useContractNotifications";
 import { PushNotificationPrompt } from "@/components/PushNotificationPrompt";
+import { captureUtmParams } from "@/lib/utmTracker";
 
 // Lazy-loaded pages
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
@@ -84,7 +85,9 @@ function AuthRoute() {
   return <Auth />;
 }
 
-const App = () => (
+const App = () => {
+  useEffect(() => { captureUtmParams(); }, []);
+  return (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
@@ -127,6 +130,7 @@ const App = () => (
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;
