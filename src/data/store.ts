@@ -50,6 +50,16 @@ export const addContract = async (c: {
   const userId = await getUserId();
   const depositValue = (c.totalValue * c.depositPercent) / 100;
   const utm = getUtmForDb();
+
+  // Auto-copy origin from client if no source provided
+  let source = c.source || "";
+  if (!source && c.clientId) {
+    try {
+      const { data: clientData } = await supabase.from("clients").select("utm_source").eq("id", c.clientId).single();
+      if (clientData?.utm_source) source = clientData.utm_source;
+    } catch {}
+  }
+
   const { data, error } = await supabase.from("contracts").insert({
     user_id: userId,
     client_id: c.clientId,
@@ -66,7 +76,7 @@ export const addContract = async (c: {
     status: c.status,
     payment_status: c.paymentStatus,
     visit_id: c.visitId || null,
-    source: c.source || "",
+    source: source,
     ...utm,
   } as any).select().single();
   if (error) throw error;
@@ -353,6 +363,7 @@ function mapContract(row: any) {
     createdAt: row.created_at,
     cancelledAt: row.cancelled_at,
     cancelledBy: row.cancelled_by,
+    source: row.source || "",
     utmSource: row.utm_source || "",
     utmCampaign: row.utm_campaign || "",
     utmMedium: row.utm_medium || "",

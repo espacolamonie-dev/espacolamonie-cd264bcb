@@ -338,11 +338,11 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
                   <InfoRow icon={DollarSign} label="Valor Total" value={fmt(contract.totalValue)} />
                   <InfoRow icon={DollarSign} label="Sinal" value={`${contract.depositPercent}% = ${fmt(contract.depositValue)}`} />
                   <InfoRow icon={DollarSign} label="Restante" value={fmt(contract.remainingValue)} />
-                  {contract.utmSource && (
+                  {(contract.source || contract.utmSource) && (
                     <div className="flex items-center gap-2 py-2">
                       <Globe size={14} className="text-muted-foreground shrink-0" />
                       <span className="text-xs text-muted-foreground w-20 shrink-0">Origem</span>
-                      <AttributionBadge utmSource={contract.utmSource} utmCampaign={contract.utmCampaign} utmMedium={contract.utmMedium} metaAdId={contract.metaAdId} metaAdsetId={contract.metaAdsetId} compact />
+                      <AttributionBadge origin={contract.source} utmSource={contract.utmSource} utmCampaign={contract.utmCampaign} utmMedium={contract.utmMedium} metaAdId={contract.metaAdId} metaAdsetId={contract.metaAdsetId} compact />
                     </div>
                   )}
                 </div>

@@ -17,7 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { getVisits, addVisit, updateVisit, deleteVisit, type Visit, type LeadSource } from "@/data/visitStore";
+import { getVisits, addVisit, updateVisit, deleteVisit, type Visit, type LeadSource, LEAD_SOURCE_OPTIONS } from "@/data/visitStore";
 import { syncVisitToGoogle, deleteVisitGoogleEvent } from "@/lib/visitGoogleSync";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
@@ -163,10 +163,11 @@ export default function Visits() {
     const activeVisits = visits.filter(v => v.status !== "Cancelada");
     const visitsToday = activeVisits.filter(v => v.visitDate === today).length;
     const scheduledToday = visits.filter(v => toLocalDate(v.createdAt) === today).length;
-    const organicCount = activeVisits.filter(v => v.leadSource === "Orgânico").length;
-    const paidCount = activeVisits.filter(v => v.leadSource === "Tráfego Pago").length;
-    const totalLeads = organicCount + paidCount;
-    return { visitsToday, scheduledToday, organicCount, paidCount, totalLeads, spDayMonth };
+    const organicCount = activeVisits.filter(v => !v.leadSource || v.leadSource === "Orgânico").length;
+    const paidCount = activeVisits.filter(v => ["Tráfego Pago", "Facebook", "Instagram", "Google"].includes(v.leadSource)).length;
+    const indicacaoCount = activeVisits.filter(v => v.leadSource === "Indicação").length;
+    const totalLeads = activeVisits.length;
+    return { visitsToday, scheduledToday, organicCount, paidCount, indicacaoCount, totalLeads, spDayMonth };
   }, [visits]);
 
   const filtered = useMemo(() => {
@@ -360,12 +361,11 @@ export default function Visits() {
           <Input type="time" value={formVisitTime} onChange={(e) => setFormVisitTime(e.target.value)} className={inputH} />
         </div>
         <div>
-          <Label>Fonte do Lead *</Label>
+          <Label>Origem do Lead *</Label>
           <Select value={formLeadSource} onValueChange={(v) => setFormLeadSource(v as LeadSource)}>
             <SelectTrigger className={inputH}><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="Orgânico">Orgânico</SelectItem>
-              <SelectItem value="Tráfego Pago">Tráfego Pago</SelectItem>
+              {LEAD_SOURCE_OPTIONS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -422,12 +422,11 @@ export default function Visits() {
           </Select>
         </div>
         <div>
-          <Label>Fonte do Lead</Label>
+          <Label>Origem do Lead</Label>
           <Select value={editForm.leadSource} onValueChange={(v) => setEditForm(p => ({ ...p, leadSource: v as LeadSource }))}>
             <SelectTrigger className={inputH}><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="Orgânico">Orgânico</SelectItem>
-              <SelectItem value="Tráfego Pago">Tráfego Pago</SelectItem>
+              {LEAD_SOURCE_OPTIONS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -520,10 +519,7 @@ export default function Visits() {
       <div className="flex justify-between"><span className="text-muted-foreground">Data da visita</span><span className="font-medium">{format(new Date(visit.visitDate + "T12:00:00"), "dd/MM/yyyy")}</span></div>
       <div className="flex justify-between"><span className="text-muted-foreground">Horário</span><span>{visit.visitTime.slice(0, 5)}</span></div>
       <div className="flex justify-between"><span className="text-muted-foreground">Status</span><Badge className={`text-[10px] font-medium border rounded-full px-2.5 py-0.5 ${VISIT_STATUS_COLORS[visit.status as VisitStatus] || ""}`}>{visit.status}</Badge></div>
-      <div className="flex justify-between"><span className="text-muted-foreground">Fonte do Lead</span><Badge variant="outline" className="text-[10px] font-medium rounded-full px-2.5 py-0.5">{visit.leadSource || "Orgânico"}</Badge></div>
-      {visit.utmSource && (
-        <div className="flex justify-between items-center"><span className="text-muted-foreground">Origem campanha</span><AttributionBadge utmSource={visit.utmSource} utmCampaign={visit.utmCampaign} utmMedium={visit.utmMedium} metaAdId={visit.metaAdId} metaAdsetId={visit.metaAdsetId} compact /></div>
-      )}
+      <div className="flex justify-between items-center"><span className="text-muted-foreground">Origem</span><AttributionBadge origin={visit.leadSource} utmSource={visit.utmSource} utmCampaign={visit.utmCampaign} utmMedium={visit.utmMedium} metaAdId={visit.metaAdId} metaAdsetId={visit.metaAdsetId} compact /></div>
       <div className="flex justify-between"><span className="text-muted-foreground">Data de cadastro</span><span className="text-sm">{format(new Date(visit.createdAt), "dd/MM/yyyy 'às' HH:mm")}</span></div>
       {visit.notes && (
         <div><span className="text-muted-foreground block mb-1">Observações</span><p className="text-sm bg-muted/50 rounded-lg p-3">{visit.notes}</p></div>
