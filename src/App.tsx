@@ -20,6 +20,7 @@ const Reports = lazy(() => import("@/pages/Reports"));
 const Settings = lazy(() => import("@/pages/Settings"));
 const Visits = lazy(() => import("@/pages/Visits"));
 const Budgets = lazy(() => import("@/pages/Budgets"));
+const Marketing = lazy(() => import("@/pages/Marketing"));
 const SignContract = lazy(() => import("@/pages/SignContract"));
 const BookVisit = lazy(() => import("@/pages/BookVisit"));
 const EventDates = lazy(() => import("@/pages/EventDates"));
@@ -116,6 +117,7 @@ const App = () => {
                         <Route path="/reports" element={<Reports />} />
                         <Route path="/budgets" element={<Budgets />} />
                         <Route path="/visits" element={<Visits />} />
+                        <Route path="/marketing" element={<Marketing />} />
                         <Route path="/settings" element={<Settings />} />
                         <Route path="*" element={<NotFound />} />
                       </Routes>
