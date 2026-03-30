@@ -237,6 +237,43 @@ export default function Agenda() {
   // Selected day events for side panel
   const selectedDayEvents = selectedDay ? (eventsByDate[selectedDay] || []) : [];
 
+  // Calculate available dates for the rest of the year
+  const { availableWeekends, availableThuFri } = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const endOfYear = new Date(today.getFullYear(), 11, 31);
+
+    // Build set of occupied dates (contracts + confirmed visits)
+    const occupiedDates = new Set<string>();
+    activeContracts.forEach((c) => occupiedDates.add(c.eventDate));
+    // Also block visit dates that are not cancelled
+    visitsList.forEach((v) => {
+      if (v.status !== "Cancelada") occupiedDates.add(v.visitDate);
+    });
+    // Block external google events too
+    externalGoogleEvents.forEach((ge) => {
+      const d = googleEventDate(ge);
+      if (d) occupiedDates.add(d);
+    });
+
+    let weekends = 0;
+    let thuFri = 0;
+    const cursor = new Date(today);
+    while (cursor <= endOfYear) {
+      const key = format(cursor, "yyyy-MM-dd");
+      const dow = cursor.getDay(); // 0=Sun,1=Mon,...,4=Thu,5=Fri,6=Sat
+      if (!occupiedDates.has(key)) {
+        if (dow === 0 || dow === 6) weekends++;
+        if (dow === 4 || dow === 5) thuFri++;
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return { availableWeekends: weekends, availableThuFri: thuFri };
+  }, [activeContracts, visitsList, externalGoogleEvents]);
+
+  const totalContracts = activeContracts.length;
+  const totalVisits = visitsList.filter((v) => v.status !== "Cancelada").length;
+
   if (loading) {
     return (
       <div className="animate-fade-in space-y-6">
@@ -246,9 +283,6 @@ export default function Agenda() {
       </div>
     );
   }
-
-  const totalContracts = activeContracts.length;
-  const totalVisits = visitsList.filter((v) => v.status !== "Cancelada").length;
 
   return (
     <div className="animate-fade-in space-y-6">
@@ -261,6 +295,22 @@ export default function Agenda() {
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-xs text-muted-foreground">Visitas agendadas</p>
           <p className="text-2xl font-display font-semibold mt-1">{totalVisits}</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center gap-1.5 mb-1">
+            <CalendarIcon size={13} className="text-primary" />
+            <p className="text-xs text-muted-foreground">Fins de semana disponíveis</p>
+          </div>
+          <p className="text-2xl font-display font-bold text-primary mt-1">{availableWeekends}</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">Sáb e Dom livres até dezembro</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center gap-1.5 mb-1">
+            <CalendarIcon size={13} className="text-accent-foreground" />
+            <p className="text-xs text-muted-foreground">Quintas e sextas disponíveis</p>
+          </div>
+          <p className="text-2xl font-display font-bold text-accent-foreground mt-1">{availableThuFri}</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">Qui e Sex livres até dezembro</p>
         </div>
       </div>
 
