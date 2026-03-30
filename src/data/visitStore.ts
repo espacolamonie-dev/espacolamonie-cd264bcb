@@ -197,6 +197,23 @@ export const updateVisit = async (id: string, updates: Record<string, any>): Pro
   }
   const { error } = await (supabase.from("visits" as any) as any).update(mapped).eq("id", id);
   if (error) throw error;
+
+  // Sync client origin when leadSource changes
+  if (updates.leadSource || updates.lead_source) {
+    const newSource = updates.leadSource || updates.lead_source;
+    try {
+      // Get the visit to find the client_id
+      const { data: visit } = await (supabase.from("visits" as any) as any)
+        .select("client_id")
+        .eq("id", id)
+        .single();
+      if (visit?.client_id) {
+        await supabase.from("clients").update({ utm_source: newSource }).eq("id", visit.client_id);
+      }
+    } catch (e) {
+      console.error("Erro ao sincronizar origem do cliente:", e);
+    }
+  }
 };
 
 export const deleteVisit = async (id: string): Promise<void> => {
