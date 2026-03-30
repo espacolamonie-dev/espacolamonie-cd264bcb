@@ -58,6 +58,20 @@ serve(async (req) => {
       });
     }
 
+    // Validate input format
+    if (token && (token.length > 256 || !/^[a-f0-9]+$/i.test(token))) {
+      return new Response(JSON.stringify({ error: "Token inválido" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (slug && (slug.length > 256 || !/^[a-z0-9-]+$/i.test(slug))) {
+      return new Response(JSON.stringify({ error: "Slug inválido" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     let query = supabase.from("contract_signatures").select("*");
     if (slug) {
       query = query.eq("slug", slug);
@@ -90,7 +104,14 @@ serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify(data), {
+    // Mask sensitive fields before returning
+    const safeData = {
+      ...data,
+      client_cpf: data.client_cpf ? data.client_cpf.replace(/^(\d{3}).*(\d{2})$/, "$1.***.***-$2") : null,
+      client_phone: data.client_phone ? data.client_phone.replace(/^(.{4}).*(.{2})$/, "$1*****$2") : null,
+    };
+
+    return new Response(JSON.stringify(safeData), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
@@ -193,7 +214,7 @@ serve(async (req) => {
   if (req.method === "POST") {
     const body = await req.json();
     const { token, pdf_base64, user_agent } = body;
-    if (!token) {
+    if (!token || typeof token !== "string" || token.length > 256) {
       return new Response(JSON.stringify({ error: "Token obrigatório" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
