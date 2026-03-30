@@ -105,6 +105,7 @@ const App = () => {
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <MetaPixelPageView />
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/auth" element={<AuthRoute />} />
