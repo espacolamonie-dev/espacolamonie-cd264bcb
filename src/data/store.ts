@@ -88,24 +88,26 @@ export const addContract = async (c: {
   } as any).select().single();
   if (error) throw error;
 
-  // Track Meta: InitiateCheckout (contract created) with deposit value + client data for matching
-  (async () => {
-    try {
-      const { data: clientData } = await supabase.from("clients").select("name, phone, email").eq("id", c.clientId).single();
-      const { trackMetaEvent } = await import("@/lib/metaPixel");
-      await trackMetaEvent("InitiateCheckout", {
-        phone: clientData?.phone,
-        email: clientData?.email,
-        name: clientData?.name,
-      }, {
-        content_name: source || "Direto",
-        content_category: c.eventType,
-      }, {
-        totalValue: c.totalValue,
-        depositValue: depositValue,
-      });
-    } catch {}
-  })();
+  // Track Meta: InitiateCheckout — only for paid traffic
+  if (source === "Tráfego Pago") {
+    (async () => {
+      try {
+        const { data: clientData } = await supabase.from("clients").select("name, phone, email").eq("id", c.clientId).single();
+        const { trackMetaEvent } = await import("@/lib/metaPixel");
+        await trackMetaEvent("InitiateCheckout", {
+          phone: clientData?.phone,
+          email: clientData?.email,
+          name: clientData?.name,
+        }, {
+          content_name: source || "Direto",
+          content_category: c.eventType,
+        }, {
+          totalValue: c.totalValue,
+          depositValue: depositValue,
+        });
+      } catch {}
+    })();
+  }
 
   return mapContract(data);
 };
@@ -164,23 +166,25 @@ export const updateContract = async (id: string, updates: Record<string, any>) =
         });
         mapped.remaining_value = Math.max(0, contract.totalValue - depositValue);
 
-        // Track Meta: Purchase (deposit paid) — with client data for matching
-        (async () => {
-          try {
-            const { data: clientData } = await supabase.from("clients").select("name, phone, email").eq("id", contract.clientId).single();
-            const { trackMetaEvent } = await import("@/lib/metaPixel");
-            await trackMetaEvent("Purchase", {
-              phone: clientData?.phone,
-              email: clientData?.email,
-              name: clientData?.name,
-            }, {
-              content_name: contract.eventType,
-            }, {
-              totalValue: contract.totalValue,
-              depositValue: depositValue,
-            });
-          } catch {}
-        })();
+        // Track Meta: Purchase — only for paid traffic
+        if (contract.source === "Tráfego Pago") {
+          (async () => {
+            try {
+              const { data: clientData } = await supabase.from("clients").select("name, phone, email").eq("id", contract.clientId).single();
+              const { trackMetaEvent } = await import("@/lib/metaPixel");
+              await trackMetaEvent("Purchase", {
+                phone: clientData?.phone,
+                email: clientData?.email,
+                name: clientData?.name,
+              }, {
+                content_name: contract.eventType,
+              }, {
+                totalValue: contract.totalValue,
+                depositValue: depositValue,
+              });
+            } catch {}
+          })();
+        }
       } else if (updates.paymentStatus === "paid_full") {
         await supabase.from("payments").insert({
           user_id: userId, contract_id: id, amount: contract.totalValue,
