@@ -1,12 +1,14 @@
 import { useEffect, useState, useMemo } from "react";
 import { formatDateBR } from "@/lib/dateUtils";
-import { CalendarDays, DollarSign, Users, TrendingUp, Target, Percent } from "lucide-react";
+import { CalendarDays, DollarSign, Users, TrendingUp, Target, Percent, Globe } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getContracts, getClients, getActivePayments, getManualEntries, getExpenses } from "@/data/store";
-import { getVisits } from "@/data/visitStore";
+import { getVisits, type Visit } from "@/data/visitStore";
 import type { Contract } from "@/types";
 import { CampaignAttribution } from "@/components/CampaignAttribution";
+import OriginReports from "@/components/OriginReports";
 import { format, parseISO, startOfMonth, endOfMonth, isBefore, isAfter, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
