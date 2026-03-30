@@ -3,9 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 
 let pixelLoaded = false;
 
-/** Load Meta Pixel script dynamically */
+/** Load Meta Pixel script dynamically (skips if already loaded via index.html) */
 export function loadMetaPixel(pixelId: string) {
-  if (pixelLoaded || !pixelId) return;
+  if (pixelLoaded || !pixelId || typeof (window as any).fbq === "function") {
+    pixelLoaded = true;
+    return;
+  }
   pixelLoaded = true;
 
   (function (f: any, b: any, e: any, v: any, n?: any, t?: any, s?: any) {
