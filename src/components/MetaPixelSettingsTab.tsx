@@ -41,6 +41,7 @@ interface EventStats {
   visits: number;
   contracts: number;
   totalValue: number;
+  errors: number;
 }
 
 function SectionCard({ icon: Icon, title, description, children }: {
@@ -70,7 +71,7 @@ export default function MetaPixelSettingsTab() {
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<"success" | "error" | null>(null);
-  const [stats, setStats] = useState<EventStats>({ leads: 0, visits: 0, contracts: 0, totalValue: 0 });
+  const [stats, setStats] = useState<EventStats>({ leads: 0, visits: 0, contracts: 0, totalValue: 0, errors: 0 });
   const { toast } = useToast();
 
   useEffect(() => {
