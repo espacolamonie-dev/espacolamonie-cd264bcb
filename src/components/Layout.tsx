@@ -10,6 +10,7 @@ import {
   Settings,
   ClipboardCheck,
   Calculator,
+  Megaphone,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useContractNotifications } from "@/hooks/useContractNotifications";
@@ -42,6 +43,7 @@ const navGroups = [
     items: [
       { to: "/agenda", label: "Agenda", icon: CalendarDays },
       { to: "/visits", label: "Visitas", icon: ClipboardCheck },
+      { to: "/marketing", label: "Marketing", icon: Megaphone },
       { to: "/reports", label: "Relatórios", icon: BarChart3 },
     ],
   },
