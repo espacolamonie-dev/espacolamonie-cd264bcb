@@ -380,8 +380,10 @@ export default function Contracts() {
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1 min-w-0">
                         <p className="font-display font-semibold text-base truncate">{clientMap[c.clientId]?.name || "—"}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{c.eventType}</p>
-                      </div>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <p className="text-xs text-muted-foreground">{c.eventType}</p>
+                          <AttributionBadge origin={c.source} compact />
+                        </div>
                       <div className="flex flex-col items-end gap-1 shrink-0">
                         <Badge className={`text-[10px] font-semibold border rounded-full px-3 py-1 ${statusColor}`}>
                           {statusLabel}
@@ -470,7 +472,13 @@ export default function Contracts() {
                     <td>
                       <div>
                         <p className="font-semibold text-sm">{clientMap[c.clientId]?.name || "—"}</p>
-                        <p className="text-xs text-muted-foreground">{c.eventType}</p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-xs text-muted-foreground">{c.eventType}</p>
+                          <AttributionBadge origin={c.source} compact />
+                        </div>
+                        {c.visitId && <p className="text-[10px] text-muted-foreground mt-0.5">📋 Veio de visita</p>}
+                      </div>
+                    </td>
                       </div>
                     </td>
                     <td className="hidden sm:table-cell text-muted-foreground tabular-nums text-sm">{formatDateBR(c.eventDate)}{c.eventDateEnd && ` – ${formatDateBR(c.eventDateEnd)}`}</td>
