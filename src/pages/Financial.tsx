@@ -826,6 +826,11 @@ export default function Financial() {
           </Card>
         </TabsContent>
 
+        {/* ====== TAB FUNCIONÁRIOS ====== */}
+        <TabsContent value="funcionarios" className="mt-4">
+          <EmployeesTab selectedMonth={selectedMonth} contracts={contracts} clients={clients} />
+        </TabsContent>
+
         {/* ====== TAB RESERVAS ====== */}
         <TabsContent value="reservas" className="space-y-6 mt-4">
           <div className="grid gap-4 lg:grid-cols-2">
