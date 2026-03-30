@@ -363,6 +363,7 @@ function mapContract(row: any) {
     createdAt: row.created_at,
     cancelledAt: row.cancelled_at,
     cancelledBy: row.cancelled_by,
+    source: row.source || "",
     utmSource: row.utm_source || "",
     utmCampaign: row.utm_campaign || "",
     utmMedium: row.utm_medium || "",
