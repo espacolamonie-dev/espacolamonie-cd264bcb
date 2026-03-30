@@ -56,6 +56,7 @@ export type RentalType = "Locação (1 dia)" | "Locação (2 dias)";
 export interface Contract {
   id: string;
   clientId: string;
+  visitId?: string | null;
   eventType: EventType;
   eventDate: string;
   eventDateEnd?: string;
