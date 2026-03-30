@@ -161,9 +161,12 @@ export const addVisit = async (v: {
     .single();
   if (error) throw error;
 
-  // Track Meta event (non-blocking)
+  // Track Meta: Schedule (visit created)
   import("@/lib/metaPixel").then(({ trackMetaEvent }) => {
-    trackMetaEvent("Schedule", { phone: v.clientPhone, name: v.clientName }).catch(() => {});
+    trackMetaEvent("Schedule", { phone: v.clientPhone, name: v.clientName }, {
+      content_name: "Visita agendada",
+      content_category: v.eventTypeDesired || "",
+    }).catch(() => {});
   });
 
   return mapVisit(data);

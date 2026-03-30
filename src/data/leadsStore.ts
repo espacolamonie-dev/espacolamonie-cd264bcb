@@ -118,7 +118,7 @@ export async function addLead(lead: {
     user_id: user.id,
   });
 
-  // Track Meta event (non-blocking)
+  // Track Meta: Lead
   import("@/lib/metaPixel").then(({ trackMetaEvent }) => {
     trackMetaEvent("Lead", { phone: lead.phone, name: lead.name }).catch(() => {});
   });
