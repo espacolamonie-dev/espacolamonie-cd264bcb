@@ -384,6 +384,7 @@ export default function Contracts() {
                           <p className="text-xs text-muted-foreground">{c.eventType}</p>
                           <AttributionBadge origin={c.source} compact />
                         </div>
+                      </div>
                       <div className="flex flex-col items-end gap-1 shrink-0">
                         <Badge className={`text-[10px] font-semibold border rounded-full px-3 py-1 ${statusColor}`}>
                           {statusLabel}
