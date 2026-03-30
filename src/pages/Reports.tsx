@@ -8,7 +8,6 @@ import { getVisits } from "@/data/visitStore";
 import type { Contract } from "@/types";
 import { CampaignAttribution } from "@/components/CampaignAttribution";
 import { format, parseISO, startOfMonth, endOfMonth, isBefore, isAfter, subMonths } from "date-fns";
-import { format, parseISO, startOfMonth, endOfMonth, isBefore, isAfter, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell,
