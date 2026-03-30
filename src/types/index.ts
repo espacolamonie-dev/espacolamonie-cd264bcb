@@ -14,6 +14,7 @@ export interface Client {
   addressZip: string;
   notes: string;
   createdAt: string;
+  utmSource: string;
 }
 
 export function formatFullAddress(c: Pick<Client, 'addressStreet' | 'addressNumber' | 'addressComplement' | 'addressNeighborhood' | 'addressCity' | 'addressState' | 'addressZip'>): string {
