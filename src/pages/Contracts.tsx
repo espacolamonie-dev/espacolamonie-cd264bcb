@@ -477,7 +477,8 @@ export default function Contracts() {
                           <p className="text-xs text-muted-foreground">{c.eventType}</p>
                           <AttributionBadge origin={c.source} compact />
                         </div>
-                        {c.visitId && <p className="text-[10px] text-muted-foreground mt-0.5">📋 Veio de visita</p>}
+                         {c.visitId && <p className="text-[10px] text-muted-foreground mt-0.5">📋 Veio de visita</p>}
+                      </div>
                     </td>
                     <td className="hidden sm:table-cell text-muted-foreground tabular-nums text-sm">{formatDateBR(c.eventDate)}{c.eventDateEnd && ` – ${formatDateBR(c.eventDateEnd)}`}</td>
                     <td className="hidden lg:table-cell text-right font-semibold tabular-nums text-sm">
