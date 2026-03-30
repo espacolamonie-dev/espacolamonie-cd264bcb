@@ -146,6 +146,7 @@ export default function Contracts() {
   const openEdit = (c: Contract) => {
     setEditing(c);
     setForm({ clientId: c.clientId, eventType: c.eventType, eventDate: c.eventDate, eventDateEnd: c.eventDateEnd || "", rentalType: c.rentalType || "Locação (1 dia)", eventTime: c.eventTime, guestCount: c.guestCount, totalValue: c.totalValue, depositPercent: c.depositPercent, status: c.status, paymentStatus: c.paymentStatus });
+    setSelectedClientOrigin(clientMap[c.clientId]?.utmSource || "");
     setOpen(true);
   };
 
