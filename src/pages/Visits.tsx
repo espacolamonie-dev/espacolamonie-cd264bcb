@@ -95,10 +95,17 @@ export default function Visits() {
   const [formGuestCount, setFormGuestCount] = useState(0);
   const [dateConflicts, setDateConflicts] = useState<{ name: string; phone: string; stage: string; type: string }[]>([]);
   
+  const [contracts, setContracts] = useState<any[]>([]);
+
   const loadVisits = useCallback(async () => {
     setLoading(true);
     try {
-      setVisits(await getVisits());
+      const [visitsData, contractsRes] = await Promise.all([
+        getVisits(),
+        supabase.from("contracts").select("id, visit_id, client_id, status").neq("status", "cancelled"),
+      ]);
+      setVisits(visitsData);
+      setContracts(contractsRes.data || []);
     } finally {
       setLoading(false);
     }
