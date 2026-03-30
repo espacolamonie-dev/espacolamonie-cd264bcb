@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Search, Pencil, Trash2, Loader2, Phone, Users } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Loader2, Phone, Users, Megaphone } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -184,19 +184,24 @@ export default function Clients() {
               <div key={c.id} className="rounded-2xl border bg-card shadow-sm overflow-hidden transition-all duration-200">
                 <div className="p-4">
                   <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-display font-semibold text-base truncate">{c.name}</p>
-                      {c.cpf && <p className="text-xs text-muted-foreground tabular-nums mt-0.5">CPF: {c.cpf}</p>}
-                    </div>
-                  </div>
-                  {c.phone && (
-                    <a href={`tel:${c.phone.replace(/\D/g, "")}`} className="text-sm text-primary flex items-center gap-1.5 mb-2">
-                      <Phone size={14} /> {c.phone}
-                    </a>
-                  )}
-                  {(c.addressStreet || c.address) && (
-                    <p className="text-xs text-muted-foreground line-clamp-1">{getDisplayAddress(c)}</p>
-                  )}
+                     <div className="flex-1 min-w-0">
+                       <p className="font-display font-semibold text-base truncate">{c.name}</p>
+                       {c.cpf && <p className="text-xs text-muted-foreground tabular-nums mt-0.5">CPF: {c.cpf}</p>}
+                     </div>
+                     {c.utmSource && (
+                       <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${c.utmSource === "Tráfego Pago" ? "bg-primary/15 text-primary" : "bg-success/15 text-success"}`}>
+                         <Megaphone size={10} /> {c.utmSource}
+                       </span>
+                     )}
+                   </div>
+                   {c.phone && (
+                     <a href={`tel:${c.phone.replace(/\D/g, "")}`} className="text-sm text-primary flex items-center gap-1.5 mb-2">
+                       <Phone size={14} /> {c.phone}
+                     </a>
+                   )}
+                   {(c.addressStreet || c.address) && (
+                     <p className="text-xs text-muted-foreground line-clamp-1">{getDisplayAddress(c)}</p>
+                   )}
                 </div>
                 <div className="flex border-t border-border">
                   <button
@@ -224,20 +229,30 @@ export default function Clients() {
                 <th>Nome</th>
                 <th className="hidden sm:table-cell">CPF</th>
                 <th className="hidden md:table-cell">Telefone</th>
-                <th className="hidden lg:table-cell">Endereço</th>
+                <th className="hidden lg:table-cell">Origem</th>
+                <th className="hidden xl:table-cell">Endereço</th>
                 <th className="text-right">Ações</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr><td colSpan={5} className="!py-12 text-center text-muted-foreground">Nenhum cliente encontrado</td></tr>
+                <tr><td colSpan={6} className="!py-12 text-center text-muted-foreground">Nenhum cliente encontrado</td></tr>
               ) : (
                 filtered.map((c) => (
                   <tr key={c.id}>
                     <td className="font-medium">{c.name}</td>
                     <td className="hidden sm:table-cell text-muted-foreground tabular-nums">{c.cpf || "—"}</td>
                     <td className="hidden md:table-cell text-muted-foreground">{c.phone || "—"}</td>
-                    <td className="hidden lg:table-cell text-muted-foreground max-w-[250px] truncate">{getDisplayAddress(c)}</td>
+                    <td className="hidden lg:table-cell">
+                      {c.utmSource ? (
+                        <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${c.utmSource === "Tráfego Pago" ? "bg-primary/15 text-primary" : "bg-success/15 text-success"}`}>
+                          {c.utmSource}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">Não definido</span>
+                      )}
+                    </td>
+                    <td className="hidden xl:table-cell text-muted-foreground max-w-[250px] truncate">{getDisplayAddress(c)}</td>
                     <td className="text-right">
                       <div className="flex items-center justify-end gap-1">
                         <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => openEdit(c)}>

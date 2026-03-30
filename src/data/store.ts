@@ -354,6 +354,7 @@ function mapClient(row: any) {
     addressZip: row.address_zip || "",
     notes: row.notes || "",
     createdAt: row.created_at,
+    utmSource: row.utm_source || "",
   };
 }
 

@@ -56,6 +56,7 @@ export default function Contracts() {
   const [importOpen, setImportOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Contract | null>(null);
   const [clientSearchOpen, setClientSearchOpen] = useState(false);
+  const [selectedClientOrigin, setSelectedClientOrigin] = useState("");
 
   const load = async () => {
     try {
@@ -110,7 +111,7 @@ export default function Contracts() {
   const openNew = () => {
     if (clients.length === 0) { toast.error("Cadastre um cliente antes de criar um contrato"); return; }
     setEditing(null); setForm({ ...emptyForm, clientId: clients[0].id, rentalType: "Locação (1 dia)", eventDateEnd: "" }); setOpen(true);
-    // Auto-fill from most recent visit of first client
+    setSelectedClientOrigin(clients[0].utmSource || "");
     autoFillFromClient(clients[0].id);
   };
 
@@ -145,6 +146,7 @@ export default function Contracts() {
   const openEdit = (c: Contract) => {
     setEditing(c);
     setForm({ clientId: c.clientId, eventType: c.eventType, eventDate: c.eventDate, eventDateEnd: c.eventDateEnd || "", rentalType: c.rentalType || "Locação (1 dia)", eventTime: c.eventTime, guestCount: c.guestCount, totalValue: c.totalValue, depositPercent: c.depositPercent, status: c.status, paymentStatus: c.paymentStatus });
+    setSelectedClientOrigin(clientMap[c.clientId]?.utmSource || "");
     setOpen(true);
   };
 
@@ -540,8 +542,9 @@ export default function Contracts() {
                             <CommandItem
                               key={c.id}
                               value={c.name}
-                              onSelect={() => {
+                            onSelect={() => {
                                 set("clientId", c.id);
+                                setSelectedClientOrigin(c.utmSource || "");
                                 if (!editing) autoFillFromClient(c.id);
                                 setClientSearchOpen(false);
                               }}
@@ -555,6 +558,13 @@ export default function Contracts() {
                     </Command>
                   </PopoverContent>
                 </Popover>
+              </div>
+              {/* Read-only origin */}
+              <div className="grid gap-1.5">
+                <Label className="text-xs font-medium text-muted-foreground">Origem do Lead</Label>
+                <div className="h-10 flex items-center px-3 rounded-lg border border-border bg-muted/50 text-sm">
+                  {(editing ? (contracts.find(c => c.id === editing.id)?.source || "") : selectedClientOrigin) || "Não definido"}
+                </div>
               </div>
               <div className="grid gap-1.5">
                 <Label className="text-xs font-medium text-muted-foreground">Tipo de evento</Label>

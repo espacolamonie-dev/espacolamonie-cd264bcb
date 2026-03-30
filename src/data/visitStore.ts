@@ -10,7 +10,7 @@ const getUserId = async (): Promise<string> => {
 export type LeadSource = "Orgânico" | "Tráfego Pago" | "Instagram" | "Facebook" | "Google" | "Indicação" | "Outro";
 
 export const LEAD_SOURCE_OPTIONS: LeadSource[] = [
-  "Instagram", "Facebook", "Google", "Tráfego Pago", "Indicação", "Orgânico", "Outro",
+  "Orgânico", "Tráfego Pago",
 ];
 
 export interface Visit {
