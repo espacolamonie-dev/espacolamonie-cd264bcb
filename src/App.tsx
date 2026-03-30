@@ -36,6 +36,17 @@ function PageLoader() {
   );
 }
 
+/** Fire PageView on every SPA route change */
+function MetaPixelPageView() {
+  const location = useLocation();
+  useEffect(() => {
+    if (typeof (window as any).fbq === "function") {
+      (window as any).fbq("track", "PageView");
+    }
+  }, [location.pathname]);
+  return null;
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
