@@ -168,8 +168,9 @@ export default function Visits() {
     const organicCount = activeVisits.filter(v => !v.leadSource || v.leadSource === "Orgânico").length;
     const paidCount = activeVisits.filter(v => ["Tráfego Pago", "Facebook", "Instagram", "Google"].includes(v.leadSource)).length;
     const indicacaoCount = activeVisits.filter(v => v.leadSource === "Indicação").length;
+    const convertedCount = visits.filter(v => v.status === "Convertida em contrato").length;
     const totalLeads = activeVisits.length;
-    return { visitsToday, scheduledToday, organicCount, paidCount, indicacaoCount, totalLeads, spDayMonth };
+    return { visitsToday, scheduledToday, organicCount, paidCount, indicacaoCount, convertedCount, totalLeads, spDayMonth };
   }, [visits]);
 
   const filtered = useMemo(() => {
