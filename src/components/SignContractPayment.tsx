@@ -147,7 +147,7 @@ export default function SignContractPayment({
   const handleCardPayment = () => {
     if (!installments) return;
     const msg = `Olá! Assinei o contrato e quero realizar o pagamento do sinal no cartão de crédito.\n\nNome: ${clientName}\nValor do sinal: ${fmt(depositValue)}\nParcelamento: ${installments}x\n\nPodem me orientar para seguir com o pagamento?`;
-    openWhatsApp(msg);
+    openWhatsApp(msg, { payment_choice: "pagar_agora", payment_method_selected: "cartao" });
   };
 
   const handleLaterPayment = () => {
