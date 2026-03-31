@@ -136,10 +136,10 @@ export default function SignContractPayment({
     }
   };
 
-  const openWhatsApp = (message: string) => {
+  const openWhatsApp = (message: string, paymentData?: { payment_choice: string; payment_method_selected: string; payment_due_date?: string }) => {
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
     window.open(url, "_blank");
-    onComplete();
+    onComplete(paymentData);
   };
 
   const handleCardPayment = () => {
