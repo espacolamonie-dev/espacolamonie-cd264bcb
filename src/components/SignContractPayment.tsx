@@ -127,6 +127,8 @@ export default function SignContractPayment({
         const result = await res.json();
         if (result.success) {
           setReceiptSent(true);
+          // Save payment choice as PIX - paid now
+          savePaymentChoice("pagar_agora", "pix");
         }
         setUploading(false);
       };
