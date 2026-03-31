@@ -60,6 +60,7 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [generateOpen, setGenerateOpen] = useState(false);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [receiptModalOpen, setReceiptModalOpen] = useState(false);
   const isMobile = useIsMobile();
 
   // Payment selection state
