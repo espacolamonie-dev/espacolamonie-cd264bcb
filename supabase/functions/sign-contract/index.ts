@@ -116,6 +116,85 @@ serve(async (req) => {
     });
   }
 
+  // PATCH /sign-contract — save payment choice after signing
+  if (req.method === "PATCH") {
+    const body = await req.json();
+    const { token, payment_choice, payment_method_selected, payment_due_date } = body;
+
+    if (!token) {
+      return new Response(JSON.stringify({ error: "Token obrigatório" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { data: sig, error: fetchErr } = await supabase
+      .from("contract_signatures")
+      .select("contract_id, user_id, client_name, total_value, deposit_percent")
+      .eq("token", token)
+      .maybeSingle();
+
+    if (fetchErr || !sig) {
+      return new Response(JSON.stringify({ error: "Contrato não encontrado" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Update contract_signatures
+    await supabase.from("contract_signatures").update({
+      payment_choice: payment_choice || "",
+      payment_method_selected: payment_method_selected || "",
+      payment_due_date: payment_due_date || null,
+    }).eq("token", token);
+
+    // Update contracts table
+    if (sig.contract_id) {
+      const updateData: Record<string, any> = {
+        payment_choice: payment_choice || "",
+        payment_method_selected: payment_method_selected || "",
+      };
+      if (payment_due_date) {
+        updateData.payment_due_date = payment_due_date;
+      }
+      if (payment_choice === "pagar_depois") {
+        updateData.payment_followup_required = true;
+      }
+      await supabase.from("contracts").update(updateData).eq("id", sig.contract_id);
+
+      // Send push notification for "pay later"
+      if (payment_choice === "pagar_depois") {
+        try {
+          const depositValue = (Number(sig.total_value) * Number(sig.deposit_percent)) / 100;
+          const fmtVal = `R$ ${depositValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+          const methodLabel = payment_method_selected === "pix" ? "PIX" : payment_method_selected === "cartao" ? "Cartão" : payment_method_selected || "Não definido";
+          const dateLabel = payment_due_date ? payment_due_date.split("-").reverse().join("/") : "não definida";
+
+          await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/manage-push`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`
+            },
+            body: JSON.stringify({
+              action: 'send-notification',
+              title: '⚠️ Cliente escolheu pagar depois',
+              body: `${sig.client_name} vai pagar ${fmtVal} depois. Método: ${methodLabel}. Data prometida: ${dateLabel}`,
+              url: '/contracts',
+              tag: `pay-later-${sig.contract_id}`
+            })
+          });
+        } catch (e) {
+          console.error("Push notification error:", e);
+        }
+      }
+    }
+
+    return new Response(JSON.stringify({ success: true }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   // PUT /sign-contract — upload receipt after signing
   if (req.method === "PUT") {
     const body = await req.json();

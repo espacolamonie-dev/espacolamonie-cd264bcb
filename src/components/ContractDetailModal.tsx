@@ -11,7 +11,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { getSafeErrorMessage } from "@/lib/errorSanitizer";
-import { CalendarDays, Users, DollarSign, FileText, Plus, AlertTriangle, Upload, Trash2, Download, FileOutput, ShieldCheck, Monitor, Smartphone, Globe, Hash, Clock, Pencil, X } from "lucide-react";
+import { CalendarDays, Users, DollarSign, FileText, Plus, AlertTriangle, Upload, Trash2, Download, FileOutput, ShieldCheck, Monitor, Smartphone, Globe, Hash, Clock, Pencil, X, Receipt } from "lucide-react";
+import ImportReceiptModal from "@/components/ImportReceiptModal";
 import { AttributionBadge } from "@/components/AttributionBadge";
 import GenerateContractModal from "@/components/GenerateContractModal";
 import ContractTimeline from "@/components/ContractTimeline";
@@ -59,6 +60,7 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [generateOpen, setGenerateOpen] = useState(false);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [receiptModalOpen, setReceiptModalOpen] = useState(false);
   const isMobile = useIsMobile();
 
   // Payment selection state
@@ -363,6 +365,25 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
             </TabsContent>
 
             <TabsContent value="payments" className="space-y-4 pt-4">
+              {/* Payment choice info */}
+              {contract.paymentChoice === "pagar_depois" && (
+                <div className="rounded-lg border border-warning/30 bg-warning/5 p-3 space-y-1">
+                  <p className="text-xs font-semibold text-warning flex items-center gap-1.5">
+                    <AlertTriangle size={13} /> Cliente escolheu pagar depois
+                  </p>
+                  <div className="grid grid-cols-2 gap-1 text-xs">
+                    <span className="text-muted-foreground">Método:</span>
+                    <span className="font-medium">{contract.paymentMethodSelected === "pix" ? "PIX" : contract.paymentMethodSelected === "cartao" ? "Cartão" : contract.paymentMethodSelected || "—"}</span>
+                    {contract.paymentDueDate && (
+                      <>
+                        <span className="text-muted-foreground">Data prometida:</span>
+                        <span className="font-medium">{new Date(contract.paymentDueDate + "T12:00:00").toLocaleDateString("pt-BR")}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">
@@ -462,9 +483,14 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
                       <Input value={payForm.description} onChange={(e) => setPayForm((p) => ({ ...p, description: e.target.value }))} className={isMobile ? "h-12" : ""} />
                     </div>
                   </div>
-                  <Button size="sm" onClick={handleAddPayment} className={`gap-1 text-xs ${isMobile ? "h-12 w-full text-sm font-semibold" : "h-8"}`}>
-                    <Plus size={13} /> Adicionar
-                  </Button>
+                  <div className={isMobile ? "flex flex-col gap-2" : "flex gap-2"}>
+                    <Button size="sm" onClick={handleAddPayment} className={`gap-1 text-xs ${isMobile ? "h-12 w-full text-sm font-semibold" : "h-8"}`}>
+                      <Plus size={13} /> Adicionar
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setReceiptModalOpen(true)} className={`gap-1 text-xs ${isMobile ? "h-12 w-full text-sm font-semibold" : "h-8"}`}>
+                      <Receipt size={13} /> Importar Comprovante
+                    </Button>
+                  </div>
                 </div>
               )}
             </TabsContent>

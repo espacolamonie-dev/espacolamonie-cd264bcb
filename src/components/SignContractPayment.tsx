@@ -23,7 +23,7 @@ interface Props {
   contractId: string;
   token: string;
   userId: string;
-  onComplete: () => void;
+  onComplete: (paymentData?: { payment_choice: string; payment_method_selected: string; payment_due_date?: string }) => void;
 }
 
 type PaymentMethod = null | "pix" | "card" | "later";
@@ -80,6 +80,20 @@ export default function SignContractPayment({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const depositValue = (totalValue * depositPercent) / 100;
+
+  const savePaymentChoice = async (choice: string, methodSel: string, dueDate?: string) => {
+    try {
+      const FUNC_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sign-contract`;
+      await fetch(FUNC_URL, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ token, payment_choice: choice, payment_method_selected: methodSel, payment_due_date: dueDate }),
+      });
+    } catch {}
+  };
   const pixPayload = generatePixPayload(depositValue);
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(pixPayload)}`;
 
@@ -127,6 +141,8 @@ export default function SignContractPayment({
         const result = await res.json();
         if (result.success) {
           setReceiptSent(true);
+          // Save payment choice as PIX - paid now
+          savePaymentChoice("pagar_agora", "pix");
         }
         setUploading(false);
       };
@@ -136,23 +152,24 @@ export default function SignContractPayment({
     }
   };
 
-  const openWhatsApp = (message: string) => {
+  const openWhatsApp = (message: string, paymentData?: { payment_choice: string; payment_method_selected: string; payment_due_date?: string }) => {
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
     window.open(url, "_blank");
-    onComplete();
+    onComplete(paymentData);
   };
 
   const handleCardPayment = () => {
     if (!installments) return;
     const msg = `Olá! Assinei o contrato e quero realizar o pagamento do sinal no cartão de crédito.\n\nNome: ${clientName}\nValor do sinal: ${fmt(depositValue)}\nParcelamento: ${installments}x\n\nPodem me orientar para seguir com o pagamento?`;
-    openWhatsApp(msg);
+    openWhatsApp(msg, { payment_choice: "pagar_agora", payment_method_selected: "cartao" });
   };
 
   const handleLaterPayment = () => {
     if (!laterDate) return;
     const dateStr = format(laterDate, "dd/MM/yyyy");
+    const isoDate = format(laterDate, "yyyy-MM-dd");
     const msg = `Olá! Assinei o contrato e quero combinar o pagamento do sinal para outro dia.\n\nNome: ${clientName}\nValor do sinal: ${fmt(depositValue)}\nData prevista para pagamento: ${dateStr}\n\nPodem confirmar se está tudo certo?`;
-    openWhatsApp(msg);
+    openWhatsApp(msg, { payment_choice: "pagar_depois", payment_method_selected: "pix", payment_due_date: isoDate });
   };
 
   // ═══ METHOD SELECTION ═══
@@ -248,7 +265,7 @@ export default function SignContractPayment({
             <p className="text-sm text-muted-foreground max-w-sm mx-auto">
               Recebemos seu comprovante. O Espaço Lamoniê irá confirmar o pagamento e entrar em contato em breve.
             </p>
-            <Button onClick={onComplete} className="mt-6 w-full h-11 rounded-xl">
+            <Button onClick={() => onComplete({ payment_choice: "pagar_agora", payment_method_selected: "pix" })} className="mt-6 w-full h-11 rounded-xl">
               Concluir
             </Button>
           </div>
