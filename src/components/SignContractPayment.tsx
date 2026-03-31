@@ -80,6 +80,20 @@ export default function SignContractPayment({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const depositValue = (totalValue * depositPercent) / 100;
+
+  const savePaymentChoice = async (choice: string, methodSel: string, dueDate?: string) => {
+    try {
+      const FUNC_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sign-contract`;
+      await fetch(FUNC_URL, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ token, payment_choice: choice, payment_method_selected: methodSel, payment_due_date: dueDate }),
+      });
+    } catch {}
+  };
   const pixPayload = generatePixPayload(depositValue);
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(pixPayload)}`;
 
