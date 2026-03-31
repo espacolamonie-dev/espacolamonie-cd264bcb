@@ -441,6 +441,9 @@ export type Database = {
           event_date_end: string | null
           event_type: string
           id: string
+          payment_choice: string
+          payment_due_date: string | null
+          payment_method_selected: string
           rental_type: string | null
           sent_at: string | null
           sent_to_phone: string | null
@@ -465,6 +468,9 @@ export type Database = {
           event_date_end?: string | null
           event_type: string
           id?: string
+          payment_choice?: string
+          payment_due_date?: string | null
+          payment_method_selected?: string
           rental_type?: string | null
           sent_at?: string | null
           sent_to_phone?: string | null
@@ -489,6 +495,9 @@ export type Database = {
           event_date_end?: string | null
           event_type?: string
           id?: string
+          payment_choice?: string
+          payment_due_date?: string | null
+          payment_method_selected?: string
           rental_type?: string | null
           sent_at?: string | null
           sent_to_phone?: string | null
@@ -536,6 +545,10 @@ export type Database = {
           meta_ad_id: string
           meta_adset_id: string
           meta_campaign_id: string
+          payment_choice: string
+          payment_due_date: string | null
+          payment_followup_required: boolean
+          payment_method_selected: string
           payment_status: string
           remaining_value: number
           rental_type: string
@@ -568,6 +581,10 @@ export type Database = {
           meta_ad_id?: string
           meta_adset_id?: string
           meta_campaign_id?: string
+          payment_choice?: string
+          payment_due_date?: string | null
+          payment_followup_required?: boolean
+          payment_method_selected?: string
           payment_status?: string
           remaining_value?: number
           rental_type?: string
@@ -600,6 +617,10 @@ export type Database = {
           meta_ad_id?: string
           meta_adset_id?: string
           meta_campaign_id?: string
+          payment_choice?: string
+          payment_due_date?: string | null
+          payment_followup_required?: boolean
+          payment_method_selected?: string
           payment_status?: string
           remaining_value?: number
           rental_type?: string
