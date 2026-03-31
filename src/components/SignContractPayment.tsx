@@ -153,8 +153,9 @@ export default function SignContractPayment({
   const handleLaterPayment = () => {
     if (!laterDate) return;
     const dateStr = format(laterDate, "dd/MM/yyyy");
+    const isoDate = format(laterDate, "yyyy-MM-dd");
     const msg = `Olá! Assinei o contrato e quero combinar o pagamento do sinal para outro dia.\n\nNome: ${clientName}\nValor do sinal: ${fmt(depositValue)}\nData prevista para pagamento: ${dateStr}\n\nPodem confirmar se está tudo certo?`;
-    openWhatsApp(msg);
+    openWhatsApp(msg, { payment_choice: "pagar_depois", payment_method_selected: "pix", payment_due_date: isoDate });
   };
 
   // ═══ METHOD SELECTION ═══
