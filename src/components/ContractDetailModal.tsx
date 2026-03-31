@@ -365,6 +365,25 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
             </TabsContent>
 
             <TabsContent value="payments" className="space-y-4 pt-4">
+              {/* Payment choice info */}
+              {contract.paymentChoice === "pagar_depois" && (
+                <div className="rounded-lg border border-warning/30 bg-warning/5 p-3 space-y-1">
+                  <p className="text-xs font-semibold text-warning flex items-center gap-1.5">
+                    <AlertTriangle size={13} /> Cliente escolheu pagar depois
+                  </p>
+                  <div className="grid grid-cols-2 gap-1 text-xs">
+                    <span className="text-muted-foreground">Método:</span>
+                    <span className="font-medium">{contract.paymentMethodSelected === "pix" ? "PIX" : contract.paymentMethodSelected === "cartao" ? "Cartão" : contract.paymentMethodSelected || "—"}</span>
+                    {contract.paymentDueDate && (
+                      <>
+                        <span className="text-muted-foreground">Data prometida:</span>
+                        <span className="font-medium">{new Date(contract.paymentDueDate + "T12:00:00").toLocaleDateString("pt-BR")}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">
