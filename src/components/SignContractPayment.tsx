@@ -23,7 +23,7 @@ interface Props {
   contractId: string;
   token: string;
   userId: string;
-  onComplete: () => void;
+  onComplete: (paymentData?: { payment_choice: string; payment_method_selected: string; payment_due_date?: string }) => void;
 }
 
 type PaymentMethod = null | "pix" | "card" | "later";
