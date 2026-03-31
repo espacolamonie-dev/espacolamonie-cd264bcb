@@ -577,7 +577,20 @@ export default function SignContract() {
             contractId={data.contract_id}
             token={data.token}
             userId={data.user_id}
-            onComplete={() => setSigned(true)}
+            onComplete={(paymentData) => {
+              // Save payment choice to contract via edge function
+              if (paymentData) {
+                fetch(`${FUNC_URL}`, {
+                  method: "PATCH",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+                  },
+                  body: JSON.stringify({ token: data.token, ...paymentData }),
+                }).catch(() => {});
+              }
+              setSigned(true);
+            }}
           />
         )}
 
