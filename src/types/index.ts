@@ -82,6 +82,10 @@ export interface Contract {
   metaCampaignId?: string;
   metaAdsetId?: string;
   metaAdId?: string;
+  paymentChoice?: string;
+  paymentMethodSelected?: string;
+  paymentDueDate?: string;
+  paymentFollowupRequired?: boolean;
 }
 
 export interface Payment {

@@ -410,6 +410,10 @@ function mapContract(row: any) {
     metaCampaignId: row.meta_campaign_id || "",
     metaAdsetId: row.meta_adset_id || "",
     metaAdId: row.meta_ad_id || "",
+    paymentChoice: row.payment_choice || "",
+    paymentMethodSelected: row.payment_method_selected || "",
+    paymentDueDate: row.payment_due_date || "",
+    paymentFollowupRequired: row.payment_followup_required || false,
   };
 }
 
