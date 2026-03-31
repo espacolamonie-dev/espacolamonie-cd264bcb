@@ -265,7 +265,7 @@ export default function SignContractPayment({
             <p className="text-sm text-muted-foreground max-w-sm mx-auto">
               Recebemos seu comprovante. O Espaço Lamoniê irá confirmar o pagamento e entrar em contato em breve.
             </p>
-            <Button onClick={onComplete} className="mt-6 w-full h-11 rounded-xl">
+            <Button onClick={() => onComplete({ payment_choice: "pagar_agora", payment_method_selected: "pix" })} className="mt-6 w-full h-11 rounded-xl">
               Concluir
             </Button>
           </div>
