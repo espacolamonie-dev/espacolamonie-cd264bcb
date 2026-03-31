@@ -483,9 +483,14 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
                       <Input value={payForm.description} onChange={(e) => setPayForm((p) => ({ ...p, description: e.target.value }))} className={isMobile ? "h-12" : ""} />
                     </div>
                   </div>
-                  <Button size="sm" onClick={handleAddPayment} className={`gap-1 text-xs ${isMobile ? "h-12 w-full text-sm font-semibold" : "h-8"}`}>
-                    <Plus size={13} /> Adicionar
-                  </Button>
+                  <div className={isMobile ? "flex flex-col gap-2" : "flex gap-2"}>
+                    <Button size="sm" onClick={handleAddPayment} className={`gap-1 text-xs ${isMobile ? "h-12 w-full text-sm font-semibold" : "h-8"}`}>
+                      <Plus size={13} /> Adicionar
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setReceiptModalOpen(true)} className={`gap-1 text-xs ${isMobile ? "h-12 w-full text-sm font-semibold" : "h-8"}`}>
+                      <Receipt size={13} /> Importar Comprovante
+                    </Button>
+                  </div>
                 </div>
               )}
             </TabsContent>
