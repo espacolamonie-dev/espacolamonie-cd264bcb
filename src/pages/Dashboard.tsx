@@ -94,6 +94,26 @@ export default function Dashboard() {
         ).length;
         setAlerts({ unsignedCount, urgentPayments });
 
+        // Billing alerts: "pagar depois" due today or overdue + partial deposits
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+        const payLaterContracts = active.filter(c =>
+          c.paymentChoice === "pagar_depois" &&
+          c.paymentStatus !== "paid_full" &&
+          c.paymentDueDate &&
+          c.paymentDueDate <= todayStr
+        ).map(c => ({ ...c, clientName: clientMap[c.clientId] || "—" }));
+
+        const partialDepositContracts = active.filter(c => {
+          if (c.paymentStatus === "paid_full" || c.paymentStatus === "pending") return false;
+          const depositValue = (c.totalValue * c.depositPercent) / 100;
+          const paid = c.totalValue - c.remainingValue;
+          return paid > 0 && paid < depositValue;
+        }).map(c => ({ ...c, clientName: clientMap[c.clientId] || "—" }));
+
+        setBillingAlerts({ payLater: payLaterContracts, partialDeposit: partialDepositContracts });
+
         setContracts(active);
         setConfirmed(conf);
         setAwaiting(awaitPay);
