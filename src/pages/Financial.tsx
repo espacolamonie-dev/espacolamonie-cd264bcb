@@ -709,6 +709,9 @@ export default function Financial() {
                       </AlertDialogContent>
                     </AlertDialog>
                   )}
+                  <Button onClick={() => setReceiptModalOpen(true)} size="sm" variant="outline" className="gap-1.5 h-8 text-xs rounded-lg">
+                    <Receipt size={12} /> Comprovante
+                  </Button>
                   <Button onClick={() => setImportEntryOpen(true)} size="sm" variant="outline" className="gap-1.5 h-8 text-xs rounded-lg">
                     <Upload size={12} /> Importar
                   </Button>
