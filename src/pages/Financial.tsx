@@ -1101,6 +1101,12 @@ export default function Financial() {
 
       <ImportStatementModal open={importExpOpen} onOpenChange={setImportExpOpen} onImported={load} />
       <ImportBankEntryModal open={importEntryOpen} onOpenChange={setImportEntryOpen} onImported={load} />
+      <ImportReceiptModal
+        open={receiptModalOpen}
+        onOpenChange={setReceiptModalOpen}
+        mode="financial"
+        onImported={() => load()}
+      />
     </div>
   );
 }
