@@ -6,7 +6,7 @@ import {
   Calendar, DollarSign, CircleArrowDown as ArrowDownCircle,
   CircleArrowUp as ArrowUpCircle, Upload, CheckSquare, UserRound,
   PiggyBank, Target, BarChart3, Filter, Search, X, SlidersHorizontal,
-  ArrowUpDown, Megaphone, Wrench, Eye, EyeOff
+  ArrowUpDown, Megaphone, Wrench, Eye, EyeOff, Receipt
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
