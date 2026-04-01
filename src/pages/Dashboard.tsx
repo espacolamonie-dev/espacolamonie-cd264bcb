@@ -404,6 +404,43 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Billing alerts: pay later + partial deposits */}
+      {(billingAlerts.payLater.length > 0 || billingAlerts.partialDeposit.length > 0) && (
+        <div className="space-y-2.5">
+          {billingAlerts.payLater.map(c => (
+            <div key={`pl-${c.id}`} className="flex items-start gap-3 rounded-xl border border-warning/30 bg-warning/5 px-4 py-3">
+              <DollarSign size={16} className="text-warning mt-0.5 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-warning">Cobrança pendente — {c.clientName}</p>
+                <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1 text-xs text-muted-foreground">
+                  <span>Pagamento prometido: {c.paymentDueDate ? new Date(c.paymentDueDate + "T12:00:00").toLocaleDateString("pt-BR") : "—"}</span>
+                  <span>Método: {c.paymentMethodSelected === "pix" ? "PIX" : c.paymentMethodSelected === "cartao" ? "Cartão" : c.paymentMethodSelected || "—"}</span>
+                  <span className="font-medium text-warning">Pendente: {fmt(c.remainingValue)}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+          {billingAlerts.partialDeposit.map(c => {
+            const depositValue = (c.totalValue * c.depositPercent) / 100;
+            const paid = c.totalValue - c.remainingValue;
+            const falta = Math.max(0, depositValue - paid);
+            return (
+              <div key={`pd-${c.id}`} className="flex items-start gap-3 rounded-xl border border-warning/30 bg-warning/5 px-4 py-3">
+                <AlertTriangle size={16} className="text-warning mt-0.5 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-warning">Sinal incompleto — {c.clientName}</p>
+                  <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1 text-xs text-muted-foreground">
+                    <span>Pago: {fmt(paid)}</span>
+                    <span className="font-medium text-warning">Faltando: {fmt(falta)}</span>
+                    <span>Cobrar em até 7 dias</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* Stat cards */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 stagger-fade-in">
         {statCards.map((card) => (
