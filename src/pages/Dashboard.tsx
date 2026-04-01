@@ -43,6 +43,7 @@ export default function Dashboard() {
   const [ticketMedio, setTicketMedio] = useState(0);
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [alerts, setAlerts] = useState<{ unsignedCount: number; urgentPayments: number }>({ unsignedCount: 0, urgentPayments: 0 });
+  const [billingAlerts, setBillingAlerts] = useState<{ payLater: (Contract & { clientName: string })[]; partialDeposit: (Contract & { clientName: string })[] }>({ payLater: [], partialDeposit: [] });
 
   const [visitToContractRate, setVisitToContractRate] = useState<number | null>(null);
   const [visitToContractDetail, setVisitToContractDetail] = useState({ visits: 0, converted: 0 });
