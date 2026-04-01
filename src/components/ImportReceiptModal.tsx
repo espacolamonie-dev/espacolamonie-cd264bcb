@@ -172,6 +172,17 @@ export default function ImportReceiptModal({
         }
 
         toast.success(`Pagamento de ${fmt(amount)} registrado via comprovante`);
+      } else if (mode === "expense") {
+        // Expense mode: save as expense
+        await supabase.from("expenses").insert({
+          description: description || "Despesa importada via comprovante",
+          category: "Outro",
+          amount,
+          date,
+          user_id: user.id,
+        });
+
+        toast.success(`Despesa de ${fmt(amount)} registrada via comprovante`);
       } else {
         // Financial mode: save as manual entry
         await supabase.from("manual_entries").insert({

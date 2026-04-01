@@ -1114,6 +1114,12 @@ export default function Financial() {
         mode="financial"
         onImported={() => load()}
       />
+      <ImportReceiptModal
+        open={expenseReceiptModalOpen}
+        onOpenChange={setExpenseReceiptModalOpen}
+        mode="expense"
+        onImported={() => load()}
+      />
     </div>
   );
 }
