@@ -73,6 +73,7 @@ export default function Financial() {
   const [importExpOpen, setImportExpOpen] = useState(false);
   const [importEntryOpen, setImportEntryOpen] = useState(false);
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
+  const [expenseReceiptModalOpen, setExpenseReceiptModalOpen] = useState(false);
   const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
   const [selectedExpenses, setSelectedExpenses] = useState<Set<string>>(new Set());
   const [funcModalOpen, setFuncModalOpen] = useState(false);
@@ -783,6 +784,9 @@ export default function Financial() {
                       </AlertDialogContent>
                     </AlertDialog>
                   )}
+                  <Button onClick={() => setExpenseReceiptModalOpen(true)} size="sm" variant="outline" className="gap-1.5 h-8 text-xs rounded-lg">
+                    <Receipt size={12} /> Comprovante
+                  </Button>
                   <Button onClick={() => setImportExpOpen(true)} size="sm" variant="outline" className="gap-1.5 h-8 text-xs rounded-lg">
                     <Upload size={12} /> Importar
                   </Button>
@@ -1108,6 +1112,12 @@ export default function Financial() {
         open={receiptModalOpen}
         onOpenChange={setReceiptModalOpen}
         mode="financial"
+        onImported={() => load()}
+      />
+      <ImportReceiptModal
+        open={expenseReceiptModalOpen}
+        onOpenChange={setExpenseReceiptModalOpen}
+        mode="expense"
         onImported={() => load()}
       />
     </div>

@@ -25,7 +25,7 @@ interface ReceiptData {
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  mode: "financial" | "contract";
+  mode: "financial" | "contract" | "expense";
   contractId?: string;
   contractTotal?: number;
   contractDeposit?: number;
@@ -172,6 +172,17 @@ export default function ImportReceiptModal({
         }
 
         toast.success(`Pagamento de ${fmt(amount)} registrado via comprovante`);
+      } else if (mode === "expense") {
+        // Expense mode: save as expense
+        await supabase.from("expenses").insert({
+          description: description || "Despesa importada via comprovante",
+          category: "Outro",
+          amount,
+          date,
+          user_id: user.id,
+        });
+
+        toast.success(`Despesa de ${fmt(amount)} registrada via comprovante`);
       } else {
         // Financial mode: save as manual entry
         await supabase.from("manual_entries").insert({
@@ -201,7 +212,7 @@ export default function ImportReceiptModal({
       <DialogContent className={isMobile ? "max-w-[100vw] w-full" : "max-w-md"}>
         <DialogHeader>
           <DialogTitle className="font-display">
-            {mode === "contract" ? "Importar Comprovante" : "Importar Comprovante"}
+            {mode === "expense" ? "Importar Comprovante de Despesa" : "Importar Comprovante"}
           </DialogTitle>
         </DialogHeader>
 
