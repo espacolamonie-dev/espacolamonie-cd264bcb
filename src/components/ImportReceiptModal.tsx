@@ -25,7 +25,7 @@ interface ReceiptData {
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  mode: "financial" | "contract";
+  mode: "financial" | "contract" | "expense";
   contractId?: string;
   contractTotal?: number;
   contractDeposit?: number;
