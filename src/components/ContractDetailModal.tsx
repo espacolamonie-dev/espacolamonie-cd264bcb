@@ -662,6 +662,18 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Receipt import modal */}
+      <ImportReceiptModal
+        open={receiptModalOpen}
+        onOpenChange={setReceiptModalOpen}
+        mode="contract"
+        contractId={contractId}
+        contractTotal={contract.totalValue}
+        contractDeposit={contract.depositValue}
+        totalPaid={totalPaid}
+        onImported={() => load()}
+      />
     </Dialog>
   );
 }

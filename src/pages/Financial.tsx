@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import ImportStatementModal from "@/components/ImportStatementModal";
 import ImportBankEntryModal from "@/components/ImportBankEntryModal";
+import ImportReceiptModal from "@/components/ImportReceiptModal";
 import EmployeesTab from "@/components/EmployeesTab";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
