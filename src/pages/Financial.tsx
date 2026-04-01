@@ -73,6 +73,7 @@ export default function Financial() {
   const [importExpOpen, setImportExpOpen] = useState(false);
   const [importEntryOpen, setImportEntryOpen] = useState(false);
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
+  const [expenseReceiptModalOpen, setExpenseReceiptModalOpen] = useState(false);
   const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
   const [selectedExpenses, setSelectedExpenses] = useState<Set<string>>(new Set());
   const [funcModalOpen, setFuncModalOpen] = useState(false);
