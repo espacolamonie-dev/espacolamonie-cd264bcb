@@ -212,7 +212,7 @@ export default function ImportReceiptModal({
       <DialogContent className={isMobile ? "max-w-[100vw] w-full" : "max-w-md"}>
         <DialogHeader>
           <DialogTitle className="font-display">
-            {mode === "contract" ? "Importar Comprovante" : "Importar Comprovante"}
+            {mode === "expense" ? "Importar Comprovante de Despesa" : "Importar Comprovante"}
           </DialogTitle>
         </DialogHeader>
 
