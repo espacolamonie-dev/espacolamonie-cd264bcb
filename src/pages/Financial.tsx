@@ -6,7 +6,7 @@ import {
   Calendar, DollarSign, CircleArrowDown as ArrowDownCircle,
   CircleArrowUp as ArrowUpCircle, Upload, CheckSquare, UserRound,
   PiggyBank, Target, BarChart3, Filter, Search, X, SlidersHorizontal,
-  ArrowUpDown, Megaphone, Wrench, Eye, EyeOff
+  ArrowUpDown, Megaphone, Wrench, Eye, EyeOff, Receipt
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import ImportStatementModal from "@/components/ImportStatementModal";
 import ImportBankEntryModal from "@/components/ImportBankEntryModal";
+import ImportReceiptModal from "@/components/ImportReceiptModal";
 import EmployeesTab from "@/components/EmployeesTab";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -71,6 +72,7 @@ export default function Financial() {
   const [entryOpen, setEntryOpen] = useState(false);
   const [importExpOpen, setImportExpOpen] = useState(false);
   const [importEntryOpen, setImportEntryOpen] = useState(false);
+  const [receiptModalOpen, setReceiptModalOpen] = useState(false);
   const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
   const [selectedExpenses, setSelectedExpenses] = useState<Set<string>>(new Set());
   const [funcModalOpen, setFuncModalOpen] = useState(false);
@@ -707,6 +709,9 @@ export default function Financial() {
                       </AlertDialogContent>
                     </AlertDialog>
                   )}
+                  <Button onClick={() => setReceiptModalOpen(true)} size="sm" variant="outline" className="gap-1.5 h-8 text-xs rounded-lg">
+                    <Receipt size={12} /> Comprovante
+                  </Button>
                   <Button onClick={() => setImportEntryOpen(true)} size="sm" variant="outline" className="gap-1.5 h-8 text-xs rounded-lg">
                     <Upload size={12} /> Importar
                   </Button>
@@ -1099,6 +1104,12 @@ export default function Financial() {
 
       <ImportStatementModal open={importExpOpen} onOpenChange={setImportExpOpen} onImported={load} />
       <ImportBankEntryModal open={importEntryOpen} onOpenChange={setImportEntryOpen} onImported={load} />
+      <ImportReceiptModal
+        open={receiptModalOpen}
+        onOpenChange={setReceiptModalOpen}
+        mode="financial"
+        onImported={() => load()}
+      />
     </div>
   );
 }

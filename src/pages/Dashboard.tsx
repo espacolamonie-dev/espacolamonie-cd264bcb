@@ -43,6 +43,7 @@ export default function Dashboard() {
   const [ticketMedio, setTicketMedio] = useState(0);
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [alerts, setAlerts] = useState<{ unsignedCount: number; urgentPayments: number }>({ unsignedCount: 0, urgentPayments: 0 });
+  const [billingAlerts, setBillingAlerts] = useState<{ payLater: (Contract & { clientName: string })[]; partialDeposit: (Contract & { clientName: string })[] }>({ payLater: [], partialDeposit: [] });
 
   const [visitToContractRate, setVisitToContractRate] = useState<number | null>(null);
   const [visitToContractDetail, setVisitToContractDetail] = useState({ visits: 0, converted: 0 });
@@ -92,6 +93,26 @@ export default function Dashboard() {
           (c) => c.paymentStatus !== "paid_full" && parseLocalDate(c.eventDate) <= sevenDaysFromNow && parseLocalDate(c.eventDate) >= new Date()
         ).length;
         setAlerts({ unsignedCount, urgentPayments });
+
+        // Billing alerts: "pagar depois" due today or overdue + partial deposits
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+        const payLaterContracts = active.filter(c =>
+          c.paymentChoice === "pagar_depois" &&
+          c.paymentStatus !== "paid_full" &&
+          c.paymentDueDate &&
+          c.paymentDueDate <= todayStr
+        ).map(c => ({ ...c, clientName: clientMap[c.clientId] || "—" }));
+
+        const partialDepositContracts = active.filter(c => {
+          if (c.paymentStatus === "paid_full" || c.paymentStatus === "pending") return false;
+          const depositValue = (c.totalValue * c.depositPercent) / 100;
+          const paid = c.totalValue - c.remainingValue;
+          return paid > 0 && paid < depositValue;
+        }).map(c => ({ ...c, clientName: clientMap[c.clientId] || "—" }));
+
+        setBillingAlerts({ payLater: payLaterContracts, partialDeposit: partialDepositContracts });
 
         setContracts(active);
         setConfirmed(conf);
@@ -380,6 +401,43 @@ export default function Dashboard() {
               <ArrowRight size={12} className="text-danger/40 group-hover:translate-x-0.5 transition-transform" />
             </button>
           )}
+        </div>
+      )}
+
+      {/* Billing alerts: pay later + partial deposits */}
+      {(billingAlerts.payLater.length > 0 || billingAlerts.partialDeposit.length > 0) && (
+        <div className="space-y-2.5">
+          {billingAlerts.payLater.map(c => (
+            <div key={`pl-${c.id}`} className="flex items-start gap-3 rounded-xl border border-warning/30 bg-warning/5 px-4 py-3">
+              <DollarSign size={16} className="text-warning mt-0.5 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-warning">Cobrança pendente — {c.clientName}</p>
+                <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1 text-xs text-muted-foreground">
+                  <span>Pagamento prometido: {c.paymentDueDate ? new Date(c.paymentDueDate + "T12:00:00").toLocaleDateString("pt-BR") : "—"}</span>
+                  <span>Método: {c.paymentMethodSelected === "pix" ? "PIX" : c.paymentMethodSelected === "cartao" ? "Cartão" : c.paymentMethodSelected || "—"}</span>
+                  <span className="font-medium text-warning">Pendente: {fmt(c.remainingValue)}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+          {billingAlerts.partialDeposit.map(c => {
+            const depositValue = (c.totalValue * c.depositPercent) / 100;
+            const paid = c.totalValue - c.remainingValue;
+            const falta = Math.max(0, depositValue - paid);
+            return (
+              <div key={`pd-${c.id}`} className="flex items-start gap-3 rounded-xl border border-warning/30 bg-warning/5 px-4 py-3">
+                <AlertTriangle size={16} className="text-warning mt-0.5 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-warning">Sinal incompleto — {c.clientName}</p>
+                  <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1 text-xs text-muted-foreground">
+                    <span>Pago: {fmt(paid)}</span>
+                    <span className="font-medium text-warning">Faltando: {fmt(falta)}</span>
+                    <span>Cobrar em até 7 dias</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
