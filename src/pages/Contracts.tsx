@@ -367,6 +367,7 @@ export default function Contracts() {
               <SelectContent>
                 <SelectItem value="all">Todos os pagamentos</SelectItem>
                 <SelectItem value="pending_urgent">⚠ Pendentes (próx. 7 dias)</SelectItem>
+                <SelectItem value="sinal_pendente">💰 Sinal pendente</SelectItem>
                 {Object.entries(PAYMENT_STATUS_LABELS).map(([k, v]) => (
                   <SelectItem key={k} value={k}>{v}</SelectItem>
                 ))}
