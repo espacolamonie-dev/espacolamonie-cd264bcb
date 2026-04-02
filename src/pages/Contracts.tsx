@@ -72,9 +72,13 @@ export default function Contracts() {
   // Handle query params from dashboard alerts
   useEffect(() => {
     const paymentParam = searchParams.get("payment");
+    const highlightParam = searchParams.get("highlight");
     if (paymentParam === "pending_urgent") {
       setPaymentFilter("pending_urgent");
-      // Clear the query param to keep URL clean
+      setSearchParams({}, { replace: true });
+    }
+    if (highlightParam) {
+      setDetailId(highlightParam);
       setSearchParams({}, { replace: true });
     }
   }, [searchParams, setSearchParams]);
@@ -115,6 +119,14 @@ export default function Contracts() {
       sevenDays.setDate(sevenDays.getDate() + 7);
       const eventDate = parseLocalDate(c.eventDate);
       matchPayment = c.paymentStatus !== "paid_full" && c.status !== "cancelled" && eventDate >= new Date() && eventDate <= sevenDays;
+    } else if (paymentFilter === "sinal_pendente") {
+      if (c.status === "cancelled" || c.paymentStatus === "paid_full") {
+        matchPayment = false;
+      } else {
+        const depositTarget = (c.totalValue * c.depositPercent) / 100;
+        const paid = c.totalValue - c.remainingValue;
+        matchPayment = paid < depositTarget;
+      }
     } else if (paymentFilter !== "all") {
       matchPayment = c.paymentStatus === paymentFilter;
     }
@@ -355,6 +367,7 @@ export default function Contracts() {
               <SelectContent>
                 <SelectItem value="all">Todos os pagamentos</SelectItem>
                 <SelectItem value="pending_urgent">⚠ Pendentes (próx. 7 dias)</SelectItem>
+                <SelectItem value="sinal_pendente">💰 Sinal pendente</SelectItem>
                 {Object.entries(PAYMENT_STATUS_LABELS).map(([k, v]) => (
                   <SelectItem key={k} value={k}>{v}</SelectItem>
                 ))}
