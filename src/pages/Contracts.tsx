@@ -72,9 +72,13 @@ export default function Contracts() {
   // Handle query params from dashboard alerts
   useEffect(() => {
     const paymentParam = searchParams.get("payment");
+    const highlightParam = searchParams.get("highlight");
     if (paymentParam === "pending_urgent") {
       setPaymentFilter("pending_urgent");
-      // Clear the query param to keep URL clean
+      setSearchParams({}, { replace: true });
+    }
+    if (highlightParam) {
+      setDetailId(highlightParam);
       setSearchParams({}, { replace: true });
     }
   }, [searchParams, setSearchParams]);
