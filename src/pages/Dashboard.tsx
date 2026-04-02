@@ -77,6 +77,7 @@ export default function Dashboard() {
         ]);
 
         const active = allContracts.filter((c) => c.status !== "cancelled");
+        const clientMap = Object.fromEntries(clients.map((c) => [c.id, c.name]));
         const conf = active.filter((c) => c.status === "confirmed").length;
         const awaitPay = active.filter(
           (c) => c.paymentStatus === "pending" || c.paymentStatus === "deposit_paid"
@@ -120,8 +121,6 @@ export default function Dashboard() {
         setFutureCount(future.length);
         setFinancialSummary({ totalIn, totalOut, balance });
         setTicketMedio(active.length > 0 ? active.reduce((s, c) => s + c.totalValue, 0) / active.length : 0);
-
-        const clientMap = Object.fromEntries(clients.map((c) => [c.id, c.name]));
 
         setUpcoming(
           future
