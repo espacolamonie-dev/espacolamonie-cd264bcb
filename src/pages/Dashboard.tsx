@@ -407,7 +407,11 @@ export default function Dashboard() {
       {(billingAlerts.payLater.length > 0 || billingAlerts.partialDeposit.length > 0) && (
         <div className="space-y-2.5">
           {billingAlerts.payLater.map(c => (
-            <div key={`pl-${c.id}`} className="flex items-start gap-3 rounded-xl border border-warning/30 bg-warning/5 px-4 py-3">
+            <button
+              key={`pl-${c.id}`}
+              onClick={() => navigate(`/contracts?highlight=${c.id}`)}
+              className="w-full flex items-start gap-3 rounded-xl border border-warning/30 bg-warning/5 px-4 py-3 text-left hover:bg-warning/10 transition-all duration-200 group cursor-pointer"
+            >
               <DollarSign size={16} className="text-warning mt-0.5 shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-warning">Cobrança pendente — {c.clientName}</p>
@@ -417,14 +421,19 @@ export default function Dashboard() {
                   <span className="font-medium text-warning">Pendente: {fmt(c.remainingValue)}</span>
                 </div>
               </div>
-            </div>
+              <ArrowRight size={14} className="text-warning/40 group-hover:translate-x-0.5 transition-transform mt-1 shrink-0" />
+            </button>
           ))}
           {billingAlerts.partialDeposit.map(c => {
             const depositValue = (c.totalValue * c.depositPercent) / 100;
             const paid = c.totalValue - c.remainingValue;
             const falta = Math.max(0, depositValue - paid);
             return (
-              <div key={`pd-${c.id}`} className="flex items-start gap-3 rounded-xl border border-warning/30 bg-warning/5 px-4 py-3">
+              <button
+                key={`pd-${c.id}`}
+                onClick={() => navigate(`/contracts?highlight=${c.id}`)}
+                className="w-full flex items-start gap-3 rounded-xl border border-warning/30 bg-warning/5 px-4 py-3 text-left hover:bg-warning/10 transition-all duration-200 group cursor-pointer"
+              >
                 <AlertTriangle size={16} className="text-warning mt-0.5 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-warning">Sinal incompleto — {c.clientName}</p>
@@ -434,7 +443,8 @@ export default function Dashboard() {
                     <span>Cobrar em até 7 dias</span>
                   </div>
                 </div>
-              </div>
+                <ArrowRight size={14} className="text-warning/40 group-hover:translate-x-0.5 transition-transform mt-1 shrink-0" />
+              </button>
             );
           })}
         </div>
