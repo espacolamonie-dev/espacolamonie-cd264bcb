@@ -119,6 +119,14 @@ export default function Contracts() {
       sevenDays.setDate(sevenDays.getDate() + 7);
       const eventDate = parseLocalDate(c.eventDate);
       matchPayment = c.paymentStatus !== "paid_full" && c.status !== "cancelled" && eventDate >= new Date() && eventDate <= sevenDays;
+    } else if (paymentFilter === "sinal_pendente") {
+      if (c.status === "cancelled" || c.paymentStatus === "paid_full") {
+        matchPayment = false;
+      } else {
+        const depositTarget = (c.totalValue * c.depositPercent) / 100;
+        const paid = c.totalValue - c.remainingValue;
+        matchPayment = paid < depositTarget;
+      }
     } else if (paymentFilter !== "all") {
       matchPayment = c.paymentStatus === paymentFilter;
     }
