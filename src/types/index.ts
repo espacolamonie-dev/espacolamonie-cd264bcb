@@ -87,6 +87,7 @@ export interface Contract {
   paymentMethodSelected?: string;
   paymentDueDate?: string;
   paymentFollowupRequired?: boolean;
+  reservedUntil?: string;
 }
 
 export interface Payment {
