@@ -165,6 +165,7 @@ export const CONTRACT_STATUS_COLORS: Record<ContractStatus, string> = {
   signed: "bg-primary/15 text-primary border-primary/30",
   confirmed: "bg-success/15 text-success border-success/30",
   cancelled: "bg-danger/15 text-danger border-danger/30",
+  expired: "bg-muted text-muted-foreground border-muted-foreground/30",
 };
 
 export const PAYMENT_STATUS_COLORS: Record<PaymentStatus, string> = {
