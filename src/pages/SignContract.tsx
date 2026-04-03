@@ -398,13 +398,24 @@ export default function SignContract() {
       headers: { Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
     })
       .then((r) => r.json())
-      .then((d) => {
+      .then(async (d) => {
         if (d.error) { setError(d.error); }
         else {
           // If this is a budget signature (has budget_id, no contract_id), use budget flow
           if (d.budget_id && !d.contract_id) {
             setBudgetData(d);
           } else {
+            // Fetch reserved_until from contract
+            if (d.contract_id) {
+              try {
+                const { createClient } = await import("@supabase/supabase-js");
+                const sb = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
+                const { data: contractRow } = await sb.from("contracts").select("reserved_until, status, payment_status").eq("id", d.contract_id).single();
+                if (contractRow) {
+                  d.reserved_until = (contractRow as any).reserved_until || undefined;
+                }
+              } catch {}
+            }
             setData(d);
           }
           if (d.status === "signed") setSigned(true);
