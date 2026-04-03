@@ -418,6 +418,7 @@ function mapContract(row: any) {
     paymentMethodSelected: row.payment_method_selected || "",
     paymentDueDate: row.payment_due_date || "",
     paymentFollowupRequired: row.payment_followup_required || false,
+    reservedUntil: row.reserved_until || undefined,
   };
 }
 
