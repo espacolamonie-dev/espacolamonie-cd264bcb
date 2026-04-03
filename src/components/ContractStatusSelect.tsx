@@ -56,7 +56,7 @@ export function ContractStatusSelect({ contractId, value, onChanged }: ContractS
   const colorClass = CONTRACT_STATUS_COLORS[value];
 
   return (
-    <Select value={value} onValueChange={handleChange} disabled={loading || value === "cancelled"}>
+    <Select value={value} onValueChange={handleChange} disabled={loading || value === "cancelled" || value === "expired"}>
       <SelectTrigger
         className={`inline-flex h-auto w-auto min-w-0 gap-1 border rounded-full px-2.5 py-0.5 text-[10px] font-medium ${colorClass} focus:ring-0 focus:ring-offset-0 [&>svg]:h-3 [&>svg]:w-3 [&>svg]:opacity-60`}
       >
