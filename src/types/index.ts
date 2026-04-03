@@ -34,7 +34,8 @@ export type ContractStatus =
   | "awaiting_signature"
   | "signed"
   | "confirmed"
-  | "cancelled";
+  | "cancelled"
+  | "expired";
 
 export type PaymentStatus = "pending" | "deposit_paid" | "paid_full";
 
