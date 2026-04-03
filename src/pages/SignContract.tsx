@@ -42,6 +42,7 @@ interface SignatureData {
   status: string;
   signed_at: string | null;
   user_id: string;
+  reserved_until?: string;
 }
 
 function buildContractText(d: SignatureData): string {
