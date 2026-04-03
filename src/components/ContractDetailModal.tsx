@@ -272,6 +272,17 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
             </div>
           )}
 
+          {/* Reservation countdown */}
+          {contract.status !== "cancelled" && contract.status !== "confirmed" && contract.reservedUntil && (
+            <div className="mt-3">
+              <ReservationCountdown
+                reservedUntil={contract.reservedUntil}
+                isGuaranteed={contract.status === "signed" && contract.paymentStatus !== "pending"}
+                variant="banner"
+              />
+            </div>
+          )}
+
           {/* Timeline */}
           <div className="rounded-md border border-border/60 bg-muted/10 px-4 py-2 overflow-x-auto mt-3">
             <ContractTimeline contract={contract} docs={docs} payments={payments} />
