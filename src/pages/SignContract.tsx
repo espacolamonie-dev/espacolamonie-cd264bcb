@@ -10,6 +10,7 @@ import {
 import { jsPDF } from "jspdf";
 import SignBudget from "@/pages/SignBudget";
 import SignContractPayment from "@/components/SignContractPayment";
+import ReservationCountdown from "@/components/ReservationCountdown";
 
 const fmt = (v: number) => Number(v).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
