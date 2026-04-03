@@ -150,6 +150,7 @@ export const CONTRACT_STATUS_LABELS: Record<ContractStatus, string> = {
   signed: "Assinado",
   confirmed: "Confirmado",
   cancelled: "Cancelado",
+  expired: "Expirado",
 };
 
 export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
