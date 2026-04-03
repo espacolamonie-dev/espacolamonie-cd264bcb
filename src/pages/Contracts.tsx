@@ -387,11 +387,12 @@ export default function Contracts() {
             </div>
           ) : (
             filtered.map((c) => {
-              const isCancelled = c.status === "cancelled";
+              const isCancelled = c.status === "cancelled" || c.status === "expired";
               const statusLabel = CONTRACT_STATUS_LABELS[c.status] || c.status;
               const statusColor = CONTRACT_STATUS_COLORS[c.status] || "";
               const paymentLabel = PAYMENT_STATUS_LABELS[c.paymentStatus] || c.paymentStatus;
               const paymentColor = PAYMENT_STATUS_COLORS[c.paymentStatus] || "";
+              const isGuaranteed = (c.status === "signed" || c.status === "confirmed") && c.paymentStatus !== "pending";
               return (
                 <div key={c.id} className={`rounded-2xl border bg-card shadow-sm transition-all duration-200 overflow-hidden ${isCancelled ? "opacity-50" : ""}`}>
                   <div className="p-4">
