@@ -493,7 +493,7 @@ export default function Contracts() {
                 <tr><td colSpan={6} className="!py-12 text-center text-muted-foreground">Nenhum contrato encontrado</td></tr>
               ) : (
                 filtered.map((c) => {
-                  const isCancelled = c.status === "cancelled";
+                  const isCancelled = c.status === "cancelled" || c.status === "expired";
                   return (
                   <tr key={c.id} className={isCancelled ? "opacity-50" : ""}>
                     <td>
