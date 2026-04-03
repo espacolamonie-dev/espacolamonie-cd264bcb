@@ -252,7 +252,7 @@ export default function Contracts() {
     return getLocalDateStr(c.createdAt || "") === todayStr;
   }).length;
 
-  const activeContracts = contracts.filter((c) => c.status !== "cancelled").length;
+  const activeContracts = contracts.filter((c) => c.status !== "cancelled" && c.status !== "expired").length;
 
   return (
     <div className="animate-fade-in space-y-6">
