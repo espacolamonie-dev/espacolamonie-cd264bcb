@@ -631,6 +631,11 @@ export default function SignContract() {
         {/* ═══ MAIN FLOW ═══ */}
         {data && !signed && !showPayment && !loading && (
           <div className="space-y-5">
+            {/* Reservation countdown banner */}
+            <ReservationCountdown
+              reservedUntil={data.reserved_until}
+              isGuaranteed={data.status === "signed"}
+            />
             {/* 1 — Contract summary card */}
             <div className="bg-card rounded-2xl shadow-lg border border-border overflow-hidden">
               <div className="flex items-center gap-2 text-primary bg-secondary px-5 py-3 text-sm border-b border-border">
