@@ -34,7 +34,8 @@ export type ContractStatus =
   | "awaiting_signature"
   | "signed"
   | "confirmed"
-  | "cancelled";
+  | "cancelled"
+  | "expired";
 
 export type PaymentStatus = "pending" | "deposit_paid" | "paid_full";
 
@@ -86,6 +87,7 @@ export interface Contract {
   paymentMethodSelected?: string;
   paymentDueDate?: string;
   paymentFollowupRequired?: boolean;
+  reservedUntil?: string;
 }
 
 export interface Payment {
@@ -149,6 +151,7 @@ export const CONTRACT_STATUS_LABELS: Record<ContractStatus, string> = {
   signed: "Assinado",
   confirmed: "Confirmado",
   cancelled: "Cancelado",
+  expired: "Expirado",
 };
 
 export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
@@ -163,6 +166,7 @@ export const CONTRACT_STATUS_COLORS: Record<ContractStatus, string> = {
   signed: "bg-primary/15 text-primary border-primary/30",
   confirmed: "bg-success/15 text-success border-success/30",
   cancelled: "bg-danger/15 text-danger border-danger/30",
+  expired: "bg-muted text-muted-foreground border-muted-foreground/30",
 };
 
 export const PAYMENT_STATUS_COLORS: Record<PaymentStatus, string> = {

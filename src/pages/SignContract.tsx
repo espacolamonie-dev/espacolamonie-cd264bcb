@@ -10,6 +10,7 @@ import {
 import { jsPDF } from "jspdf";
 import SignBudget from "@/pages/SignBudget";
 import SignContractPayment from "@/components/SignContractPayment";
+import ReservationCountdown from "@/components/ReservationCountdown";
 
 const fmt = (v: number) => Number(v).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -41,6 +42,7 @@ interface SignatureData {
   status: string;
   signed_at: string | null;
   user_id: string;
+  reserved_until?: string;
 }
 
 function buildContractText(d: SignatureData): string {
@@ -396,13 +398,24 @@ export default function SignContract() {
       headers: { Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
     })
       .then((r) => r.json())
-      .then((d) => {
+      .then(async (d) => {
         if (d.error) { setError(d.error); }
         else {
           // If this is a budget signature (has budget_id, no contract_id), use budget flow
           if (d.budget_id && !d.contract_id) {
             setBudgetData(d);
           } else {
+            // Fetch reserved_until from contract
+            if (d.contract_id) {
+              try {
+                const { createClient } = await import("@supabase/supabase-js");
+                const sb = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
+                const { data: contractRow } = await sb.from("contracts").select("reserved_until, status, payment_status").eq("id", d.contract_id).single();
+                if (contractRow) {
+                  d.reserved_until = (contractRow as any).reserved_until || undefined;
+                }
+              } catch {}
+            }
             setData(d);
           }
           if (d.status === "signed") setSigned(true);
@@ -618,6 +631,11 @@ export default function SignContract() {
         {/* ═══ MAIN FLOW ═══ */}
         {data && !signed && !showPayment && !loading && (
           <div className="space-y-5">
+            {/* Reservation countdown banner */}
+            <ReservationCountdown
+              reservedUntil={data.reserved_until}
+              isGuaranteed={data.status === "signed"}
+            />
             {/* 1 — Contract summary card */}
             <div className="bg-card rounded-2xl shadow-lg border border-border overflow-hidden">
               <div className="flex items-center gap-2 text-primary bg-secondary px-5 py-3 text-sm border-b border-border">

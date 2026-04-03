@@ -28,6 +28,7 @@ import { NumericInput } from "@/components/NumericInput";
 import ImportContractModal from "@/components/ImportContractModal";
 import { supabase } from "@/integrations/supabase/client";
 import { AttributionBadge } from "@/components/AttributionBadge";
+import ReservationCountdown from "@/components/ReservationCountdown";
 
 const EVENT_TYPES: EventType[] = [
   "Aniversário 15 anos", "Aniversário Adulto", "Aniversário Infantil", "Casamento",
@@ -252,7 +253,7 @@ export default function Contracts() {
     return getLocalDateStr(c.createdAt || "") === todayStr;
   }).length;
 
-  const activeContracts = contracts.filter((c) => c.status !== "cancelled").length;
+  const activeContracts = contracts.filter((c) => c.status !== "cancelled" && c.status !== "expired").length;
 
   return (
     <div className="animate-fade-in space-y-6">
@@ -386,11 +387,12 @@ export default function Contracts() {
             </div>
           ) : (
             filtered.map((c) => {
-              const isCancelled = c.status === "cancelled";
+              const isCancelled = c.status === "cancelled" || c.status === "expired";
               const statusLabel = CONTRACT_STATUS_LABELS[c.status] || c.status;
               const statusColor = CONTRACT_STATUS_COLORS[c.status] || "";
               const paymentLabel = PAYMENT_STATUS_LABELS[c.paymentStatus] || c.paymentStatus;
               const paymentColor = PAYMENT_STATUS_COLORS[c.paymentStatus] || "";
+              const isGuaranteed = (c.status === "signed" || c.status === "confirmed") && c.paymentStatus !== "pending";
               return (
                 <div key={c.id} className={`rounded-2xl border bg-card shadow-sm transition-all duration-200 overflow-hidden ${isCancelled ? "opacity-50" : ""}`}>
                   <div className="p-4">
@@ -411,6 +413,13 @@ export default function Contracts() {
                         </Badge>
                       </div>
                     </div>
+
+                    {/* Reservation countdown */}
+                    {c.reservedUntil && !isCancelled && (
+                      <div className="mb-3">
+                        <ReservationCountdown reservedUntil={c.reservedUntil} isGuaranteed={isGuaranteed} variant="compact" />
+                      </div>
+                    )}
 
                     <div className="grid grid-cols-2 gap-2 mb-3">
                       <div className="flex items-center gap-2 rounded-xl bg-muted/50 px-3 py-2">
@@ -484,7 +493,7 @@ export default function Contracts() {
                 <tr><td colSpan={6} className="!py-12 text-center text-muted-foreground">Nenhum contrato encontrado</td></tr>
               ) : (
                 filtered.map((c) => {
-                  const isCancelled = c.status === "cancelled";
+                  const isCancelled = c.status === "cancelled" || c.status === "expired";
                   return (
                   <tr key={c.id} className={isCancelled ? "opacity-50" : ""}>
                     <td>

@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { getSafeErrorMessage } from "@/lib/errorSanitizer";
 import { CalendarDays, Users, DollarSign, FileText, Plus, AlertTriangle, Upload, Trash2, Download, FileOutput, ShieldCheck, Monitor, Smartphone, Globe, Hash, Clock, Pencil, X, Receipt } from "lucide-react";
+import ReservationCountdown from "@/components/ReservationCountdown";
 import ImportReceiptModal from "@/components/ImportReceiptModal";
 import { AttributionBadge } from "@/components/AttributionBadge";
 import GenerateContractModal from "@/components/GenerateContractModal";
@@ -268,6 +269,17 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
                   </span>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* Reservation countdown */}
+          {contract.status !== "cancelled" && contract.status !== "confirmed" && contract.reservedUntil && (
+            <div className="mt-3">
+              <ReservationCountdown
+                reservedUntil={contract.reservedUntil}
+                isGuaranteed={contract.status === "signed" && contract.paymentStatus !== "pending"}
+                variant="banner"
+              />
             </div>
           )}
 

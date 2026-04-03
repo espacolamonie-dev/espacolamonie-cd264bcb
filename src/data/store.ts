@@ -67,6 +67,9 @@ export const addContract = async (c: {
   }
   if (!source) source = "Orgânico";
 
+  // Set reserved_until to 24h from now
+  const reservedUntil = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
   const { data, error } = await supabase.from("contracts").insert({
     user_id: userId,
     client_id: c.clientId,
@@ -84,6 +87,7 @@ export const addContract = async (c: {
     payment_status: c.paymentStatus,
     visit_id: c.visitId || null,
     source: source,
+    reserved_until: reservedUntil,
     ...utm,
   } as any).select().single();
   if (error) throw error;
@@ -135,6 +139,7 @@ export const updateContract = async (id: string, updates: Record<string, any>) =
     remainingValue: "remaining_value", paymentStatus: "payment_status",
     cancelledAt: "cancelled_at", cancelledBy: "cancelled_by",
     visitId: "visit_id", source: "source",
+    reservedUntil: "reserved_until",
   };
   for (const [k, v] of Object.entries(updates)) {
     mapped[keyMap[k] || k] = v;
@@ -414,6 +419,7 @@ function mapContract(row: any) {
     paymentMethodSelected: row.payment_method_selected || "",
     paymentDueDate: row.payment_due_date || "",
     paymentFollowupRequired: row.payment_followup_required || false,
+    reservedUntil: row.reserved_until || undefined,
   };
 }
 
