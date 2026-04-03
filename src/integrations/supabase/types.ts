@@ -552,6 +552,7 @@ export type Database = {
           payment_status: string
           remaining_value: number
           rental_type: string
+          reserved_until: string | null
           source: string
           status: string
           total_value: number
@@ -588,6 +589,7 @@ export type Database = {
           payment_status?: string
           remaining_value?: number
           rental_type?: string
+          reserved_until?: string | null
           source?: string
           status?: string
           total_value?: number
@@ -624,6 +626,7 @@ export type Database = {
           payment_status?: string
           remaining_value?: number
           rental_type?: string
+          reserved_until?: string | null
           source?: string
           status?: string
           total_value?: number
