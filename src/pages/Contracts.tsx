@@ -28,6 +28,7 @@ import { NumericInput } from "@/components/NumericInput";
 import ImportContractModal from "@/components/ImportContractModal";
 import { supabase } from "@/integrations/supabase/client";
 import { AttributionBadge } from "@/components/AttributionBadge";
+import ReservationCountdown from "@/components/ReservationCountdown";
 
 const EVENT_TYPES: EventType[] = [
   "Aniversário 15 anos", "Aniversário Adulto", "Aniversário Infantil", "Casamento",
