@@ -414,6 +414,13 @@ export default function Contracts() {
                       </div>
                     </div>
 
+                    {/* Reservation countdown */}
+                    {c.reservedUntil && !isCancelled && (
+                      <div className="mb-3">
+                        <ReservationCountdown reservedUntil={c.reservedUntil} isGuaranteed={isGuaranteed} variant="compact" />
+                      </div>
+                    )}
+
                     <div className="grid grid-cols-2 gap-2 mb-3">
                       <div className="flex items-center gap-2 rounded-xl bg-muted/50 px-3 py-2">
                         <CalendarDays size={14} className="text-muted-foreground shrink-0" />
