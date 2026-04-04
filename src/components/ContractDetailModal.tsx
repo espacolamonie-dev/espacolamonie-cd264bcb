@@ -55,7 +55,7 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
   const [client, setClient] = useState<Client | null>(null);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [docs, setDocs] = useState<Document[]>([]);
-  const [payForm, setPayForm] = useState({ amount: 0, date: new Date().toISOString().split("T")[0], description: "", tag: "none" as "none" | "sinal" | "restante" });
+  const [payForm, setPayForm] = useState({ amount: 0, date: todayLocalStr(), description: "", tag: "none" as "none" | "sinal" | "restante" });
   const [uploading, setUploading] = useState(false);
   const [docType, setDocType] = useState<string>("outro");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -107,7 +107,7 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
     try {
       await addPayment({ ...payForm, description: desc, contractId });
       toast.success("Pagamento registrado com sucesso");
-      setPayForm({ amount: 0, date: new Date().toISOString().split("T")[0], description: "", tag: "none" });
+      setPayForm({ amount: 0, date: todayLocalStr(), description: "", tag: "none" });
       await load();
       triggerGoogleSync(contractId);
     } catch (e: any) { toast.error(getSafeErrorMessage(e)); }

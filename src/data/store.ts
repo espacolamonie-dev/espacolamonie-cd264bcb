@@ -166,7 +166,7 @@ export const updateContract = async (id: string, updates: Record<string, any>) =
         const depositValue = (contract.totalValue * contract.depositPercent) / 100;
         await supabase.from("payments").insert({
           user_id: userId, contract_id: id, amount: depositValue,
-          date: new Date().toISOString().split("T")[0],
+          date: todayLocalStr(),
           description: "Sinal pago automaticamente",
         });
         mapped.remaining_value = Math.max(0, contract.totalValue - depositValue);
@@ -193,7 +193,7 @@ export const updateContract = async (id: string, updates: Record<string, any>) =
       } else if (updates.paymentStatus === "paid_full") {
         await supabase.from("payments").insert({
           user_id: userId, contract_id: id, amount: contract.totalValue,
-          date: new Date().toISOString().split("T")[0],
+          date: todayLocalStr(),
           description: "Pagamento total registrado automaticamente",
         });
         mapped.remaining_value = 0;

@@ -41,7 +41,7 @@ export default function ImportReceiptModal({
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [amount, setAmount] = useState(0);
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(todayLocalStr());
   const [description, setDescription] = useState("");
   const [paymentType, setPaymentType] = useState("sinal");
   const [paymentMethod, setPaymentMethod] = useState("Pix");
@@ -58,7 +58,7 @@ export default function ImportReceiptModal({
     setReceiptData(null);
     setImagePreview(null);
     setAmount(0);
-    setDate(new Date().toISOString().split("T")[0]);
+    setDate(todayLocalStr());
     setDescription("");
     setPaymentType(isFirstPayment ? "sinal" : "restante");
     setPaymentMethod("Pix");

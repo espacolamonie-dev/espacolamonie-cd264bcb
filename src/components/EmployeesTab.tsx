@@ -75,7 +75,7 @@ export default function EmployeesTab({ selectedMonth, contracts, clients }: Prop
   const [editId, setEditId] = useState<string | null>(null);
   const [payModalEmployee, setPayModalEmployee] = useState<Employee | null>(null);
   const [payAmount, setPayAmount] = useState(0);
-  const [payDate, setPayDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [payDate, setPayDate] = useState(() => todayLocalStr());
   const [payDesc, setPayDesc] = useState("");
 
   const [form, setForm] = useState({
@@ -324,7 +324,7 @@ export default function EmployeesTab({ selectedMonth, contracts, clients }: Prop
 
                 {/* Actions */}
                 <div className="flex flex-col gap-1.5 shrink-0">
-                  <Button size="sm" variant="outline" className="gap-1.5 text-xs rounded-lg" onClick={() => { setPayModalEmployee(emp); setPayAmount(0); setPayDesc(""); setPayDate(new Date().toISOString().split("T")[0]); }}>
+                  <Button size="sm" variant="outline" className="gap-1.5 text-xs rounded-lg" onClick={() => { setPayModalEmployee(emp); setPayAmount(0); setPayDesc(""); setPayDate(todayLocalStr()); }}>
                     <DollarSign size={12} /> Pagar
                   </Button>
                   <Button size="sm" variant="ghost" className="gap-1.5 text-xs rounded-lg" onClick={() => openEdit(emp)}>
