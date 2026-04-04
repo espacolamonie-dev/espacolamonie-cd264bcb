@@ -257,8 +257,71 @@ serve(async (req) => {
         file_name: storagePath,
       });
 
+      // Try to parse receipt with AI to extract amount
+      let parsedAmount: number | null = null;
+      try {
+        const parseRes = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/parse-receipt`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          },
+          body: JSON.stringify({ image_base64: file_base64, mime_type: file_type || "image/jpeg" }),
+        });
+        const parseResult = await parseRes.json();
+        if (parseResult.receipt?.amount) {
+          parsedAmount = parseResult.receipt.amount;
+        }
+      } catch (e) {
+        console.error("Receipt parse error:", e);
+      }
+
+      // Register payment if amount was parsed or use deposit value as fallback
+      const depositValue = (Number(sig.total_value) * Number(sig.deposit_percent)) / 100;
+      const paymentAmount = parsedAmount || depositValue;
+      const today = new Date().toISOString().split("T")[0];
+
+      // Get current payments total
+      const { data: existingPayments } = await supabase
+        .from("payments")
+        .select("amount")
+        .eq("contract_id", sig.contract_id);
+      const currentPaid = (existingPayments || []).reduce((s: number, p: any) => s + Number(p.amount), 0);
+
+      // Insert payment
+      await supabase.from("payments").insert({
+        user_id: sig.user_id,
+        contract_id: sig.contract_id,
+        amount: paymentAmount,
+        date: today,
+        description: parsedAmount
+          ? `Sinal via PIX - comprovante importado (R$ ${paymentAmount.toFixed(2)})`
+          : `Sinal via PIX - comprovante enviado`,
+      });
+
+      // Update contract payment status
+      const newTotalPaid = currentPaid + paymentAmount;
+      const contractTotal = Number(sig.total_value);
+      const newRemaining = Math.max(0, contractTotal - newTotalPaid);
+      let newPaymentStatus = "pending";
+      if (newTotalPaid >= contractTotal) newPaymentStatus = "paid_full";
+      else if (newTotalPaid > 0) newPaymentStatus = "deposit_paid";
+
+      await supabase.from("contracts").update({
+        remaining_value: newRemaining,
+        payment_status: newPaymentStatus,
+        payment_choice: "pagar_agora",
+        payment_method_selected: "pix",
+      }).eq("id", sig.contract_id);
+
       // Send push notification about receipt
       try {
+        const fmtVal = `R$ ${paymentAmount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+        const sinalIncompleto = newTotalPaid < depositValue;
+        const pushBody = sinalIncompleto
+          ? `${sig.client_name} enviou comprovante de ${fmtVal}. Sinal incompleto: faltam R$ ${(depositValue - newTotalPaid).toFixed(2)}.`
+          : `${sig.client_name} enviou comprovante de ${fmtVal}. Sinal pago integralmente!`;
+
         await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/manage-push`, {
           method: "POST",
           headers: {
@@ -268,7 +331,7 @@ serve(async (req) => {
           body: JSON.stringify({
             action: 'send-notification',
             title: '💰 Comprovante PIX recebido!',
-            body: `${sig.client_name} enviou o comprovante de pagamento do sinal.`,
+            body: pushBody,
             url: '/contracts',
             tag: `receipt-${sig.contract_id}`
           })
@@ -277,7 +340,13 @@ serve(async (req) => {
         console.error("Push notification error:", e);
       }
 
-      return new Response(JSON.stringify({ success: true }), {
+      return new Response(JSON.stringify({ 
+        success: true,
+        parsed_amount: parsedAmount,
+        payment_registered: paymentAmount,
+        remaining: newRemaining,
+        payment_status: newPaymentStatus,
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     } catch (e) {
