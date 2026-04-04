@@ -635,7 +635,24 @@ export default function SignContract() {
             <ReservationCountdown
               reservedUntil={data.reserved_until}
               isGuaranteed={data.status === "signed"}
+              onExpired={() => setError("O prazo de 24 horas para assinatura expirou. A reserva foi liberada.")}
             />
+
+            {/* Block if expired */}
+            {(() => {
+              const isExpired = data.reserved_until && new Date(data.reserved_until).getTime() < Date.now();
+              if (isExpired) return (
+                <div className="bg-card rounded-2xl shadow-lg border border-danger/30 p-10 text-center">
+                  <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-3" />
+                  <p className="text-destructive font-medium">O prazo de 24 horas para assinatura expirou.</p>
+                  <p className="text-sm text-muted-foreground mt-2">A data pode ter sido liberada para outros interessados. Entre em contato com o Espaço Lamoniê.</p>
+                </div>
+              );
+              return null;
+            })()}
+
+            {/* Only show the rest if NOT expired */}
+            {!(data.reserved_until && new Date(data.reserved_until).getTime() < Date.now()) && (<>
             {/* 1 — Contract summary card */}
             <div className="bg-card rounded-2xl shadow-lg border border-border overflow-hidden">
               <div className="flex items-center gap-2 text-primary bg-secondary px-5 py-3 text-sm border-b border-border">
@@ -663,6 +680,19 @@ export default function SignContract() {
             <div>
               <h2 className="text-lg font-display font-semibold text-foreground mb-1">📋 Como funciona o Espaço Lamoniê</h2>
               <p className="text-xs text-muted-foreground mb-4">Leia cada regra e marque a caixa de concordância para continuar.</p>
+
+              {/* Master checkbox */}
+              <label className="flex items-center gap-3 mb-4 p-4 bg-primary/5 rounded-xl border border-primary/20 cursor-pointer group hover:bg-primary/10 transition-colors">
+                <Checkbox
+                  checked={allRulesChecked}
+                  onCheckedChange={(checked) => {
+                    setCheckedRules(new Array(RULES.length).fill(!!checked));
+                  }}
+                />
+                <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
+                  Li e concordo com todas as regras acima
+                </span>
+              </label>
 
               <div className="grid gap-3">
                 {RULES.map((rule, i) => {
@@ -807,6 +837,7 @@ export default function SignContract() {
                 </div>
               </div>
             )}
+            </>)}
           </div>
         )}
 

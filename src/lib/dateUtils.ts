@@ -15,3 +15,16 @@ export function formatDateBR(dateStr: string): string {
   const [year, month, day] = dateStr.split("-");
   return `${day}/${month}/${year}`;
 }
+
+/**
+ * Get today's date as "YYYY-MM-DD" in local timezone (America/Sao_Paulo).
+ * Avoids the UTC issue where `new Date().toISOString().split("T")[0]`
+ * returns yesterday's date after 21:00 BRT.
+ */
+export function todayLocalStr(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}

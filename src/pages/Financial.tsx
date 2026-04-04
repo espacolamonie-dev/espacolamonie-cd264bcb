@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
+import { todayLocalStr } from "@/lib/dateUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { CurrencyInput } from "@/components/CurrencyInput";
 import {
@@ -102,11 +103,11 @@ export default function Financial() {
 
   const [expForm, setExpForm] = useState({
     description: "", category: "Outros" as ExpenseCategory, amount: 0,
-    date: new Date().toISOString().split("T")[0],
+    date: todayLocalStr(),
   });
   const [entryForm, setEntryForm] = useState({
     description: "", category: "Outro" as ManualEntryCategory, amount: 0,
-    date: new Date().toISOString().split("T")[0], paymentMethod: "Pix" as PaymentMethod, notes: "",
+    date: todayLocalStr(), paymentMethod: "Pix" as PaymentMethod, notes: "",
   });
 
   // Reserves from localStorage
@@ -195,7 +196,7 @@ export default function Financial() {
       await addExpense(expForm);
       toast.success("Despesa registrada");
       setExpOpen(false);
-      setExpForm({ description: "", category: "Outros", amount: 0, date: new Date().toISOString().split("T")[0] });
+      setExpForm({ description: "", category: "Outros", amount: 0, date: todayLocalStr() });
       await load();
     } catch (e: any) { toast.error(getSafeErrorMessage(e)); }
   };
@@ -206,7 +207,7 @@ export default function Financial() {
       await addManualEntry(entryForm);
       toast.success("Entrada registrada");
       setEntryOpen(false);
-      setEntryForm({ description: "", category: "Outro", amount: 0, date: new Date().toISOString().split("T")[0], paymentMethod: "Pix", notes: "" });
+      setEntryForm({ description: "", category: "Outro", amount: 0, date: todayLocalStr(), paymentMethod: "Pix", notes: "" });
       await load();
     } catch (e: any) { toast.error(getSafeErrorMessage(e)); }
   };

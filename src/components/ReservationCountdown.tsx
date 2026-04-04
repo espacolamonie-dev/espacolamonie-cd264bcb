@@ -5,10 +5,12 @@ interface Props {
   reservedUntil?: string;
   isGuaranteed?: boolean; // signed + deposit paid
   variant?: "banner" | "compact";
+  onExpired?: () => void;
 }
 
-export default function ReservationCountdown({ reservedUntil, isGuaranteed, variant = "banner" }: Props) {
+export default function ReservationCountdown({ reservedUntil, isGuaranteed, variant = "banner", onExpired }: Props) {
   const [remaining, setRemaining] = useState<number | null>(null);
+  const [expiredNotified, setExpiredNotified] = useState(false);
 
   useEffect(() => {
     if (!reservedUntil || isGuaranteed) return;
@@ -16,12 +18,17 @@ export default function ReservationCountdown({ reservedUntil, isGuaranteed, vari
 
     const tick = () => {
       const diff = target - Date.now();
-      setRemaining(diff > 0 ? diff : 0);
+      const val = diff > 0 ? diff : 0;
+      setRemaining(val);
+      if (val <= 0 && !expiredNotified && onExpired) {
+        setExpiredNotified(true);
+        onExpired();
+      }
     };
     tick();
     const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
-  }, [reservedUntil, isGuaranteed]);
+  }, [reservedUntil, isGuaranteed, expiredNotified, onExpired]);
 
   if (isGuaranteed) {
     if (variant === "compact") {
