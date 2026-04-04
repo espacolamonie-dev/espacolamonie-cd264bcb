@@ -5,6 +5,7 @@ interface Props {
   reservedUntil?: string;
   isGuaranteed?: boolean; // signed + deposit paid
   variant?: "banner" | "compact";
+  onExpired?: () => void;
 }
 
 export default function ReservationCountdown({ reservedUntil, isGuaranteed, variant = "banner" }: Props) {
