@@ -325,11 +325,11 @@ serve(async (req) => {
       });
     }
 
-    // Check if contract is cancelled before allowing signature
+    // Check if contract is cancelled or expired before allowing signature
     if (sig.contract_id) {
       const { data: contractCheck } = await supabase
         .from("contracts")
-        .select("status")
+        .select("status, reserved_until")
         .eq("id", sig.contract_id)
         .maybeSingle();
       
@@ -338,6 +338,22 @@ serve(async (req) => {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+      }
+      if (contractCheck && contractCheck.status === "expired") {
+        return new Response(JSON.stringify({ error: "O prazo de 24 horas para assinatura expirou. A reserva foi liberada." }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      // Check reserved_until
+      if (contractCheck && contractCheck.reserved_until) {
+        const reservedUntil = new Date(contractCheck.reserved_until).getTime();
+        if (Date.now() > reservedUntil) {
+          return new Response(JSON.stringify({ error: "O prazo de 24 horas para assinatura expirou. A reserva foi liberada." }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
       }
     }
 
