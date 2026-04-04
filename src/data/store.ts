@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getUtmForDb } from "@/lib/utmTracker";
+import { todayLocalStr } from "@/lib/dateUtils";
 
 // Helper to get current user id
 const getUserId = async (): Promise<string> => {
