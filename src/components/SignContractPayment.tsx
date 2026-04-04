@@ -120,34 +120,44 @@ export default function SignContractPayment({
   const handleUploadReceipt = async (file: File) => {
     setUploading(true);
     try {
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const base64 = (reader.result as string).split(",")[1];
-        const res = await fetch(FUNC_URL, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({
-            token,
-            action: "upload-receipt",
-            file_base64: base64,
-            file_name: file.name,
-            file_type: file.type,
-            payment_method: "pix",
-          }),
-        });
-        const result = await res.json();
-        if (result.success) {
-          setReceiptSent(true);
-          // Save payment choice as PIX - paid now
-          savePaymentChoice("pagar_agora", "pix");
-        }
-        setUploading(false);
-      };
-      reader.readAsDataURL(file);
-    } catch {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve((reader.result as string).split(",")[1]);
+        reader.onerror = () => reject(new Error("Erro ao ler arquivo"));
+        reader.readAsDataURL(file);
+      });
+
+      const res = await fetch(FUNC_URL, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          token,
+          action: "upload-receipt",
+          file_base64: base64,
+          file_name: file.name,
+          file_type: file.type,
+          payment_method: "pix",
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Erro ao enviar comprovante");
+      }
+
+      const result = await res.json();
+      if (result.success) {
+        setReceiptSent(true);
+        savePaymentChoice("pagar_agora", "pix");
+      } else {
+        throw new Error(result.error || "Erro ao processar comprovante");
+      }
+    } catch (err: any) {
+      alert(err?.message || "Erro ao enviar comprovante. Tente novamente.");
+    } finally {
       setUploading(false);
     }
   };
