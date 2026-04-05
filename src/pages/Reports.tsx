@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { formatDateBR } from "@/lib/dateUtils";
-import { CalendarDays, DollarSign, Users, TrendingUp, Target, Percent, Globe } from "lucide-react";
+import { CalendarDays, DollarSign, Users, TrendingUp, Target, Percent, Globe, ArrowUpRight, ArrowDownRight, Minus, BarChart3, PieChart as PieChartIcon, LineChart as LineChartIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,6 +13,7 @@ import { format, parseISO, startOfMonth, endOfMonth, isBefore, isAfter, subMonth
 import { ptBR } from "date-fns/locale";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell,
+  LineChart, Line, Area, AreaChart,
 } from "recharts";
 
 const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
