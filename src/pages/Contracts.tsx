@@ -249,6 +249,13 @@ export default function Contracts() {
     return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
   }).length;
 
+  const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+  const prevMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+  const contractsLastMonth = contracts.filter((c) => {
+    const d = new Date(c.createdAt || c.eventDate);
+    return d.getMonth() === prevMonth && d.getFullYear() === prevMonthYear;
+  }).length;
+
   const contractsToday = contracts.filter((c) => {
     return getLocalDateStr(c.createdAt || "") === todayStr;
   }).length;
