@@ -286,7 +286,7 @@ export default function Contracts() {
       </div>
 
       {/* Stats cards */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div
           className={`rounded-xl border bg-card p-4 flex items-center gap-3 cursor-pointer hover:border-primary/50 transition-colors ${statusFilter === "created_today" ? "border-primary/50 ring-1 ring-primary/20" : "border-border"}`}
           onClick={() => setStatusFilter(statusFilter === "created_today" ? "all" : "created_today")}
@@ -312,11 +312,23 @@ export default function Contracts() {
           </div>
         </div>
         <div
+          className={`rounded-xl border bg-card p-4 flex items-center gap-3 cursor-pointer hover:border-primary/50 transition-colors ${statusFilter === "created_last_month" ? "border-primary/50 ring-1 ring-primary/20" : "border-border"}`}
+          onClick={() => setStatusFilter(statusFilter === "created_last_month" ? "all" : "created_last_month")}
+        >
+          <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
+            <CalendarDays size={20} className="text-muted-foreground" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold tabular-nums">{contractsLastMonth}</p>
+            <p className="text-xs text-muted-foreground">Mês anterior {statusFilter === "created_last_month" && "· Filtrado"}</p>
+          </div>
+        </div>
+        <div
           className={`rounded-xl border bg-card p-4 flex items-center gap-3 cursor-pointer hover:border-primary/50 transition-colors ${statusFilter === "active_only" ? "border-primary/50 ring-1 ring-primary/20" : "border-border"}`}
           onClick={() => setStatusFilter(statusFilter === "active_only" ? "all" : "active_only")}
         >
-          <div className="h-10 w-10 rounded-lg bg-green-500/10 flex items-center justify-center shrink-0">
-            <Activity size={20} className="text-green-600" />
+          <div className="h-10 w-10 rounded-lg bg-primary/5 flex items-center justify-center shrink-0">
+            <Activity size={20} className="text-primary" />
           </div>
           <div>
             <p className="text-2xl font-bold tabular-nums">{activeContracts}</p>
