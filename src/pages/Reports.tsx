@@ -17,8 +17,270 @@ import {
 } from "recharts";
 
 const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const pct = (curr: number, prev: number) => prev === 0 ? (curr > 0 ? 100 : 0) : Math.round(((curr - prev) / prev) * 100);
 
-export default function Reports() {
+function GrowthBadge({ value }: { value: number }) {
+  if (value > 0) return <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-primary"><ArrowUpRight size={12} />+{value}%</span>;
+  if (value < 0) return <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-destructive"><ArrowDownRight size={12} />{value}%</span>;
+  return <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-muted-foreground"><Minus size={12} />0%</span>;
+}
+
+function EvolutionTab({ contracts, payments, visits, allExpenses }: {
+  contracts: Contract[];
+  payments: { amount: number; date: string }[];
+  visits: any[];
+  allExpenses: { amount: number; date: string }[];
+  clientMap: Record<string, string>;
+}) {
+  const evolution = useMemo(() => {
+    const months: {
+      key: string; label: string;
+      contracts: number; revenue: number; expenses: number; profit: number;
+      visits: number; converted: number; conversionRate: number;
+      avgTicket: number; totalContractValue: number;
+    }[] = [];
+
+    for (let i = 11; i >= 0; i--) {
+      const ms = startOfMonth(subMonths(new Date(), i));
+      const me = endOfMonth(ms);
+      const key = format(ms, "yyyy-MM");
+      const label = format(ms, "MMM yy", { locale: ptBR });
+
+      const active = contracts.filter((c) => c.status !== "cancelled" && c.status !== "expired");
+
+      const monthContracts = active.filter((c) => {
+        const d = new Date(c.createdAt);
+        return !isBefore(d, ms) && !isAfter(d, me);
+      });
+
+      const monthVisits = visits.filter((v: any) => {
+        const d = new Date(v.visitDate + "T12:00:00");
+        return !isBefore(d, ms) && !isAfter(d, me);
+      });
+
+      const activeVisitIds = new Set(active.filter((c) => c.visitId).map((c) => c.visitId));
+      const confirmedVisits = monthVisits.filter((v: any) => v.status === "Confirmada" || v.status === "Convertida em contrato");
+      const convertedCount = confirmedVisits.filter((v: any) => activeVisitIds.has(v.id) || v.status === "Convertida em contrato").length;
+
+      const sinais = monthContracts.reduce((sum, c) => {
+        if (c.paymentStatus === "deposit_paid" || c.paymentStatus === "paid_full") return sum + c.depositValue;
+        return sum;
+      }, 0);
+      const manualEntries = payments.filter((p) => { const d = parseISO(p.date); return !isBefore(d, ms) && !isAfter(d, me); }).reduce((s, p) => s + p.amount, 0);
+      const revenue = sinais + manualEntries;
+
+      const expensesTotal = allExpenses.filter((e) => { const d = parseISO(e.date); return !isBefore(d, ms) && !isAfter(d, me); }).reduce((s, e) => s + e.amount, 0);
+
+      const totalContractValue = monthContracts.reduce((s, c) => s + c.totalValue, 0);
+
+      months.push({
+        key, label,
+        contracts: monthContracts.length,
+        revenue, expenses: expensesTotal,
+        profit: revenue - expensesTotal,
+        visits: monthVisits.length,
+        converted: convertedCount,
+        conversionRate: confirmedVisits.length > 0 ? Math.round((convertedCount / confirmedVisits.length) * 100) : 0,
+        avgTicket: monthContracts.length > 0 ? totalContractValue / monthContracts.length : 0,
+        totalContractValue,
+      });
+    }
+
+    const curr = months[months.length - 1];
+    const prev = months[months.length - 2];
+    const bestRevenue = [...months].sort((a, b) => b.revenue - a.revenue)[0];
+    const bestContracts = [...months].sort((a, b) => b.contracts - a.contracts)[0];
+
+    const eventTypeCounts: Record<string, number> = {};
+    const active = contracts.filter((c) => c.status !== "cancelled" && c.status !== "expired");
+    active.forEach((c) => { eventTypeCounts[c.eventType] = (eventTypeCounts[c.eventType] || 0) + 1; });
+    const eventTypeData = Object.entries(eventTypeCounts).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+
+    return { months, curr, prev, bestRevenue, bestContracts, eventTypeData };
+  }, [contracts, payments, visits, allExpenses]);
+
+  const COLORS_EVO = ["hsl(153 42% 26%)", "hsl(142 71% 45%)", "hsl(38 92% 50%)", "hsl(0 84% 60%)", "hsl(42 45% 56%)", "hsl(220 9% 46%)", "hsl(280 60% 50%)", "hsl(200 80% 50%)"];
+  const { curr, prev, months } = evolution;
+
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        {[
+          { label: "Contratos", val: curr.contracts, prevVal: prev.contracts, isCurrency: false },
+          { label: "Faturamento", val: curr.revenue, prevVal: prev.revenue, isCurrency: true, color: "text-primary" },
+          { label: "Lucro", val: curr.profit, prevVal: prev.profit, isCurrency: true, color: curr.profit >= 0 ? "text-primary" : "text-destructive" },
+          { label: "Ticket médio", val: curr.avgTicket, prevVal: prev.avgTicket, isCurrency: true },
+        ].map((kpi) => (
+          <div key={kpi.label} className="stat-card">
+            <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mb-2">{kpi.label}</p>
+            <p className={`text-2xl font-display font-bold ${kpi.color || ""}`}>{kpi.isCurrency ? fmt(kpi.val) : kpi.val}</p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-xs text-muted-foreground">vs {kpi.isCurrency ? fmt(kpi.prevVal) : kpi.prevVal}</span>
+              <GrowthBadge value={pct(kpi.val, kpi.prevVal)} />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
+        <div className="card-premium p-5">
+          <p className="text-xs text-muted-foreground font-semibold uppercase mb-1">Conversão este mês</p>
+          <p className="text-4xl font-display font-bold text-primary">{curr.conversionRate}%</p>
+          <p className="text-xs text-muted-foreground mt-1">{curr.converted} contratos de {curr.visits} visitas</p>
+          <div className="mt-2"><GrowthBadge value={pct(curr.conversionRate, prev.conversionRate)} /></div>
+        </div>
+        <div className="card-premium p-5">
+          <p className="text-xs text-muted-foreground font-semibold uppercase mb-1">🏆 Melhor mês (receita)</p>
+          <p className="text-2xl font-display font-bold">{fmt(evolution.bestRevenue.revenue)}</p>
+          <p className="text-xs text-muted-foreground capitalize">{evolution.bestRevenue.label}</p>
+        </div>
+        <div className="card-premium p-5">
+          <p className="text-xs text-muted-foreground font-semibold uppercase mb-1">🏆 Melhor mês (contratos)</p>
+          <p className="text-2xl font-display font-bold">{evolution.bestContracts.contracts} contratos</p>
+          <p className="text-xs text-muted-foreground capitalize">{evolution.bestContracts.label}</p>
+        </div>
+      </div>
+
+      <div className="card-premium p-6">
+        <h2 className="font-display text-lg font-semibold mb-1">Receita vs Despesas (12 meses)</h2>
+        <p className="text-xs text-muted-foreground mb-6">Evolução financeira mensal</p>
+        <div className="h-[320px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={months} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
+              <defs>
+                <linearGradient id="gradRevenue" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="gradExpense" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="hsl(var(--destructive))" stopOpacity={0.2} />
+                  <stop offset="95%" stopColor="hsl(var(--destructive))" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)} />
+              <Tooltip formatter={(value: number) => fmt(value)} contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "12px", fontSize: "12px" }} />
+              <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "12px" }} />
+              <Area type="monotone" dataKey="revenue" name="Receita" stroke="hsl(var(--primary))" fill="url(#gradRevenue)" strokeWidth={2} />
+              <Area type="monotone" dataKey="expenses" name="Despesas" stroke="hsl(var(--destructive))" fill="url(#gradExpense)" strokeWidth={2} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="card-premium p-6">
+          <h2 className="font-display text-lg font-semibold mb-1">Contratos por mês</h2>
+          <div className="h-[280px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={months} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "12px", fontSize: "12px" }} />
+                <Bar dataKey="contracts" name="Contratos" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} barSize={22} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        <div className="card-premium p-6">
+          <h2 className="font-display text-lg font-semibold mb-1">Taxa de conversão</h2>
+          <div className="h-[280px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={months} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} unit="%" />
+                <Tooltip formatter={(v: number) => `${v}%`} contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "12px", fontSize: "12px" }} />
+                <Line type="monotone" dataKey="conversionRate" name="Conversão" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={{ r: 3, fill: "hsl(var(--primary))" }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="card-premium p-6">
+          <h2 className="font-display text-lg font-semibold mb-1">Lucro líquido mensal</h2>
+          <div className="h-[280px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={months} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)} />
+                <Tooltip formatter={(value: number) => fmt(value)} contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "12px", fontSize: "12px" }} />
+                <Bar dataKey="profit" name="Lucro" radius={[6, 6, 0, 0]} barSize={22}>
+                  {months.map((m, i) => (
+                    <Cell key={i} fill={m.profit >= 0 ? "hsl(var(--primary))" : "hsl(var(--destructive))"} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        <div className="card-premium p-6">
+          <h2 className="font-display text-lg font-semibold mb-1">Distribuição de eventos</h2>
+          <p className="text-xs text-muted-foreground mb-6">Por tipo (todos os períodos)</p>
+          <div className="h-[280px]">
+            {evolution.eventTypeData.length === 0 ? (
+              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Sem dados</div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={evolution.eventTypeData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={3} dataKey="value" nameKey="name" label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`} labelLine={{ stroke: "hsl(var(--muted-foreground))" }} style={{ fontSize: "10px" }}>
+                    {evolution.eventTypeData.map((_, i) => (
+                      <Cell key={i} fill={COLORS_EVO[i % COLORS_EVO.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(v: number) => `${v} evento${v > 1 ? "s" : ""}`} contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "12px", fontSize: "12px" }} />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="card-premium overflow-hidden">
+        <div className="px-6 py-4">
+          <h2 className="font-display text-lg font-semibold">Resumo mensal (12 meses)</h2>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-t border-b border-border bg-muted/30">
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Mês</th>
+                <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Contratos</th>
+                <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Visitas</th>
+                <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Conversão</th>
+                <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Receita</th>
+                <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Despesas</th>
+                <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Lucro</th>
+                <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Ticket médio</th>
+              </tr>
+            </thead>
+            <tbody>
+              {months.slice().reverse().map((m, i) => (
+                <tr key={m.key} className={`border-b border-border/50 ${i === 0 ? "bg-primary/5 font-medium" : "hover:bg-muted/20"}`}>
+                  <td className="px-4 py-2.5 capitalize">{m.label}</td>
+                  <td className="px-4 py-2.5 text-right tabular-nums">{m.contracts}</td>
+                  <td className="px-4 py-2.5 text-right tabular-nums">{m.visits}</td>
+                  <td className="px-4 py-2.5 text-right tabular-nums">{m.conversionRate}%</td>
+                  <td className="px-4 py-2.5 text-right tabular-nums text-primary">{fmt(m.revenue)}</td>
+                  <td className="px-4 py-2.5 text-right tabular-nums text-destructive">{fmt(m.expenses)}</td>
+                  <td className={`px-4 py-2.5 text-right tabular-nums ${m.profit >= 0 ? "text-primary" : "text-destructive"}`}>{fmt(m.profit)}</td>
+                  <td className="px-4 py-2.5 text-right tabular-nums">{fmt(m.avgTicket)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
   const [loading, setLoading] = useState(true);
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [clientMap, setClientMap] = useState<Record<string, string>>({});
