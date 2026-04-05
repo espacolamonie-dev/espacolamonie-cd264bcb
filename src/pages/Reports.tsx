@@ -412,6 +412,11 @@ export default function Reports() {
           </div>
         </TabsContent>
 
+        {/* ══════ ABA EVOLUÇÃO ══════ */}
+        <TabsContent value="evolucao" className="space-y-6">
+          <EvolutionTab contracts={contracts} payments={payments} visits={visits} allExpenses={allExpenses} clientMap={clientMap} />
+        </TabsContent>
+
         {/* ══════ ABA ORIGEM ══════ */}
         <TabsContent value="origem">
           <OriginReports visits={visits as Visit[]} contracts={contracts} />
