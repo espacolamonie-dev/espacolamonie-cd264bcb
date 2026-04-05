@@ -88,11 +88,12 @@ serve(async (req) => {
       });
     }
 
-    // Check if contract is cancelled (only if there's a contract_id)
+    // Check if contract is cancelled or fetch reserved_until (only if there's a contract_id)
+    let contractReservedUntil: string | null = null;
     if (data.contract_id) {
       const { data: contract } = await supabase
         .from("contracts")
-        .select("status")
+        .select("status, reserved_until")
         .eq("id", data.contract_id)
         .maybeSingle();
       
@@ -102,6 +103,9 @@ serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      if (contract) {
+        contractReservedUntil = contract.reserved_until || null;
+      }
     }
 
     // Mask sensitive fields before returning
@@ -109,6 +113,7 @@ serve(async (req) => {
       ...data,
       client_cpf: data.client_cpf ? data.client_cpf.replace(/^(\d{3}).*(\d{2})$/, "$1.***.***-$2") : null,
       client_phone: data.client_phone ? data.client_phone.replace(/^(.{4}).*(.{2})$/, "$1*****$2") : null,
+      reserved_until: contractReservedUntil,
     };
 
     return new Response(JSON.stringify(safeData), {
