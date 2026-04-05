@@ -280,7 +280,7 @@ function EvolutionTab({ contracts, payments, visits, allExpenses }: {
   );
 }
 
-
+export default function Reports() {
   const [loading, setLoading] = useState(true);
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [clientMap, setClientMap] = useState<Record<string, string>>({});
