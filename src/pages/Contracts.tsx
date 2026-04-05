@@ -108,6 +108,11 @@ export default function Contracts() {
     } else if (statusFilter === "created_month") {
       const d = new Date(c.createdAt || c.eventDate);
       matchStatus = d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    } else if (statusFilter === "created_last_month") {
+      const d = new Date(c.createdAt || c.eventDate);
+      const pm = currentMonth === 0 ? 11 : currentMonth - 1;
+      const py = currentMonth === 0 ? currentYear - 1 : currentYear;
+      matchStatus = d.getMonth() === pm && d.getFullYear() === py;
     } else if (statusFilter === "active_only") {
       matchStatus = c.status !== "cancelled";
     } else if (statusFilter !== "all") {
