@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { todayLocalStr } from "@/lib/dateUtils";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
