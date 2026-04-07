@@ -90,13 +90,21 @@ export default function EmployeesTab({ selectedMonth, contracts, clients }: Prop
 
   const activeContracts = contracts.filter(c => c.status !== "cancelled");
   
-  // Only contracts CREATED this month (by created_at) and with deposit paid
-  const contractsInMonth = activeContracts.filter(c => {
+  // All contracts CREATED this month
+  const allContractsInMonth = activeContracts.filter(c => {
     const createdDate = new Date(c.createdAt);
-    const isThisMonth = createdDate >= monthStart && createdDate <= monthEnd;
-    const depositPaid = c.paymentStatus === "deposit_paid" || c.paymentStatus === "paid_full";
-    return isThisMonth && depositPaid;
+    return createdDate >= monthStart && createdDate <= monthEnd;
   });
+
+  // Only contracts with deposit paid — these count for employee payment
+  const contractsInMonth = allContractsInMonth.filter(c => 
+    c.paymentStatus === "deposit_paid" || c.paymentStatus === "paid_full"
+  );
+
+  // Contracts still pending deposit — shown but not counted yet
+  const contractsPendingDeposit = allContractsInMonth.filter(c => 
+    c.paymentStatus === "pending"
+  );
 
   // Count multi-day contracts (event_date to event_date_end) as 2 units
   const getContractUnits = (c: any): number => {
@@ -105,6 +113,7 @@ export default function EmployeesTab({ selectedMonth, contracts, clients }: Prop
   };
 
   const contractUnitsInMonth = contractsInMonth.reduce((sum, c) => sum + getContractUnits(c), 0);
+  const pendingUnits = contractsPendingDeposit.reduce((sum, c) => sum + getContractUnits(c), 0);
 
   const loadEmployees = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -223,7 +232,10 @@ export default function EmployeesTab({ selectedMonth, contracts, clients }: Prop
         <Card className="p-4 border-warning/30 bg-gradient-to-br from-warning/5 to-transparent">
           <p className="text-[10px] text-muted-foreground uppercase font-semibold mb-1">A Pagar (Mês)</p>
           <p className="text-2xl font-display font-bold text-warning">{fmt(totalDevido)}</p>
-          <p className="text-[10px] text-muted-foreground">{contractUnitsInMonth} diária{contractUnitsInMonth !== 1 ? "s" : ""} ({contractsInMonth.length} contrato{contractsInMonth.length !== 1 ? "s" : ""})</p>
+          <p className="text-[10px] text-muted-foreground">{contractUnitsInMonth} diária{contractUnitsInMonth !== 1 ? "s" : ""} paga{contractUnitsInMonth !== 1 ? "s" : ""} ({contractsInMonth.length} contrato{contractsInMonth.length !== 1 ? "s" : ""})</p>
+          {pendingUnits > 0 && (
+            <p className="text-[10px] text-amber-500 mt-0.5">+ {pendingUnits} diária{pendingUnits !== 1 ? "s" : ""} aguardando sinal ({contractsPendingDeposit.length} contrato{contractsPendingDeposit.length !== 1 ? "s" : ""})</p>
+          )}
         </Card>
         <Card className="p-4 border-success/30 bg-gradient-to-br from-success/5 to-transparent">
           <p className="text-[10px] text-muted-foreground uppercase font-semibold mb-1">Já Pago</p>
@@ -301,13 +313,14 @@ export default function EmployeesTab({ selectedMonth, contracts, clients }: Prop
                   </div>
 
                   {/* Active contracts for this employee */}
-                  {emp.paymentType === "por_contrato" && contractsInMonth.length > 0 && (
+                  {emp.paymentType === "por_contrato" && (contractsInMonth.length > 0 || contractsPendingDeposit.length > 0) && (
                     <Collapsible className="mt-3">
                       <CollapsibleTrigger asChild>
                         <Button variant="ghost" size="sm" className="w-full justify-between text-xs h-8 px-2 text-muted-foreground hover:text-foreground">
                           <span className="flex items-center gap-1.5">
                             <FileText size={12} />
-                            {contractUnitsInMonth} diária{contractUnitsInMonth !== 1 ? "s" : ""} a receber neste mês
+                            {contractUnitsInMonth} diária{contractUnitsInMonth !== 1 ? "s" : ""} a receber
+                            {pendingUnits > 0 && ` · ${pendingUnits} aguardando sinal`}
                           </span>
                           <ChevronDown size={14} />
                         </Button>
@@ -318,7 +331,7 @@ export default function EmployeesTab({ selectedMonth, contracts, clients }: Prop
                           const units = getContractUnits(c);
                           const valueForContract = units * emp.paymentValue;
                           return (
-                            <div key={c.id} className="flex items-center justify-between p-2 rounded-lg border bg-card text-xs">
+                            <div key={c.id} className="flex items-center justify-between p-2 rounded-lg border border-success/20 bg-success/5 text-xs">
                               <div className="min-w-0 flex-1">
                                 <p className="font-medium truncate">{client?.name || "Cliente"}</p>
                                 <p className="text-[10px] text-muted-foreground">
@@ -330,10 +343,35 @@ export default function EmployeesTab({ selectedMonth, contracts, clients }: Prop
                                 </p>
                               </div>
                               <div className="text-right shrink-0 ml-2">
-                                <p className="font-bold text-violet-600 dark:text-violet-400">{fmt(valueForContract)}</p>
-                                {units > 1 && (
-                                  <Badge variant="secondary" className="text-[9px] px-1.5 py-0">{units} diárias</Badge>
-                                )}
+                                <p className="font-bold text-success">{fmt(valueForContract)}</p>
+                                <Badge variant="secondary" className="text-[9px] px-1.5 py-0 bg-success/10 text-success border-success/20">
+                                  {units > 1 ? `${units} diárias` : "Sinal pago ✓"}
+                                </Badge>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {contractsPendingDeposit.map(c => {
+                          const client = clients.find(cl => cl.id === c.clientId);
+                          const units = getContractUnits(c);
+                          const valueForContract = units * emp.paymentValue;
+                          return (
+                            <div key={c.id} className="flex items-center justify-between p-2 rounded-lg border border-amber-500/20 bg-amber-500/5 text-xs opacity-70">
+                              <div className="min-w-0 flex-1">
+                                <p className="font-medium truncate">{client?.name || "Cliente"}</p>
+                                <p className="text-[10px] text-muted-foreground">
+                                  {new Date(c.eventDate + "T12:00:00").toLocaleDateString("pt-BR")}
+                                  {c.eventDateEnd && c.eventDateEnd !== c.eventDate && (
+                                    <> → {new Date(c.eventDateEnd + "T12:00:00").toLocaleDateString("pt-BR")}</>
+                                  )}
+                                  {" · "}{c.eventType}
+                                </p>
+                              </div>
+                              <div className="text-right shrink-0 ml-2">
+                                <p className="font-bold text-amber-600 dark:text-amber-400">{fmt(valueForContract)}</p>
+                                <Badge variant="secondary" className="text-[9px] px-1.5 py-0 bg-amber-500/10 text-amber-600 border-amber-500/20">
+                                  Aguardando sinal
+                                </Badge>
                               </div>
                             </div>
                           );
