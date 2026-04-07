@@ -89,9 +89,13 @@ export default function EmployeesTab({ selectedMonth, contracts, clients }: Prop
   const monthEnd = new Date(year, month, 0, 23, 59, 59);
 
   const activeContracts = contracts.filter(c => c.status !== "cancelled");
+  
+  // Only contracts CREATED this month (by created_at) and with deposit paid
   const contractsInMonth = activeContracts.filter(c => {
-    const d = new Date(c.eventDate || c.createdAt);
-    return d >= monthStart && d <= monthEnd;
+    const createdDate = new Date(c.createdAt);
+    const isThisMonth = createdDate >= monthStart && createdDate <= monthEnd;
+    const depositPaid = c.paymentStatus === "deposit_paid" || c.paymentStatus === "paid_full";
+    return isThisMonth && depositPaid;
   });
 
   // Count multi-day contracts (event_date to event_date_end) as 2 units
