@@ -90,9 +90,17 @@ export default function EmployeesTab({ selectedMonth, contracts, clients }: Prop
 
   const activeContracts = contracts.filter(c => c.status !== "cancelled");
   const contractsInMonth = activeContracts.filter(c => {
-    const d = new Date(c.createdAt);
+    const d = new Date(c.eventDate || c.createdAt);
     return d >= monthStart && d <= monthEnd;
   });
+
+  // Count multi-day contracts (event_date to event_date_end) as 2 units
+  const getContractUnits = (c: any): number => {
+    if (c.eventDateEnd && c.eventDateEnd !== c.eventDate) return 2;
+    return 1;
+  };
+
+  const contractUnitsInMonth = contractsInMonth.reduce((sum, c) => sum + getContractUnits(c), 0);
 
   const loadEmployees = async () => {
     const { data: { user } } = await supabase.auth.getUser();
