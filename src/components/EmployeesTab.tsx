@@ -194,9 +194,9 @@ export default function EmployeesTab({ selectedMonth, contracts, clients }: Prop
   };
 
   const getEmployeeTotal = (emp: Employee) => {
-    if (emp.paymentType === "por_contrato") return contractsInMonth.length * emp.paymentValue;
+    if (emp.paymentType === "por_contrato") return contractUnitsInMonth * emp.paymentValue;
     if (emp.paymentType === "fixo_mensal") return emp.paymentValue;
-    return 0; // avulso - only what's paid
+    return 0;
   };
 
   const getEmployeePaid = (empId: string) => {
