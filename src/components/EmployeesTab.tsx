@@ -90,13 +90,21 @@ export default function EmployeesTab({ selectedMonth, contracts, clients }: Prop
 
   const activeContracts = contracts.filter(c => c.status !== "cancelled");
   
-  // Only contracts CREATED this month (by created_at) and with deposit paid
-  const contractsInMonth = activeContracts.filter(c => {
+  // All contracts CREATED this month
+  const allContractsInMonth = activeContracts.filter(c => {
     const createdDate = new Date(c.createdAt);
-    const isThisMonth = createdDate >= monthStart && createdDate <= monthEnd;
-    const depositPaid = c.paymentStatus === "deposit_paid" || c.paymentStatus === "paid_full";
-    return isThisMonth && depositPaid;
+    return createdDate >= monthStart && createdDate <= monthEnd;
   });
+
+  // Only contracts with deposit paid — these count for employee payment
+  const contractsInMonth = allContractsInMonth.filter(c => 
+    c.paymentStatus === "deposit_paid" || c.paymentStatus === "paid_full"
+  );
+
+  // Contracts still pending deposit — shown but not counted yet
+  const contractsPendingDeposit = allContractsInMonth.filter(c => 
+    c.paymentStatus === "pending"
+  );
 
   // Count multi-day contracts (event_date to event_date_end) as 2 units
   const getContractUnits = (c: any): number => {
@@ -105,6 +113,7 @@ export default function EmployeesTab({ selectedMonth, contracts, clients }: Prop
   };
 
   const contractUnitsInMonth = contractsInMonth.reduce((sum, c) => sum + getContractUnits(c), 0);
+  const pendingUnits = contractsPendingDeposit.reduce((sum, c) => sum + getContractUnits(c), 0);
 
   const loadEmployees = async () => {
     const { data: { user } } = await supabase.auth.getUser();
