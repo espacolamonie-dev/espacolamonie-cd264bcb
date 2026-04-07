@@ -283,7 +283,7 @@ export default function EmployeesTab({ selectedMonth, contracts, clients }: Prop
                       <p className="text-[9px] text-muted-foreground uppercase font-semibold">Deve</p>
                       <p className="text-sm font-bold text-violet-600 dark:text-violet-400">{fmt(total)}</p>
                       {emp.paymentType === "por_contrato" && (
-                        <p className="text-[9px] text-muted-foreground">{contractsInMonth.length}× {fmt(emp.paymentValue)}</p>
+                        <p className="text-[9px] text-muted-foreground">{contractUnitsInMonth}× {fmt(emp.paymentValue)}</p>
                       )}
                     </div>
                     <div className="p-2 rounded-lg bg-success/5 border border-success/10">
@@ -295,6 +295,48 @@ export default function EmployeesTab({ selectedMonth, contracts, clients }: Prop
                       <p className="text-sm font-bold text-danger">{fmt(remaining)}</p>
                     </div>
                   </div>
+
+                  {/* Active contracts for this employee */}
+                  {emp.paymentType === "por_contrato" && contractsInMonth.length > 0 && (
+                    <Collapsible className="mt-3">
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="sm" className="w-full justify-between text-xs h-8 px-2 text-muted-foreground hover:text-foreground">
+                          <span className="flex items-center gap-1.5">
+                            <FileText size={12} />
+                            {contractUnitsInMonth} diária{contractUnitsInMonth !== 1 ? "s" : ""} a receber neste mês
+                          </span>
+                          <ChevronDown size={14} />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="mt-1.5 space-y-1">
+                        {contractsInMonth.map(c => {
+                          const client = clients.find(cl => cl.id === c.clientId);
+                          const units = getContractUnits(c);
+                          const valueForContract = units * emp.paymentValue;
+                          return (
+                            <div key={c.id} className="flex items-center justify-between p-2 rounded-lg border bg-card text-xs">
+                              <div className="min-w-0 flex-1">
+                                <p className="font-medium truncate">{client?.name || "Cliente"}</p>
+                                <p className="text-[10px] text-muted-foreground">
+                                  {new Date(c.eventDate + "T12:00:00").toLocaleDateString("pt-BR")}
+                                  {c.eventDateEnd && c.eventDateEnd !== c.eventDate && (
+                                    <> → {new Date(c.eventDateEnd + "T12:00:00").toLocaleDateString("pt-BR")}</>
+                                  )}
+                                  {" · "}{c.eventType}
+                                </p>
+                              </div>
+                              <div className="text-right shrink-0 ml-2">
+                                <p className="font-bold text-violet-600 dark:text-violet-400">{fmt(valueForContract)}</p>
+                                {units > 1 && (
+                                  <Badge variant="secondary" className="text-[9px] px-1.5 py-0">{units} diárias</Badge>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </CollapsibleContent>
+                    </Collapsible>
+                  )}
 
                   {/* Payment history */}
                   {empPayments.length > 0 && (
