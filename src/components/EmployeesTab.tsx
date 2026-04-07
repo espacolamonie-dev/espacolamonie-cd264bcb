@@ -15,7 +15,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Plus, Trash2, UserRound, Phone, DollarSign, Edit, X } from "lucide-react";
+import { Plus, Trash2, UserRound, Phone, DollarSign, Edit, X, ChevronDown, FileText } from "lucide-react";
 import { toast } from "sonner";
 
 const applyPhoneMask = (value: string): string => {
