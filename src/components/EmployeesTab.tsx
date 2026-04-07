@@ -232,7 +232,10 @@ export default function EmployeesTab({ selectedMonth, contracts, clients }: Prop
         <Card className="p-4 border-warning/30 bg-gradient-to-br from-warning/5 to-transparent">
           <p className="text-[10px] text-muted-foreground uppercase font-semibold mb-1">A Pagar (Mês)</p>
           <p className="text-2xl font-display font-bold text-warning">{fmt(totalDevido)}</p>
-          <p className="text-[10px] text-muted-foreground">{contractUnitsInMonth} diária{contractUnitsInMonth !== 1 ? "s" : ""} ({contractsInMonth.length} contrato{contractsInMonth.length !== 1 ? "s" : ""})</p>
+          <p className="text-[10px] text-muted-foreground">{contractUnitsInMonth} diária{contractUnitsInMonth !== 1 ? "s" : ""} paga{contractUnitsInMonth !== 1 ? "s" : ""} ({contractsInMonth.length} contrato{contractsInMonth.length !== 1 ? "s" : ""})</p>
+          {pendingUnits > 0 && (
+            <p className="text-[10px] text-amber-500 mt-0.5">+ {pendingUnits} diária{pendingUnits !== 1 ? "s" : ""} aguardando sinal ({contractsPendingDeposit.length} contrato{contractsPendingDeposit.length !== 1 ? "s" : ""})</p>
+          )}
         </Card>
         <Card className="p-4 border-success/30 bg-gradient-to-br from-success/5 to-transparent">
           <p className="text-[10px] text-muted-foreground uppercase font-semibold mb-1">Já Pago</p>
