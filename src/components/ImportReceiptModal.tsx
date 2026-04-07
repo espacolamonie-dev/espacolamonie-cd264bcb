@@ -172,6 +172,32 @@ export default function ImportReceiptModal({
           }
         }
 
+        // Save receipt image as document on the contract
+        if (imagePreview) {
+          try {
+            const blob = await fetch(imagePreview).then(r => r.blob());
+            const ext = blob.type.includes("png") ? "png" : "jpg";
+            const fileName = `comprovante_${Date.now()}.${ext}`;
+            const storagePath = `${user.id}/${contractId}/${fileName}`;
+
+            const { error: uploadErr } = await supabase.storage
+              .from("documents")
+              .upload(storagePath, blob, { contentType: blob.type });
+
+            if (!uploadErr) {
+              await supabase.from("documents").insert({
+                contract_id: contractId,
+                user_id: user.id,
+                name: `Comprovante - ${desc}`,
+                file_name: storagePath,
+                type: "comprovante",
+              });
+            }
+          } catch (docErr) {
+            console.error("Erro ao salvar comprovante nos documentos:", docErr);
+          }
+        }
+
         toast.success(`Pagamento de ${fmt(amount)} registrado via comprovante`);
       } else if (mode === "expense") {
         // Expense mode: save as expense
