@@ -1,5 +1,5 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
-import { Plus, Search, Phone, CalendarDays, Clock, Filter, Eye, Check, RotateCcw, X as XIcon, AlertTriangle, Pencil, Users, Megaphone, TrendingUp, Link2, ExternalLink, MessageCircle, DollarSign, Copy } from "lucide-react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import { Plus, Search, Phone, CalendarDays, Clock, Filter, Eye, Check, RotateCcw, X as XIcon, AlertTriangle, Pencil, Users, Megaphone, TrendingUp, Link2, ExternalLink, MessageCircle, DollarSign, Copy, Trash2, UserPlus } from "lucide-react";
 import { AttributionBadge } from "@/components/AttributionBadge";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -97,21 +97,100 @@ export default function Visits() {
   
   const [contracts, setContracts] = useState<any[]>([]);
 
+  // Client autocomplete state
+  const [allClients, setAllClients] = useState<{ id: string; name: string; phone: string; email: string; notes: string }[]>([]);
+  const [showClientSuggestions, setShowClientSuggestions] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const clientInputRef = useRef<HTMLDivElement>(null);
+  const [deleteConfirmVisit, setDeleteConfirmVisit] = useState<Visit | null>(null);
+
   const loadVisits = useCallback(async () => {
     setLoading(true);
     try {
-      const [visitsData, contractsRes] = await Promise.all([
+      const [visitsData, contractsRes, clientsRes] = await Promise.all([
         getVisits(),
         supabase.from("contracts").select("id, visit_id, client_id, status").neq("status", "cancelled"),
+        supabase.from("clients").select("id, name, phone, email, notes"),
       ]);
       setVisits(visitsData);
       setContracts(contractsRes.data || []);
+      setAllClients((clientsRes.data || []).map(c => ({ id: c.id, name: c.name, phone: c.phone || "", email: c.email || "", notes: c.notes || "" })));
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => { loadVisits(); }, [loadVisits]);
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (clientInputRef.current && !clientInputRef.current.contains(e.target as Node)) {
+        setShowClientSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const filteredClients = useMemo(() => {
+    if (!formName.trim() || formName.trim().length < 2) return [];
+    const q = formName.toLowerCase();
+    return allClients.filter(c => c.name.toLowerCase().includes(q)).slice(0, 8);
+  }, [formName, allClients]);
+
+  const selectClient = (client: { id: string; name: string; phone: string; email: string; notes: string }) => {
+    setFormName(client.name);
+    setFormPhone(client.phone ? phoneMask(client.phone) : "");
+    if (client.notes && !formNotes) setFormNotes(client.notes);
+    setSelectedClientId(client.id);
+    setShowClientSuggestions(false);
+  };
+
+  const handleDeleteVisit = async (visit: Visit) => {
+    try {
+      // Check if client has other visits or contracts
+      const clientId = visit.clientId;
+      
+      // Delete Google event first
+      if (visit.googleEventId) {
+        try { await deleteVisitGoogleEvent(visit.id); } catch {}
+      }
+      
+      // Delete the visit
+      await deleteVisit(visit.id);
+      
+      // Delete the associated client if it has no other contracts
+      if (clientId) {
+        const { data: otherContracts } = await supabase
+          .from("contracts")
+          .select("id")
+          .eq("client_id", clientId)
+          .limit(1);
+        
+        const { data: otherVisits } = await (supabase.from("visits" as any) as any)
+          .select("id")
+          .eq("client_id", clientId)
+          .neq("id", visit.id)
+          .limit(1);
+        
+        if ((!otherContracts || otherContracts.length === 0) && (!otherVisits || otherVisits.length === 0)) {
+          await supabase.from("clients").delete().eq("id", clientId);
+          toast.success("Visita e cliente excluídos com sucesso!");
+        } else {
+          toast.success("Visita excluída! Cliente mantido pois possui outros vínculos.");
+        }
+      } else {
+        toast.success("Visita excluída com sucesso!");
+      }
+      
+      setDetailVisit(null);
+      setDeleteConfirmVisit(null);
+      loadVisits();
+    } catch (e: any) {
+      toast.error(getSafeErrorMessage(e));
+    }
+  };
 
   // Check for date interest conflicts
   useEffect(() => {
@@ -227,7 +306,8 @@ export default function Visits() {
     setFormVisitDate(""); setFormVisitTime(""); setFormNotes("");
     setFormLeadSource("Orgânico"); setFormEventType(""); setFormEventValue(0);
     setFormDepositPercent(0); setFormGuestCount(0);
-    setDateConflicts([]);
+    setDateConflicts([]); setSelectedClientId(null);
+    setShowClientSuggestions(false);
   };
 
   const handleCreate = async () => {
@@ -321,9 +401,50 @@ export default function Visits() {
     const inputH = mobile ? "h-12" : "h-12";
     return (
       <>
-        <div>
+        <div ref={clientInputRef} className="relative">
           <Label>Nome do cliente *</Label>
-          <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Nome completo" className={inputH} autoFocus={mobile} />
+          <Input
+            value={formName}
+            onChange={(e) => {
+              setFormName(e.target.value);
+              setSelectedClientId(null);
+              setShowClientSuggestions(true);
+            }}
+            onFocus={() => { if (formName.trim().length >= 2) setShowClientSuggestions(true); }}
+            placeholder="Digite o nome para buscar..."
+            className={inputH}
+            autoFocus={mobile}
+            autoComplete="off"
+          />
+          {selectedClientId && (
+            <span className="absolute right-3 top-[38px] text-xs text-success font-medium">✓ Cliente selecionado</span>
+          )}
+          {showClientSuggestions && filteredClients.length > 0 && !selectedClientId && (
+            <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-popover border border-border rounded-xl shadow-lg max-h-48 overflow-y-auto">
+              {filteredClients.map(c => (
+                <button
+                  key={c.id}
+                  type="button"
+                  className="w-full text-left px-3 py-2.5 hover:bg-accent/50 transition-colors flex items-center gap-3 border-b border-border/50 last:border-0"
+                  onClick={() => selectClient(c)}
+                >
+                  <Users size={14} className="text-muted-foreground shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">{c.name}</p>
+                    {c.phone && <p className="text-xs text-muted-foreground">{c.phone}</p>}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+          {showClientSuggestions && formName.trim().length >= 2 && filteredClients.length === 0 && !selectedClientId && (
+            <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-popover border border-border rounded-xl shadow-lg p-3">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <UserPlus size={14} />
+                <span>Novo cliente será criado automaticamente</span>
+              </div>
+            </div>
+          )}
         </div>
         <div>
           <Label>Telefone *</Label>
@@ -984,8 +1105,15 @@ export default function Visits() {
                       <Button variant="destructive" className="h-12 w-full gap-1.5" onClick={() => handleStatusChange(detailVisit, "Cancelada")}>
                         <XIcon size={16} /> Cancelar visita
                       </Button>
+                      <Button variant="outline" className="h-12 w-full gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setDeleteConfirmVisit(detailVisit)}>
+                        <Trash2 size={16} /> Excluir visita e cliente
+                      </Button>
                     </>
-                  ) : null}
+                  ) : (
+                    <Button variant="outline" className="h-12 w-full gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setDeleteConfirmVisit(detailVisit)}>
+                      <Trash2 size={16} /> Excluir visita e cliente
+                    </Button>
+                  )}
                 </div>
               </>
             ) : (
@@ -1011,7 +1139,7 @@ export default function Visits() {
                 ) : (
                   <>
                     {renderDetailView(detailVisit)}
-                    {detailVisit.status !== "Cancelada" && (
+                    {detailVisit.status !== "Cancelada" ? (
                       <DialogFooter className="flex-wrap gap-2">
                         {detailVisit.status !== "Confirmada" && (
                           <Button size="sm" className="gap-1.5 h-11 bg-success hover:bg-success/90 text-success-foreground" onClick={() => handleStatusChange(detailVisit, "Confirmada")}>
@@ -1025,6 +1153,15 @@ export default function Visits() {
                         )}
                         <Button size="sm" variant="destructive" className="gap-1.5 h-11" onClick={() => handleStatusChange(detailVisit, "Cancelada")}>
                           <XIcon size={14} /> Cancelar
+                        </Button>
+                        <Button size="sm" variant="outline" className="gap-1.5 h-11 text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setDeleteConfirmVisit(detailVisit)}>
+                          <Trash2 size={14} /> Excluir
+                        </Button>
+                      </DialogFooter>
+                    ) : (
+                      <DialogFooter>
+                        <Button size="sm" variant="outline" className="gap-1.5 h-11 text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setDeleteConfirmVisit(detailVisit)}>
+                          <Trash2 size={14} /> Excluir visita e cliente
                         </Button>
                       </DialogFooter>
                     )}
@@ -1071,6 +1208,36 @@ export default function Visits() {
                 </Button>
                 <Button variant="outline" onClick={() => setConfirmMsgVisit(null)}>
                   Fechar
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteConfirmVisit} onOpenChange={(open) => { if (!open) setDeleteConfirmVisit(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-display flex items-center gap-2 text-destructive">
+              <Trash2 size={20} />
+              Confirmar exclusão
+            </DialogTitle>
+          </DialogHeader>
+          {deleteConfirmVisit && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Tem certeza que deseja excluir a visita de <strong>{deleteConfirmVisit.clientName}</strong>?
+              </p>
+              <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
+                ⚠️ O cliente associado também será excluído, caso não tenha outros contratos ou visitas vinculadas.
+              </p>
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => setDeleteConfirmVisit(null)}>
+                  Cancelar
+                </Button>
+                <Button variant="destructive" className="flex-1 gap-1.5" onClick={() => handleDeleteVisit(deleteConfirmVisit)}>
+                  <Trash2 size={14} /> Excluir
                 </Button>
               </div>
             </div>
