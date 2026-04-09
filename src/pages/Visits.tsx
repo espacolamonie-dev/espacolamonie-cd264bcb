@@ -1,5 +1,5 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
-import { Plus, Search, Phone, CalendarDays, Clock, Filter, Eye, Check, RotateCcw, X as XIcon, AlertTriangle, Pencil, Users, Megaphone, TrendingUp, Link2, ExternalLink, MessageCircle, DollarSign, Copy } from "lucide-react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import { Plus, Search, Phone, CalendarDays, Clock, Filter, Eye, Check, RotateCcw, X as XIcon, AlertTriangle, Pencil, Users, Megaphone, TrendingUp, Link2, ExternalLink, MessageCircle, DollarSign, Copy, Trash2, UserPlus } from "lucide-react";
 import { AttributionBadge } from "@/components/AttributionBadge";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
