@@ -306,7 +306,8 @@ export default function Visits() {
     setFormVisitDate(""); setFormVisitTime(""); setFormNotes("");
     setFormLeadSource("Orgânico"); setFormEventType(""); setFormEventValue(0);
     setFormDepositPercent(0); setFormGuestCount(0);
-    setDateConflicts([]);
+    setDateConflicts([]); setSelectedClientId(null);
+    setShowClientSuggestions(false);
   };
 
   const handleCreate = async () => {
