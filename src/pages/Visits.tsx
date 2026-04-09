@@ -97,6 +97,13 @@ export default function Visits() {
   
   const [contracts, setContracts] = useState<any[]>([]);
 
+  // Client autocomplete state
+  const [allClients, setAllClients] = useState<{ id: string; name: string; phone: string; email: string; notes: string }[]>([]);
+  const [showClientSuggestions, setShowClientSuggestions] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const clientInputRef = useRef<HTMLDivElement>(null);
+  const [deleteConfirmVisit, setDeleteConfirmVisit] = useState<Visit | null>(null);
+
   const loadVisits = useCallback(async () => {
     setLoading(true);
     try {
