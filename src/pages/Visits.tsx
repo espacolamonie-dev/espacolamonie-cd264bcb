@@ -1139,7 +1139,7 @@ export default function Visits() {
                 ) : (
                   <>
                     {renderDetailView(detailVisit)}
-                    {detailVisit.status !== "Cancelada" && (
+                    {detailVisit.status !== "Cancelada" ? (
                       <DialogFooter className="flex-wrap gap-2">
                         {detailVisit.status !== "Confirmada" && (
                           <Button size="sm" className="gap-1.5 h-11 bg-success hover:bg-success/90 text-success-foreground" onClick={() => handleStatusChange(detailVisit, "Confirmada")}>
@@ -1153,6 +1153,15 @@ export default function Visits() {
                         )}
                         <Button size="sm" variant="destructive" className="gap-1.5 h-11" onClick={() => handleStatusChange(detailVisit, "Cancelada")}>
                           <XIcon size={14} /> Cancelar
+                        </Button>
+                        <Button size="sm" variant="outline" className="gap-1.5 h-11 text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setDeleteConfirmVisit(detailVisit)}>
+                          <Trash2 size={14} /> Excluir
+                        </Button>
+                      </DialogFooter>
+                    ) : (
+                      <DialogFooter>
+                        <Button size="sm" variant="outline" className="gap-1.5 h-11 text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setDeleteConfirmVisit(detailVisit)}>
+                          <Trash2 size={14} /> Excluir visita e cliente
                         </Button>
                       </DialogFooter>
                     )}
