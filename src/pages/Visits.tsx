@@ -1105,8 +1105,15 @@ export default function Visits() {
                       <Button variant="destructive" className="h-12 w-full gap-1.5" onClick={() => handleStatusChange(detailVisit, "Cancelada")}>
                         <XIcon size={16} /> Cancelar visita
                       </Button>
+                      <Button variant="outline" className="h-12 w-full gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setDeleteConfirmVisit(detailVisit)}>
+                        <Trash2 size={16} /> Excluir visita e cliente
+                      </Button>
                     </>
-                  ) : null}
+                  ) : (
+                    <Button variant="outline" className="h-12 w-full gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setDeleteConfirmVisit(detailVisit)}>
+                      <Trash2 size={16} /> Excluir visita e cliente
+                    </Button>
+                  )}
                 </div>
               </>
             ) : (
