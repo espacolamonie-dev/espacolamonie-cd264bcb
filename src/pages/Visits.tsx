@@ -401,9 +401,50 @@ export default function Visits() {
     const inputH = mobile ? "h-12" : "h-12";
     return (
       <>
-        <div>
+        <div ref={clientInputRef} className="relative">
           <Label>Nome do cliente *</Label>
-          <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Nome completo" className={inputH} autoFocus={mobile} />
+          <Input
+            value={formName}
+            onChange={(e) => {
+              setFormName(e.target.value);
+              setSelectedClientId(null);
+              setShowClientSuggestions(true);
+            }}
+            onFocus={() => { if (formName.trim().length >= 2) setShowClientSuggestions(true); }}
+            placeholder="Digite o nome para buscar..."
+            className={inputH}
+            autoFocus={mobile}
+            autoComplete="off"
+          />
+          {selectedClientId && (
+            <span className="absolute right-3 top-[38px] text-xs text-success font-medium">✓ Cliente selecionado</span>
+          )}
+          {showClientSuggestions && filteredClients.length > 0 && !selectedClientId && (
+            <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-popover border border-border rounded-xl shadow-lg max-h-48 overflow-y-auto">
+              {filteredClients.map(c => (
+                <button
+                  key={c.id}
+                  type="button"
+                  className="w-full text-left px-3 py-2.5 hover:bg-accent/50 transition-colors flex items-center gap-3 border-b border-border/50 last:border-0"
+                  onClick={() => selectClient(c)}
+                >
+                  <Users size={14} className="text-muted-foreground shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">{c.name}</p>
+                    {c.phone && <p className="text-xs text-muted-foreground">{c.phone}</p>}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+          {showClientSuggestions && formName.trim().length >= 2 && filteredClients.length === 0 && !selectedClientId && (
+            <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-popover border border-border rounded-xl shadow-lg p-3">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <UserPlus size={14} />
+                <span>Novo cliente será criado automaticamente</span>
+              </div>
+            </div>
+          )}
         </div>
         <div>
           <Label>Telefone *</Label>
