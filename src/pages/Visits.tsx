@@ -1214,6 +1214,36 @@ export default function Visits() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteConfirmVisit} onOpenChange={(open) => { if (!open) setDeleteConfirmVisit(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-display flex items-center gap-2 text-destructive">
+              <Trash2 size={20} />
+              Confirmar exclusão
+            </DialogTitle>
+          </DialogHeader>
+          {deleteConfirmVisit && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Tem certeza que deseja excluir a visita de <strong>{deleteConfirmVisit.clientName}</strong>?
+              </p>
+              <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
+                ⚠️ O cliente associado também será excluído, caso não tenha outros contratos ou visitas vinculadas.
+              </p>
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => setDeleteConfirmVisit(null)}>
+                  Cancelar
+                </Button>
+                <Button variant="destructive" className="flex-1 gap-1.5" onClick={() => handleDeleteVisit(deleteConfirmVisit)}>
+                  <Trash2 size={14} /> Excluir
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
