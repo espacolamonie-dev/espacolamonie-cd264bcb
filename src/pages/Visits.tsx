@@ -107,18 +107,90 @@ export default function Visits() {
   const loadVisits = useCallback(async () => {
     setLoading(true);
     try {
-      const [visitsData, contractsRes] = await Promise.all([
+      const [visitsData, contractsRes, clientsRes] = await Promise.all([
         getVisits(),
         supabase.from("contracts").select("id, visit_id, client_id, status").neq("status", "cancelled"),
+        supabase.from("clients").select("id, name, phone, email, notes"),
       ]);
       setVisits(visitsData);
       setContracts(contractsRes.data || []);
+      setAllClients((clientsRes.data || []).map(c => ({ id: c.id, name: c.name, phone: c.phone || "", email: c.email || "", notes: c.notes || "" })));
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => { loadVisits(); }, [loadVisits]);
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (clientInputRef.current && !clientInputRef.current.contains(e.target as Node)) {
+        setShowClientSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const filteredClients = useMemo(() => {
+    if (!formName.trim() || formName.trim().length < 2) return [];
+    const q = formName.toLowerCase();
+    return allClients.filter(c => c.name.toLowerCase().includes(q)).slice(0, 8);
+  }, [formName, allClients]);
+
+  const selectClient = (client: { id: string; name: string; phone: string; email: string; notes: string }) => {
+    setFormName(client.name);
+    setFormPhone(client.phone ? phoneMask(client.phone) : "");
+    if (client.notes && !formNotes) setFormNotes(client.notes);
+    setSelectedClientId(client.id);
+    setShowClientSuggestions(false);
+  };
+
+  const handleDeleteVisit = async (visit: Visit) => {
+    try {
+      // Check if client has other visits or contracts
+      const clientId = visit.clientId;
+      
+      // Delete Google event first
+      if (visit.googleEventId) {
+        try { await deleteVisitGoogleEvent(visit.id); } catch {}
+      }
+      
+      // Delete the visit
+      await deleteVisit(visit.id);
+      
+      // Delete the associated client if it has no other contracts
+      if (clientId) {
+        const { data: otherContracts } = await supabase
+          .from("contracts")
+          .select("id")
+          .eq("client_id", clientId)
+          .limit(1);
+        
+        const { data: otherVisits } = await (supabase.from("visits" as any) as any)
+          .select("id")
+          .eq("client_id", clientId)
+          .neq("id", visit.id)
+          .limit(1);
+        
+        if ((!otherContracts || otherContracts.length === 0) && (!otherVisits || otherVisits.length === 0)) {
+          await supabase.from("clients").delete().eq("id", clientId);
+          toast.success("Visita e cliente excluídos com sucesso!");
+        } else {
+          toast.success("Visita excluída! Cliente mantido pois possui outros vínculos.");
+        }
+      } else {
+        toast.success("Visita excluída com sucesso!");
+      }
+      
+      setDetailVisit(null);
+      setDeleteConfirmVisit(null);
+      loadVisits();
+    } catch (e: any) {
+      toast.error(getSafeErrorMessage(e));
+    }
+  };
 
   // Check for date interest conflicts
   useEffect(() => {
