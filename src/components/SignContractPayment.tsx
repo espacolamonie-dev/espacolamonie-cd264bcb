@@ -378,40 +378,18 @@ export default function SignContractPayment({
               <p className="text-2xl font-bold text-primary">{fmt(depositValue)}</p>
             </div>
 
-            <div>
-              <p className="text-sm font-medium text-foreground mb-3 text-center">Em quantas vezes deseja parcelar?</p>
-              <div className="grid grid-cols-3 gap-2">
-                {[1, 2, 3, 4, 5, 6].map((n) => (
-                  <button
-                    key={n}
-                    onClick={() => setInstallments(n)}
-                    className={cn(
-                      "rounded-xl border p-3 text-center transition-all",
-                      installments === n
-                        ? "border-primary bg-primary/10 text-primary font-semibold"
-                        : "border-border bg-card text-foreground hover:border-primary/40"
-                    )}
-                  >
-                    <p className="text-lg font-bold">{n}x</p>
-                    <p className="text-[10px] text-muted-foreground">{fmt(depositValue / n)}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
+            <p className="text-sm text-muted-foreground text-center">
+              Você será redirecionado para a página de pagamento segura do Mercado Pago para finalizar com cartão de crédito.
+            </p>
 
             <Button
               onClick={handleCardPayment}
-              disabled={!installments}
-              className="w-full h-12 rounded-xl text-base font-semibold gap-2 disabled:opacity-40"
+              className="w-full h-12 rounded-xl text-base font-semibold gap-2"
             >
-              <Smartphone size={18} />
-              Solicitar via WhatsApp
+              <CreditCard size={18} />
+              Pagar com cartão
               <ExternalLink size={14} />
             </Button>
-
-            <p className="text-[11px] text-muted-foreground text-center">
-              Você será redirecionado para o WhatsApp do Espaço Lamoniê para finalizar o pagamento.
-            </p>
           </div>
         </div>
       </div>
