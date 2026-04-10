@@ -168,10 +168,12 @@ export default function SignContractPayment({
     onComplete(paymentData);
   };
 
-  const handleCardPayment = () => {
-    if (!installments) return;
-    const msg = `Olá! Assinei o contrato e quero realizar o pagamento do sinal no cartão de crédito.\n\nNome: ${clientName}\nValor do sinal: ${fmt(depositValue)}\nParcelamento: ${installments}x\n\nPodem me orientar para seguir com o pagamento?`;
-    openWhatsApp(msg, { payment_choice: "pagar_agora", payment_method_selected: "cartao" });
+  const handleCardPayment = async () => {
+    // Save payment choice before redirecting
+    await savePaymentChoice("pagar_agora", "cartao");
+    onComplete({ payment_choice: "pagar_agora", payment_method_selected: "cartao" });
+    // Redirect to Mercado Pago
+    window.open("https://mpago.la/18R9LwG", "_blank");
   };
 
   const handleLaterPayment = () => {
