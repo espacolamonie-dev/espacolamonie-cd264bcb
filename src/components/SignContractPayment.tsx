@@ -77,6 +77,8 @@ export default function SignContractPayment({
   const [laterDate, setLaterDate] = useState<Date | undefined>(undefined);
   const [uploading, setUploading] = useState(false);
   const [receiptSent, setReceiptSent] = useState(false);
+  const [paidAmount, setPaidAmount] = useState<number | null>(null);
+  const [remainingAmount, setRemainingAmount] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const depositValue = (totalValue * depositPercent) / 100;
