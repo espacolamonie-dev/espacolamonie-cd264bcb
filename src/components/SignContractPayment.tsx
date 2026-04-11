@@ -370,7 +370,7 @@ export default function SignContractPayment({
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*,.pdf"
+              accept="image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf"
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];
@@ -378,7 +378,11 @@ export default function SignContractPayment({
               }}
             />
             <Button
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => {
+                // Reset value before click to allow re-selecting same file
+                if (fileInputRef.current) fileInputRef.current.value = "";
+                fileInputRef.current?.click();
+              }}
               disabled={uploading}
               className="w-full h-12 rounded-xl text-base font-semibold gap-2"
             >
