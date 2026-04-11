@@ -140,19 +140,23 @@ export default function SignContractPayment({
           action: "upload-receipt",
           file_base64: base64,
           file_name: file.name,
-          file_type: file.type,
+          file_type: file.type || "image/jpeg",
           payment_method: "pix",
         }),
       });
 
       if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || "Erro ao enviar comprovante");
+        const errText = await res.text();
+        let errMsg = "Erro ao enviar comprovante";
+        try { errMsg = JSON.parse(errText).error || errMsg; } catch {}
+        throw new Error(errMsg);
       }
 
       const result = await res.json();
       if (result.success) {
         setReceiptSent(true);
+        setPaidAmount(result.payment_registered || depositValue);
+        setRemainingAmount(result.remaining ?? null);
         savePaymentChoice("pagar_agora", "pix");
       } else {
         throw new Error(result.error || "Erro ao processar comprovante");
@@ -161,6 +165,8 @@ export default function SignContractPayment({
       alert(err?.message || "Erro ao enviar comprovante. Tente novamente.");
     } finally {
       setUploading(false);
+      // Reset file input so same file can be re-selected
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
