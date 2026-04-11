@@ -77,6 +77,8 @@ export default function SignContractPayment({
   const [laterDate, setLaterDate] = useState<Date | undefined>(undefined);
   const [uploading, setUploading] = useState(false);
   const [receiptSent, setReceiptSent] = useState(false);
+  const [paidAmount, setPaidAmount] = useState<number | null>(null);
+  const [remainingAmount, setRemainingAmount] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const depositValue = (totalValue * depositPercent) / 100;
@@ -138,19 +140,23 @@ export default function SignContractPayment({
           action: "upload-receipt",
           file_base64: base64,
           file_name: file.name,
-          file_type: file.type,
+          file_type: file.type || "image/jpeg",
           payment_method: "pix",
         }),
       });
 
       if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || "Erro ao enviar comprovante");
+        const errText = await res.text();
+        let errMsg = "Erro ao enviar comprovante";
+        try { errMsg = JSON.parse(errText).error || errMsg; } catch {}
+        throw new Error(errMsg);
       }
 
       const result = await res.json();
       if (result.success) {
         setReceiptSent(true);
+        setPaidAmount(result.payment_registered || depositValue);
+        setRemainingAmount(result.remaining ?? null);
         savePaymentChoice("pagar_agora", "pix");
       } else {
         throw new Error(result.error || "Erro ao processar comprovante");
@@ -159,6 +165,8 @@ export default function SignContractPayment({
       alert(err?.message || "Erro ao enviar comprovante. Tente novamente.");
     } finally {
       setUploading(false);
+      // Reset file input so same file can be re-selected
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -277,6 +285,33 @@ export default function SignContractPayment({
             <p className="text-sm text-muted-foreground max-w-sm mx-auto">
               Recebemos seu comprovante. O Espaço Lamoniê irá confirmar o pagamento e entrar em contato em breve.
             </p>
+
+            {/* Payment summary */}
+            <div className="bg-secondary rounded-xl p-4 mt-5 text-left space-y-2 max-w-sm mx-auto">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Valor pago:</span>
+                <span className="font-semibold text-foreground">{fmt(paidAmount || depositValue)}</span>
+              </div>
+              {remainingAmount !== null && remainingAmount > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Valor restante:</span>
+                  <span className="font-semibold text-foreground">{fmt(remainingAmount)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Método:</span>
+                <span className="font-semibold text-foreground">PIX</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Status:</span>
+                <span className="font-semibold text-emerald-600">Comprovante recebido ✓</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground mt-4">
+              O comprovante foi salvo automaticamente nos documentos do contrato.
+            </p>
+
             <Button onClick={() => onComplete({ payment_choice: "pagar_agora", payment_method_selected: "pix" })} className="mt-6 w-full h-11 rounded-xl">
               Concluir
             </Button>
@@ -335,7 +370,7 @@ export default function SignContractPayment({
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*,.pdf"
+              accept="image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf"
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];
@@ -343,7 +378,11 @@ export default function SignContractPayment({
               }}
             />
             <Button
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => {
+                // Reset value before click to allow re-selecting same file
+                if (fileInputRef.current) fileInputRef.current.value = "";
+                fileInputRef.current?.click();
+              }}
               disabled={uploading}
               className="w-full h-12 rounded-xl text-base font-semibold gap-2"
             >
