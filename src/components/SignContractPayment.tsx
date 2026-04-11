@@ -285,6 +285,33 @@ export default function SignContractPayment({
             <p className="text-sm text-muted-foreground max-w-sm mx-auto">
               Recebemos seu comprovante. O Espaço Lamoniê irá confirmar o pagamento e entrar em contato em breve.
             </p>
+
+            {/* Payment summary */}
+            <div className="bg-secondary rounded-xl p-4 mt-5 text-left space-y-2 max-w-sm mx-auto">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Valor pago:</span>
+                <span className="font-semibold text-foreground">{fmt(paidAmount || depositValue)}</span>
+              </div>
+              {remainingAmount !== null && remainingAmount > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Valor restante:</span>
+                  <span className="font-semibold text-foreground">{fmt(remainingAmount)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Método:</span>
+                <span className="font-semibold text-foreground">PIX</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Status:</span>
+                <span className="font-semibold text-emerald-600">Comprovante recebido ✓</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground mt-4">
+              O comprovante foi salvo automaticamente nos documentos do contrato.
+            </p>
+
             <Button onClick={() => onComplete({ payment_choice: "pagar_agora", payment_method_selected: "pix" })} className="mt-6 w-full h-11 rounded-xl">
               Concluir
             </Button>
