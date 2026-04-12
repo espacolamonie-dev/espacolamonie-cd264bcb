@@ -197,8 +197,10 @@ export default function BudgetDetailModal({ budgetId, open, onClose, onUpdated }
       const a = document.createElement("a");
       a.href = url;
       a.download = `Orçamento Lamoniê – ${budget?.clientName} – Assinado.pdf`;
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (e: any) {
       toast.error("Erro ao baixar PDF: " + e.message);
     }

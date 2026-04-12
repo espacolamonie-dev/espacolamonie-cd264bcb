@@ -213,8 +213,16 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
 
   const handleDownloadDoc = async (doc: Document) => {
     try {
-      const url = await getDocumentSignedUrl(doc.fileName);
-      window.open(url, "_blank");
+      const { data, error } = await supabase.storage.from("documents").download(doc.fileName);
+      if (error) throw error;
+      const url = URL.createObjectURL(data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = doc.name || doc.fileName.split("/").pop() || "documento";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (err: any) { toast.error(getSafeErrorMessage(err)); }
   };
 
