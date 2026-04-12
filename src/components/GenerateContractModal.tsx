@@ -439,13 +439,18 @@ export default function GenerateContractModal({ contract, client, open, onOpenCh
     try {
       const blob = await generatePDF(contract, client);
       const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      const link = window.document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", fileName);
+      link.style.display = "none";
+      window.document.body.appendChild(link);
+      setTimeout(() => {
+        link.click();
+        setTimeout(() => {
+          window.document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        }, 200);
+      }, 0);
       toast.success("Download iniciado!");
     } catch {
       toast.error("Erro ao baixar o contrato");
