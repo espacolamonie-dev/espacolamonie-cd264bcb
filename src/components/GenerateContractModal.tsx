@@ -442,8 +442,10 @@ export default function GenerateContractModal({ contract, client, open, onOpenCh
       const a = document.createElement("a");
       a.href = url;
       a.download = fileName;
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
       toast.success("Download iniciado!");
     } catch {
       toast.error("Erro ao baixar o contrato");
