@@ -190,19 +190,28 @@ export default function BudgetDetailModal({ budgetId, open, onClose, onUpdated }
 
   const downloadSignedPdf = async () => {
     if (!signedPdfUrl) return;
+    const toastId = toast.loading("Baixando PDF...");
     try {
-      const { data, error } = await supabase.storage.from("documents").download(signedPdfUrl);
-      if (error) throw error;
-      const url = URL.createObjectURL(data);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `Orçamento Lamoniê – ${budget?.clientName} – Assinado.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      const { data: signedData, error: signedError } = await supabase.storage
+        .from("documents")
+        .createSignedUrl(signedPdfUrl, 300);
+      if (signedError) throw signedError;
+      if (!signedData?.signedUrl) throw new Error("URL não gerada");
+      
+      const link = window.document.createElement("a");
+      link.href = signedData.signedUrl;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.setAttribute("download", `Orçamento Lamoniê – ${budget?.clientName} – Assinado.pdf`);
+      link.style.display = "none";
+      window.document.body.appendChild(link);
+      setTimeout(() => {
+        link.click();
+        setTimeout(() => window.document.body.removeChild(link), 100);
+      }, 0);
+      toast.success("Download iniciado!", { id: toastId });
     } catch (e: any) {
-      toast.error("Erro ao baixar PDF: " + e.message);
+      toast.error("Erro ao baixar PDF: " + e.message, { id: toastId });
     }
   };
 
