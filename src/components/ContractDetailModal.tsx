@@ -212,18 +212,40 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
   };
 
   const handleDownloadDoc = async (doc: Document) => {
+    const toastId = toast.loading("Baixando documento...");
     try {
-      const { data, error } = await supabase.storage.from("documents").download(doc.fileName);
-      if (error) throw error;
-      const url = URL.createObjectURL(data);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = doc.name || doc.fileName.split("/").pop() || "documento";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-    } catch (err: any) { toast.error(getSafeErrorMessage(err)); }
+      // Try signed URL approach first (works better on mobile)
+      const { data: signedData, error: signedError } = await supabase.storage
+        .from("documents")
+        .createSignedUrl(doc.fileName, 300);
+      
+      if (signedError) throw signedError;
+      if (!signedData?.signedUrl) throw new Error("URL não gerada");
+      
+      // Use window.open with signed URL - most reliable on mobile
+      const downloadUrl = signedData.signedUrl;
+      
+      // For mobile: open in new tab which triggers native download
+      const link = window.document.createElement("a");
+      link.href = downloadUrl;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.setAttribute("download", doc.name || doc.fileName.split("/").pop() || "documento");
+      link.style.display = "none";
+      window.document.body.appendChild(link);
+      
+      // Use setTimeout to escape dialog event context
+      setTimeout(() => {
+        link.click();
+        setTimeout(() => {
+          window.document.body.removeChild(link);
+        }, 100);
+      }, 0);
+      
+      toast.success("Download iniciado!", { id: toastId });
+    } catch (err: any) {
+      toast.error("Erro ao baixar: " + getSafeErrorMessage(err), { id: toastId });
+    }
   };
 
   const docStatus = docs.length === 0 ? "Nenhum documento" : docs.length < 3 ? "Documentos pendentes" : "Documentos completos";
