@@ -186,7 +186,10 @@ export default function SignContractPayment({
         throw new Error(result.error || "Erro ao processar comprovante");
       }
     } catch (err: any) {
-      alert(err?.message || "Erro ao enviar comprovante. Tente novamente.");
+      const msg = err?.name === "AbortError"
+        ? "A conexão demorou demais. Tente novamente."
+        : err?.message || "Erro ao enviar comprovante. Tente novamente.";
+      alert(msg);
     } finally {
       setUploading(false);
       // Reset file input so same file can be re-selected
