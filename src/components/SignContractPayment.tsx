@@ -142,6 +142,9 @@ export default function SignContractPayment({
         reader.readAsDataURL(file);
       });
 
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000);
+
       const res = await fetch(FUNC_URL, {
         method: "PUT",
         headers: {
@@ -156,7 +159,10 @@ export default function SignContractPayment({
           file_type: file.type || "image/jpeg",
           payment_method: "pix",
         }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeout);
 
       if (!res.ok) {
         const errText = await res.text();
