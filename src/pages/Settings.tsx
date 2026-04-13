@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {
   CheckCircle2, XCircle, RefreshCw, Calendar, ExternalLink,
   AlertCircle, Loader2, Building2, CreditCard, Bell, Shield, Megaphone,
-  Save, Upload, GitBranch, Package,
+  Save, Upload, GitBranch, Package, Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,6 +21,7 @@ import CatalogSettingsTab from "@/components/CatalogSettingsTab";
 import ScheduleSettingsTab from "@/components/ScheduleSettingsTab";
 import MetaPixelSettingsTab from "@/components/MetaPixelSettingsTab";
 import MercadoPagoSettingsTab from "@/components/MercadoPagoSettingsTab";
+import WebhookSimulatorTab from "@/components/WebhookSimulatorTab";
 import { supabase } from "@/integrations/supabase/client";
 
 // ─── Masks ───
@@ -329,6 +330,9 @@ export default function Settings() {
           </TabsTrigger>
           <TabsTrigger value="mercadopago" className="gap-1.5 text-xs">
             <CreditCard size={14} /> Mercado Pago
+          </TabsTrigger>
+          <TabsTrigger value="webhook-sim" className="gap-1.5 text-xs">
+            <Zap size={14} /> Simulador
           </TabsTrigger>
         </TabsList>
 
@@ -690,6 +694,10 @@ export default function Settings() {
 
         <TabsContent value="mercadopago">
           <MercadoPagoSettingsTab />
+        </TabsContent>
+
+        <TabsContent value="webhook-sim">
+          <WebhookSimulatorTab />
         </TabsContent>
       </Tabs>
     </div>
