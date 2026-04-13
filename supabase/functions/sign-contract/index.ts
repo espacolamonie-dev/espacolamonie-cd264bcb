@@ -108,16 +108,11 @@ serve(async (req) => {
       }
     }
 
-    // Get event_time from the contract query we already did
+    // Get event_time - requery to avoid variable scope issues
     let eventTime = "";
     if (data.contract_id) {
-      // Re-use the contract data from above query (already includes event_time)
-      const { data: contractForTime } = await supabase
-        .from("contracts")
-        .select("event_time")
-        .eq("id", data.contract_id)
-        .maybeSingle();
-      eventTime = contractForTime?.event_time || "";
+      const { data: cData2 } = await supabase.from("contracts").select("event_time").eq("id", data.contract_id).maybeSingle();
+      eventTime = cData2?.event_time || "";
     }
 
     // Mask sensitive fields before returning
