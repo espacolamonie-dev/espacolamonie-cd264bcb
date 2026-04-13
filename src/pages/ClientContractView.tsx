@@ -38,6 +38,7 @@ interface ContractData {
     id: string;
     event_type: string;
     event_date: string;
+    event_date_end: string | null;
     event_time: string;
     guest_count: number;
     total_value: number;
