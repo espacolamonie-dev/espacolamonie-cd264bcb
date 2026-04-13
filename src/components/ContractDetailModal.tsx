@@ -674,7 +674,22 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
                     </div>
 
                     <div className="grid gap-2 sm:grid-cols-2">
-                      <AuditRow icon={Hash} label="ID do Contrato" value={log.contract_id} />
+                      <div className="flex items-center gap-2">
+                        <Hash size={12} className="text-muted-foreground shrink-0" />
+                        <span className="text-[11px] text-muted-foreground">ID do Contrato:</span>
+                        <span className="text-xs font-medium truncate font-mono">{log.contract_id}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(log.contract_id);
+                            toast.success("ID copiado!");
+                          }}
+                          className="shrink-0 p-0.5 rounded hover:bg-muted transition-colors"
+                          title="Copiar ID"
+                        >
+                          <Copy size={12} className="text-muted-foreground hover:text-foreground" />
+                        </button>
+                      </div>
                       <AuditRow icon={FileText} label="Cliente" value={log.client_name} />
                       {log.client_cpf && <AuditRow icon={FileText} label="CPF" value={log.client_cpf} />}
                       <AuditRow icon={FileText} label="Arquivo" value={log.signed_file_name} />
