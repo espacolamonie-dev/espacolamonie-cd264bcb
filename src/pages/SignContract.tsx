@@ -394,6 +394,10 @@ export default function SignContract() {
   const [countdown, setCountdown] = useState<number | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Step: 1=Leitura, 2=Aceite, 3=Assinatura, 4=Pagamento, 5=Conclusão
+  const [showSignature, setShowSignature] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
+
   // Countdown effect: start 5s timer when all rules are checked
   useEffect(() => {
     if (allRulesChecked && countdown === null && !showSignature) {
@@ -415,9 +419,6 @@ export default function SignContract() {
     return () => { if (countdownRef.current) clearInterval(countdownRef.current); };
   }, [allRulesChecked, showSignature]);
 
-  // Step: 1=Leitura, 2=Aceite, 3=Assinatura, 4=Pagamento, 5=Conclusão
-  const [showSignature, setShowSignature] = useState(false);
-  const [showPayment, setShowPayment] = useState(false);
 
   const currentStep = signed ? 5 : showPayment ? 4 : showSignature ? 3 : allRulesChecked ? 2 : 1;
   const stepProgress = signed ? 100 : showPayment ? 80 : showSignature ? 60 : allRulesChecked ? 40 : (checkedRules.filter(Boolean).length / RULES.length) * 20;
