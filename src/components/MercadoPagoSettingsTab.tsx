@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 interface MpSettings {
   access_token: string;
   public_key: string;
+  webhook_secret: string;
   success_url: string;
   failure_url: string;
   pending_url: string;
@@ -22,6 +23,7 @@ interface MpSettings {
 const defaultMpSettings: MpSettings = {
   access_token: "",
   public_key: "",
+  webhook_secret: "",
   success_url: "",
   failure_url: "",
   pending_url: "",
