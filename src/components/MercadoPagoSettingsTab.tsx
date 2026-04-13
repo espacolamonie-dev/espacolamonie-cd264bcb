@@ -25,6 +25,8 @@ interface MpSettings {
 const defaultMpSettings: MpSettings = {
   access_token: "",
   public_key: "",
+  client_id: "",
+  client_secret: "",
   webhook_secret: "",
   success_url: "",
   failure_url: "",
