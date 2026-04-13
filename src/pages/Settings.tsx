@@ -20,6 +20,7 @@ import PipelineSettingsTab from "@/components/PipelineSettingsTab";
 import CatalogSettingsTab from "@/components/CatalogSettingsTab";
 import ScheduleSettingsTab from "@/components/ScheduleSettingsTab";
 import MetaPixelSettingsTab from "@/components/MetaPixelSettingsTab";
+import MercadoPagoSettingsTab from "@/components/MercadoPagoSettingsTab";
 import { supabase } from "@/integrations/supabase/client";
 
 // ─── Masks ───
@@ -325,6 +326,9 @@ export default function Settings() {
           </TabsTrigger>
           <TabsTrigger value="meta" className="gap-1.5 text-xs">
             <Megaphone size={14} /> Meta Pixel
+          </TabsTrigger>
+          <TabsTrigger value="mercadopago" className="gap-1.5 text-xs">
+            <CreditCard size={14} /> Mercado Pago
           </TabsTrigger>
         </TabsList>
 
@@ -682,6 +686,10 @@ export default function Settings() {
 
         <TabsContent value="meta">
           <MetaPixelSettingsTab />
+        </TabsContent>
+
+        <TabsContent value="mercadopago">
+          <MercadoPagoSettingsTab />
         </TabsContent>
       </Tabs>
     </div>

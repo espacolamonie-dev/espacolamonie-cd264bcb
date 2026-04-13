@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -79,6 +79,7 @@ export default function SignContractPayment({
   const [receiptSent, setReceiptSent] = useState(false);
   const [paidAmount, setPaidAmount] = useState<number | null>(null);
   const [remainingAmount, setRemainingAmount] = useState<number | null>(null);
+  const [cardLoading, setCardLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const depositValue = (totalValue * depositPercent) / 100;
@@ -177,11 +178,48 @@ export default function SignContractPayment({
   };
 
   const handleCardPayment = async () => {
-    // Save payment choice before redirecting
-    await savePaymentChoice("pagar_agora", "cartao");
-    onComplete({ payment_choice: "pagar_agora", payment_method_selected: "cartao" });
-    // Redirect to Mercado Pago
-    window.open("https://mpago.la/18R9LwG", "_blank");
+    setCardLoading(true);
+    try {
+      // Save payment choice
+      await savePaymentChoice("pagar_agora", "cartao");
+
+      // Create dynamic MP checkout
+      const CHECKOUT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-mp-checkout`;
+      const res = await fetch(CHECKOUT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ contract_id: contractId, token }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        // Fallback to static link if MP not configured
+        if (data.error?.includes("não configurado")) {
+          onComplete({ payment_choice: "pagar_agora", payment_method_selected: "cartao" });
+          window.open("https://mpago.la/18R9LwG", "_blank");
+          return;
+        }
+        throw new Error(data.error || "Erro ao criar checkout");
+      }
+
+      // Redirect to Mercado Pago checkout
+      const redirectUrl = data.init_point || data.sandbox_init_point;
+      if (redirectUrl) {
+        onComplete({ payment_choice: "pagar_agora", payment_method_selected: "cartao" });
+        window.location.href = redirectUrl;
+      } else {
+        throw new Error("URL de checkout não retornada");
+      }
+    } catch (err: any) {
+      console.error("MP checkout error:", err);
+      alert(err?.message || "Erro ao criar pagamento. Tente novamente.");
+    } finally {
+      setCardLoading(false);
+    }
   };
 
   const handleLaterPayment = () => {
@@ -423,11 +461,14 @@ export default function SignContractPayment({
 
             <Button
               onClick={handleCardPayment}
+              disabled={cardLoading}
               className="w-full h-12 rounded-xl text-base font-semibold gap-2"
             >
-              <CreditCard size={18} />
-              Pagar com cartão
-              <ExternalLink size={14} />
+              {cardLoading ? (
+                <><Loader2 className="h-5 w-5 animate-spin" /> Criando pagamento...</>
+              ) : (
+                <><CreditCard size={18} /> Pagar com cartão <ExternalLink size={14} /></>
+              )}
             </Button>
           </div>
         </div>
