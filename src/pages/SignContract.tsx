@@ -792,7 +792,6 @@ export default function SignContract() {
                   </p>
                 )}
               </div>
-              </div>
             ) : (
               <div className="bg-card rounded-2xl shadow-lg border border-border overflow-hidden">
                 <div className="p-5">
