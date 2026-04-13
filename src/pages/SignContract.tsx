@@ -394,6 +394,27 @@ export default function SignContract() {
   const [countdown, setCountdown] = useState<number | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Countdown effect: start 5s timer when all rules are checked
+  useEffect(() => {
+    if (allRulesChecked && countdown === null && !showSignature) {
+      setCountdown(5);
+      countdownRef.current = setInterval(() => {
+        setCountdown(prev => {
+          if (prev === null || prev <= 1) {
+            if (countdownRef.current) clearInterval(countdownRef.current);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    if (!allRulesChecked) {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+      setCountdown(null);
+    }
+    return () => { if (countdownRef.current) clearInterval(countdownRef.current); };
+  }, [allRulesChecked, showSignature]);
+
   // Step: 1=Leitura, 2=Aceite, 3=Assinatura, 4=Pagamento, 5=Conclusão
   const [showSignature, setShowSignature] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
