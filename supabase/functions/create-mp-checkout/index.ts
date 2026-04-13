@@ -109,14 +109,15 @@ serve(async (req) => {
     };
 
     // Create Mercado Pago preference
+    const externalReference = contract.id;
     const preferencePayload: Record<string, any> = {
       items: [
         {
-          title: `Sinal - ${contract.event_type} - Espaço Lamoniê`,
-          description: `Sinal do contrato para ${client?.name || sig.client_name} - ${contract.event_type} em ${contract.event_date}`,
+          title: checkoutTitle,
+          description: `Pagamento para ${client?.name || sig.client_name} - ${contract.event_type} em ${contract.event_date}`,
           quantity: 1,
           currency_id: "BRL",
-          unit_price: depositValue,
+          unit_price: checkoutAmount,
         },
       ],
       external_reference: externalReference,
