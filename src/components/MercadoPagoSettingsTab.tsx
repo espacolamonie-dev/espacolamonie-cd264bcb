@@ -12,6 +12,8 @@ import { useToast } from "@/hooks/use-toast";
 interface MpSettings {
   access_token: string;
   public_key: string;
+  client_id: string;
+  client_secret: string;
   webhook_secret: string;
   success_url: string;
   failure_url: string;
@@ -23,6 +25,8 @@ interface MpSettings {
 const defaultMpSettings: MpSettings = {
   access_token: "",
   public_key: "",
+  client_id: "",
+  client_secret: "",
   webhook_secret: "",
   success_url: "",
   failure_url: "",
@@ -59,6 +63,8 @@ export default function MercadoPagoSettingsTab() {
         setSettings({
           access_token: (data as any).access_token || "",
           public_key: (data as any).public_key || "",
+          client_id: (data as any).client_id || "",
+          client_secret: (data as any).client_secret || "",
           webhook_secret: (data as any).webhook_secret || "",
           success_url: (data as any).success_url || "",
           failure_url: (data as any).failure_url || "",
@@ -203,6 +209,33 @@ export default function MercadoPagoSettingsTab() {
                 placeholder="APP_USR-..."
                 className="mt-1 font-mono text-xs"
               />
+            </div>
+
+            <div>
+              <Label className="text-xs">Client ID</Label>
+              <Input
+                value={settings.client_id}
+                onChange={(e) => update("client_id", e.target.value)}
+                placeholder="Cole aqui o Client ID..."
+                className="mt-1 font-mono text-xs"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Encontre em: Mercado Pago → Suas integrações → Detalhes da aplicação → Client ID
+              </p>
+            </div>
+
+            <div>
+              <Label className="text-xs">Client Secret</Label>
+              <Input
+                type="password"
+                value={settings.client_secret}
+                onChange={(e) => update("client_secret", e.target.value)}
+                placeholder="Cole aqui o Client Secret..."
+                className="mt-1 font-mono text-xs"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Encontre em: Mercado Pago → Suas integrações → Detalhes da aplicação → Client Secret
+              </p>
             </div>
 
             <div>

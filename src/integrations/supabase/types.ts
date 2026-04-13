@@ -1060,6 +1060,8 @@ export type Database = {
       mercado_pago_settings: {
         Row: {
           access_token: string
+          client_id: string
+          client_secret: string
           created_at: string
           failure_url: string
           id: string
@@ -1074,6 +1076,8 @@ export type Database = {
         }
         Insert: {
           access_token?: string
+          client_id?: string
+          client_secret?: string
           created_at?: string
           failure_url?: string
           id?: string
@@ -1088,6 +1092,8 @@ export type Database = {
         }
         Update: {
           access_token?: string
+          client_id?: string
+          client_secret?: string
           created_at?: string
           failure_url?: string
           id?: string
