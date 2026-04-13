@@ -265,9 +265,11 @@ serve(async (req) => {
         file_name: storagePath,
       });
 
-      // Try to parse receipt with AI to extract amount
+      // Try to parse receipt with AI to extract amount (with timeout)
       let parsedAmount: number | null = null;
       try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
         const parseRes = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/parse-receipt`, {
           method: "POST",
           headers: {
@@ -275,13 +277,15 @@ serve(async (req) => {
             "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
           },
           body: JSON.stringify({ image_base64: file_base64, mime_type: file_type || "image/jpeg" }),
+          signal: controller.signal,
         });
+        clearTimeout(timeout);
         const parseResult = await parseRes.json();
         if (parseResult.receipt?.amount) {
           parsedAmount = parseResult.receipt.amount;
         }
       } catch (e) {
-        console.error("Receipt parse error:", e);
+        console.error("Receipt parse error (non-blocking):", e);
       }
 
       // Register payment if amount was parsed or use deposit value as fallback
