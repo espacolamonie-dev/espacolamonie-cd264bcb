@@ -214,7 +214,13 @@ async function generateSignedPDF(d: SignatureData, signatureDataUrl: string): Pr
   const dateClausePdf = d.rental_type === "Locação (2 dias)" && d.event_date_end
     ? `na modalidade de Locação de 2 (dois) dias, compreendendo os dias ${formatDate(d.event_date)} e ${formatDate(d.event_date_end)}`
     : `na data ${formatDate(d.event_date)}`;
-  addText(`1.1. O presente contrato tem por objeto a locação do espaço físico do Espaço Lamoniê, exclusivamente para realização de evento privado, sem fins lucrativos, ${dateClausePdf}, no horário de dia inteiro, com devolução das chaves dentro do horário acordado.`);
+  addText(`1.1. O presente contrato tem por objeto a locação do espaço físico do Espaço Lamoniê, exclusivamente para realização de evento privado, sem fins lucrativos, ${dateClausePdf}, no horário acordado, com devolução das chaves dentro do horário acordado.`);
+  addSpace(5);
+
+  checkPage();
+  addText("CLÁUSULA 1.1 – DO HORÁRIO", { bold: true, size: 12 }); addSpace(2);
+  addText(`O evento ocorrerá no horário de ${(d as any).event_time || "dia inteiro"}, conforme acordado entre as partes.`);
+  addSpace(5);
   addSpace(5);
 
   checkPage();
