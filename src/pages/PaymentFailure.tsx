@@ -7,8 +7,13 @@ const WHATSAPP_NUMBER = "5531997111502";
 
 export default function PaymentFailure() {
   const [params] = useSearchParams();
-  const [contractToken, setContractToken] = useState<string | null>(null);
+  const [contractUrl, setContractUrl] = useState<string | null>(null);
+
   const externalRef = params.get("external_reference") || params.get("collection_id");
+
+  useEffect(() => {
+    console.log("[PaymentFailure] URL params:", Object.fromEntries(params.entries()));
+  }, []);
 
   useEffect(() => {
     if (!externalRef) return;
@@ -19,16 +24,14 @@ export default function PaymentFailure() {
           headers: { Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
         });
         const data = await res.json();
-        if (data.slug) setContractToken(data.slug);
-        else if (data.token) setContractToken(data.token);
-      } catch {}
+        if (data.slug) setContractUrl(`/contrato/${data.slug}`);
+        else if (data.token) setContractUrl(`/contrato/acesso?token=${data.token}`);
+      } catch (err) {
+        console.error("[PaymentFailure] Error fetching contract:", err);
+      }
     };
     fetchToken();
   }, [externalRef]);
-
-  const contractUrl = contractToken
-    ? (contractToken.includes("-") || !contractToken.includes("=") ? `/contrato/${contractToken}` : `/contrato/acesso?token=${contractToken}`)
-    : null;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-red-50 to-white dark:from-red-950/20 dark:to-background flex items-center justify-center p-4">
@@ -46,20 +49,24 @@ export default function PaymentFailure() {
           </div>
 
           <div className="space-y-3">
-            <Button
-              className="w-full h-12 rounded-xl text-base font-semibold gap-2"
-              onClick={() => window.history.back()}
-            >
-              <RotateCcw size={16} />
-              Tentar novamente
-            </Button>
-            {contractUrl && (
-              <Button asChild variant="outline" className="w-full h-11 rounded-xl">
-                <a href={contractUrl}>Acessar contrato</a>
+            {contractUrl ? (
+              <Button asChild className="w-full h-12 rounded-xl text-base font-semibold gap-2">
+                <a href={contractUrl}>
+                  <RotateCcw size={16} />
+                  Voltar ao contrato e tentar novamente
+                </a>
+              </Button>
+            ) : (
+              <Button
+                className="w-full h-12 rounded-xl text-base font-semibold gap-2"
+                onClick={() => window.history.back()}
+              >
+                <RotateCcw size={16} />
+                Tentar novamente
               </Button>
             )}
             <Button
-              variant="ghost"
+              variant="outline"
               className="w-full h-11 rounded-xl gap-2"
               onClick={() => window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Olá! Meu pagamento não foi aprovado, podem me ajudar?")}`, "_blank")}
             >
