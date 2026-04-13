@@ -537,28 +537,42 @@ export default function SignContract() {
     setError("");
     try {
       const sigDataUrl = canvasRef.current!.toDataURL("image/png");
-      const pdfDataUri = await generateSignedPDF(data, sigDataUrl);
-      const rawBase64 = pdfDataUri.split(",")[1];
-
-      const res = await fetch(FUNC_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({ token: sigToken, pdf_base64: rawBase64, user_agent: navigator.userAgent }),
+      
+      // Generate PDF in background - don't block UI
+      const pdfPromise = generateSignedPDF(data, sigDataUrl);
+      
+      // Show payment immediately while PDF generates
+      setSigning(false);
+      setShowPayment(true);
+      
+      // Track Meta: CompleteRegistration (contract signed)
+      import("@/lib/metaPixel").then(({ trackPixelEvent, generateEventId }) => {
+        trackPixelEvent("CompleteRegistration", { content_name: data.event_type }, generateEventId());
+      }).catch(() => {});
+      
+      // Send PDF to backend asynchronously
+      pdfPromise.then(async (pdfDataUri) => {
+        const rawBase64 = pdfDataUri.split(",")[1];
+        try {
+          await fetch(FUNC_URL, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            },
+            body: JSON.stringify({ token: sigToken, pdf_base64: rawBase64, user_agent: navigator.userAgent }),
+          });
+        } catch (e) {
+          console.error("Erro ao salvar assinatura:", e);
+        }
+      }).catch((e) => {
+        console.error("Erro ao gerar PDF:", e);
       });
-      const result = await res.json();
-      if (result.error) { setError(result.error); }
-      else {
-        setShowPayment(true);
-        // Track Meta: CompleteRegistration (contract signed)
-        import("@/lib/metaPixel").then(({ trackPixelEvent, generateEventId }) => {
-          trackPixelEvent("CompleteRegistration", { content_name: data.event_type }, generateEventId());
-        }).catch(() => {});
-      }
-    } catch { setError("Erro ao assinar contrato"); }
-    finally { setSigning(false); }
+      
+    } catch { 
+      setError("Erro ao assinar contrato"); 
+      setSigning(false);
+    }
   };
 
   const depositValue = data ? (Number(data.total_value) * Number(data.deposit_percent)) / 100 : 0;
