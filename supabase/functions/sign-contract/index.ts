@@ -88,8 +88,9 @@ serve(async (req) => {
       });
     }
 
-    // Check if contract is cancelled or fetch reserved_until (only if there's a contract_id)
+    // Check if contract is cancelled or fetch reserved_until and event_time
     let contractReservedUntil: string | null = null;
+    let eventTime = "";
     if (data.contract_id) {
       const { data: contract } = await supabase
         .from("contracts")
@@ -105,12 +106,9 @@ serve(async (req) => {
       }
       if (contract) {
         contractReservedUntil = contract.reserved_until || null;
+        eventTime = contract.event_time || "";
       }
     }
-
-    // event_time already fetched from the contract query above
-    const contractForTime = data.contract_id ? (await supabase.from("contracts").select("event_time").eq("id", data.contract_id).maybeSingle()).data : null;
-    const eventTime = contractForTime?.event_time || "";
 
     // Mask sensitive fields before returning
     const safeData = {
