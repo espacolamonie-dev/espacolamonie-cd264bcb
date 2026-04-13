@@ -545,6 +545,10 @@ export type Database = {
           meta_ad_id: string
           meta_adset_id: string
           meta_campaign_id: string
+          mp_external_reference: string
+          mp_payment_id: string
+          mp_payment_status: string
+          mp_preference_id: string
           payment_choice: string
           payment_due_date: string | null
           payment_followup_required: boolean
@@ -582,6 +586,10 @@ export type Database = {
           meta_ad_id?: string
           meta_adset_id?: string
           meta_campaign_id?: string
+          mp_external_reference?: string
+          mp_payment_id?: string
+          mp_payment_status?: string
+          mp_preference_id?: string
           payment_choice?: string
           payment_due_date?: string | null
           payment_followup_required?: boolean
@@ -619,6 +627,10 @@ export type Database = {
           meta_ad_id?: string
           meta_adset_id?: string
           meta_campaign_id?: string
+          mp_external_reference?: string
+          mp_payment_id?: string
+          mp_payment_status?: string
+          mp_preference_id?: string
           payment_choice?: string
           payment_due_date?: string | null
           payment_followup_required?: boolean
@@ -1045,6 +1057,48 @@ export type Database = {
         }
         Relationships: []
       }
+      mercado_pago_settings: {
+        Row: {
+          access_token: string
+          created_at: string
+          failure_url: string
+          id: string
+          is_active: boolean
+          pending_url: string
+          public_key: string
+          success_url: string
+          updated_at: string
+          user_id: string
+          webhook_url: string
+        }
+        Insert: {
+          access_token?: string
+          created_at?: string
+          failure_url?: string
+          id?: string
+          is_active?: boolean
+          pending_url?: string
+          public_key?: string
+          success_url?: string
+          updated_at?: string
+          user_id: string
+          webhook_url?: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          failure_url?: string
+          id?: string
+          is_active?: boolean
+          pending_url?: string
+          public_key?: string
+          success_url?: string
+          updated_at?: string
+          user_id?: string
+          webhook_url?: string
+        }
+        Relationships: []
+      }
       meta_event_logs: {
         Row: {
           created_at: string
@@ -1120,6 +1174,39 @@ export type Database = {
           user_id?: string
           value_source?: string
           whatsapp_number?: string
+        }
+        Relationships: []
+      }
+      mp_payment_logs: {
+        Row: {
+          amount: number
+          contract_id: string
+          created_at: string
+          id: string
+          mp_payment_id: string
+          raw_payload: Json | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          contract_id: string
+          created_at?: string
+          id?: string
+          mp_payment_id?: string
+          raw_payload?: Json | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          contract_id?: string
+          created_at?: string
+          id?: string
+          mp_payment_id?: string
+          raw_payload?: Json | null
+          status?: string
+          user_id?: string
         }
         Relationships: []
       }
