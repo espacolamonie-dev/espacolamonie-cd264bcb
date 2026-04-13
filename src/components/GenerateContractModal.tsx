@@ -232,7 +232,13 @@ async function generatePDF(contract: Contract, client: Client): Promise<Blob> {
   const dateClause = contract.rentalType === "Locação (2 dias)" && contract.eventDateEnd
     ? `na modalidade de Locação de 2 (dois) dias, compreendendo os dias ${formatDate(contract.eventDate)} e ${formatDate(contract.eventDateEnd)}`
     : `na data ${formatDate(contract.eventDate)}`;
-  addText(`1.1. O presente contrato tem por objeto a locação do espaço físico do Espaço Lamoniê, exclusivamente para realização de evento privado, sem fins lucrativos, ${dateClause}, no horário de dia inteiro, com devolução das chaves dentro do horário acordado.`);
+  addText(`1.1. O presente contrato tem por objeto a locação do espaço físico do Espaço Lamoniê, exclusivamente para realização de evento privado, sem fins lucrativos, ${dateClause}, no horário acordado, com devolução das chaves dentro do horário acordado.`);
+  addSpace(3);
+
+  checkPage();
+  addText("CLÁUSULA 1.1 – DO HORÁRIO", { bold: true, size: 11 });
+  addSpace(1);
+  addText(`O evento ocorrerá no horário de ${contract.eventTime || "dia inteiro"}, conforme acordado entre as partes.`);
   addSpace(3);
 
   checkPage();
