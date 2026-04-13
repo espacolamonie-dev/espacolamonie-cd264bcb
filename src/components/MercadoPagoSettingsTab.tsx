@@ -12,6 +12,8 @@ import { useToast } from "@/hooks/use-toast";
 interface MpSettings {
   access_token: string;
   public_key: string;
+  client_id: string;
+  client_secret: string;
   webhook_secret: string;
   success_url: string;
   failure_url: string;
