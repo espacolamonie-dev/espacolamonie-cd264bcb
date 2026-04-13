@@ -91,6 +91,20 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
         .eq("contract_id", contractId)
         .order("created_at", { ascending: false });
       setAuditLogs((logs as AuditLog[]) || []);
+
+      // Load signing link
+      const { data: sigData } = await (supabase
+        .from("contract_signatures")
+        .select("slug, token") as any)
+        .eq("contract_id", contractId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (sigData?.slug) {
+        setSigningLink(`${window.location.origin}/assinar/${sigData.slug}`);
+      } else {
+        setSigningLink(null);
+      }
     } catch {}
   };
   useEffect(() => { load(); }, [contractId]);
