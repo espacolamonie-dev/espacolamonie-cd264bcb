@@ -63,6 +63,8 @@ export default function MercadoPagoSettingsTab() {
         setSettings({
           access_token: (data as any).access_token || "",
           public_key: (data as any).public_key || "",
+          client_id: (data as any).client_id || "",
+          client_secret: (data as any).client_secret || "",
           webhook_secret: (data as any).webhook_secret || "",
           success_url: (data as any).success_url || "",
           failure_url: (data as any).failure_url || "",
