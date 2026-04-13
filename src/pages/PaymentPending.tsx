@@ -19,13 +19,16 @@ export default function PaymentPending() {
           headers: { Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
         });
         const data = await res.json();
-        if (data.token) setContractToken(data.token);
+        if (data.slug) setContractToken(data.slug);
+        else if (data.token) setContractToken(data.token);
       } catch {}
     };
     fetchToken();
   }, [externalRef]);
 
-  const contractUrl = contractToken ? `/contrato/acesso?token=${contractToken}` : null;
+  const contractUrl = contractToken
+    ? (contractToken.includes("-") || !contractToken.includes("=") ? `/contrato/${contractToken}` : `/contrato/acesso?token=${contractToken}`)
+    : null;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50 to-white dark:from-amber-950/20 dark:to-background flex items-center justify-center p-4">
