@@ -25,6 +25,10 @@ const SignContract = lazy(() => import("@/pages/SignContract"));
 const BookVisit = lazy(() => import("@/pages/BookVisit"));
 const EventDates = lazy(() => import("@/pages/EventDates"));
 const BudgetPublicView = lazy(() => import("@/pages/BudgetPublicView"));
+const PaymentSuccess = lazy(() => import("@/pages/PaymentSuccess"));
+const PaymentPending = lazy(() => import("@/pages/PaymentPending"));
+const PaymentFailure = lazy(() => import("@/pages/PaymentFailure"));
+const ClientContractView = lazy(() => import("@/pages/ClientContractView"));
 const Auth = lazy(() => import("@/pages/Auth"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
@@ -114,6 +118,10 @@ const App = () => {
             <Route path="/agendar-visita" element={<BookVisit />} />
             <Route path="/datas-eventos" element={<EventDates />} />
             <Route path="/orcamento/:token" element={<BudgetPublicView />} />
+            <Route path="/pagamento/sucesso" element={<PaymentSuccess />} />
+            <Route path="/pagamento/pendente" element={<PaymentPending />} />
+            <Route path="/pagamento/falha" element={<PaymentFailure />} />
+            <Route path="/contrato/acesso" element={<ClientContractView />} />
             <Route
               path="/*"
               element={
