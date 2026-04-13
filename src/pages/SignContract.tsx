@@ -69,7 +69,10 @@ Telefone: ${d.client_phone || "Não informado"}
 Têm entre si justo e contratado o seguinte:
 
 CLÁUSULA 1 – DO OBJETO
-1.1. O presente contrato tem por objeto a locação do espaço físico do Espaço Lamoniê, exclusivamente para realização de evento privado, sem fins lucrativos, ${d.rental_type === "Locação (2 dias)" && d.event_date_end ? `na modalidade de Locação de 2 (dois) dias, compreendendo os dias ${formatDate(d.event_date)} e ${formatDate(d.event_date_end)}` : `na data ${formatDate(d.event_date)}`}, no horário de dia inteiro, com devolução das chaves dentro do horário acordado.
+1.1. O presente contrato tem por objeto a locação do espaço físico do Espaço Lamoniê, exclusivamente para realização de evento privado, sem fins lucrativos, ${d.rental_type === "Locação (2 dias)" && d.event_date_end ? `na modalidade de Locação de 2 (dois) dias, compreendendo os dias ${formatDate(d.event_date)} e ${formatDate(d.event_date_end)}` : `na data ${formatDate(d.event_date)}`}, no horário acordado, com devolução das chaves dentro do horário acordado.
+
+CLÁUSULA 1.1 – DO HORÁRIO
+O evento ocorrerá no horário de ${(d as any).event_time || "dia inteiro"}, conforme acordado entre as partes.
 
 CLÁUSULA 2 – DO VALOR E FORMA DE PAGAMENTO
 2.1. O valor total da locação é de ${fmt(d.total_value)}.
