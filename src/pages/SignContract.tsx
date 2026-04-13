@@ -37,6 +37,7 @@ interface SignatureData {
   event_date_end: string | null;
   rental_type: string;
   event_type: string;
+  event_time: string;
   total_value: number;
   deposit_percent: number;
   status: string;
@@ -390,6 +391,8 @@ export default function SignContract() {
   // Rule checkboxes
   const [checkedRules, setCheckedRules] = useState<boolean[]>(new Array(RULES.length).fill(false));
   const allRulesChecked = checkedRules.every(Boolean);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Step: 1=Leitura, 2=Aceite, 3=Assinatura, 4=Pagamento, 5=Conclusão
   const [showSignature, setShowSignature] = useState(false);
@@ -668,6 +671,7 @@ export default function SignContract() {
                     ? `${formatDate(data.event_date)} – ${formatDate(data.event_date_end)}`
                     : formatDate(data.event_date)
                 } />
+                {data.event_time && <Row label="Horário reservado" value={data.event_time} />}
                 <div className="border-t border-border my-2" />
                 <Row label="Valor Total" value={fmt(data.total_value)} bold />
                 <Row label={`Sinal (${data.deposit_percent}%)`} value={fmt(depositValue)} />
