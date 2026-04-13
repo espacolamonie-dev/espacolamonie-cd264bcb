@@ -191,6 +191,8 @@ serve(async (req) => {
           name: company?.company_name || "Espaço Lamoniê",
         },
         slug: currentSlug,
+        token: sig.token,
+        userId: sig.user_id,
         pdfUrl,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
