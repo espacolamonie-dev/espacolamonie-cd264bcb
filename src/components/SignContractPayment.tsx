@@ -68,9 +68,20 @@ function crc16ccitt(str: string): string {
   return crc.toString(16).toUpperCase().padStart(4, "0");
 }
 
+function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
 export default function SignContractPayment({
   clientName, totalValue, depositPercent, contractId, token, userId, onComplete
 }: Props) {
+  const clientSlug = generateSlug(clientName);
+  const clientAreaUrl = `/contrato/${clientSlug}`;
   const [method, setMethod] = useState<PaymentMethod>(null);
   const [copied, setCopied] = useState(false);
   const [installments, setInstallments] = useState<number | null>(null);
