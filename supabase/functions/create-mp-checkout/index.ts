@@ -98,15 +98,12 @@ serve(async (req) => {
     const depositValue = Number(contract.deposit_value) || (Number(contract.total_value) * Number(contract.deposit_percent)) / 100;
     const externalReference = contract.id;
 
-    // Build back_urls
-    const projectUrl = Deno.env.get("SUPABASE_URL")?.replace(".supabase.co", "").replace("https://", "") || "";
-    
-    // Build back_urls - use configured or generate defaults from sign-contract page
-    const signContractUrl = `https://espacolamonie.lovable.app/sign-contract/${token}`;
+    // Build back_urls for payment result pages
+    const siteUrl = "https://espacolamonie.lovable.app";
     const backUrls: Record<string, string> = {
-      success: mpSettings.success_url || signContractUrl,
-      failure: mpSettings.failure_url || signContractUrl,
-      pending: mpSettings.pending_url || signContractUrl,
+      success: mpSettings.success_url || `${siteUrl}/pagamento/sucesso`,
+      failure: mpSettings.failure_url || `${siteUrl}/pagamento/falha`,
+      pending: mpSettings.pending_url || `${siteUrl}/pagamento/pendente`,
     };
 
     // Create Mercado Pago preference
