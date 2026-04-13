@@ -653,7 +653,7 @@ export default function SignContract() {
             </div>
             <h2 className="text-2xl font-display font-semibold text-foreground mb-2">Tudo certo!</h2>
             <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
-              Seu contrato foi assinado e o pagamento está sendo processado. O Espaço Lamoniê entrará em contato para confirmar os detalhes do seu evento.
+              Seu contrato foi assinado e o pagamento está sendo processado.
             </p>
             <div className="bg-secondary rounded-xl p-5 text-left space-y-2 text-sm max-w-sm mx-auto">
               <Row label="Evento" value={data.event_type} />
@@ -663,6 +663,12 @@ export default function SignContract() {
                   : formatDate(data.event_date)
               } />
             </div>
+            <Button
+              onClick={() => window.location.href = `/contrato/acesso?token=${data.token}`}
+              className="mt-6 w-full h-11 rounded-xl"
+            >
+              Acessar meu contrato
+            </Button>
           </div>
         )}
 
