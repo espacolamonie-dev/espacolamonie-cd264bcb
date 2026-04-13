@@ -7,46 +7,76 @@ const WHATSAPP_NUMBER = "5531997111502";
 
 export default function PaymentSuccess() {
   const [params] = useSearchParams();
-  const [contractToken, setContractToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [contractUrl, setContractUrl] = useState<string | null>(null);
 
-  const externalRef = params.get("external_reference") || params.get("collection_id");
+  // Read all possible MP callback params
+  const externalRef = params.get("external_reference");
+  const collectionId = params.get("collection_id");
+  const collectionStatus = params.get("collection_status");
+  const paymentId = params.get("payment_id");
+  const status = params.get("status");
+
+  // Log all received params for debugging
+  useEffect(() => {
+    console.log("[PaymentSuccess] URL params:", {
+      external_reference: externalRef,
+      collection_id: collectionId,
+      collection_status: collectionStatus,
+      payment_id: paymentId,
+      status,
+    });
+  }, []);
+
+  // The external_reference is the contract_id; fallback to collection_id
+  const contractRef = externalRef || collectionId;
 
   useEffect(() => {
-    if (!externalRef) {
+    if (!contractRef) {
       setLoading(false);
-      setError("Referência do pagamento não encontrada.");
+      // Don't show error — show fallback message
       return;
     }
 
-    const fetchToken = async () => {
+    let cancelled = false;
+    const fetchAndRedirect = async () => {
       try {
-        const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/contract-public-access?action=get-token&external_reference=${externalRef}`;
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/contract-public-access?action=get-token&external_reference=${contractRef}`;
         const res = await fetch(url, {
           headers: { Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
         });
         const data = await res.json();
-        if (data.slug || data.token) {
-          const dest = data.slug ? `/contrato/${data.slug}` : `/contrato/acesso?token=${data.token}`;
-          setContractToken(data.token);
-          // Auto redirect after 2s
-          setTimeout(() => {
-            window.location.href = dest;
-          }, 2000);
-        } else {
-          setError("Não foi possível localizar o contrato.");
+
+        if (cancelled) return;
+
+        if (data.slug) {
+          setContractUrl(`/contrato/${data.slug}`);
+        } else if (data.token) {
+          setContractUrl(`/contrato/acesso?token=${data.token}`);
         }
-      } catch {
-        setError("Erro ao buscar dados do contrato.");
+      } catch (err) {
+        console.error("[PaymentSuccess] Error fetching contract:", err);
+        if (!cancelled) {
+          setError("Não foi possível localizar o contrato automaticamente.");
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
-    fetchToken();
-  }, [externalRef]);
 
-  const contractUrl = contractToken ? (contractToken.includes("/") ? contractToken : `/contrato/acesso?token=${contractToken}`) : null;
+    fetchAndRedirect();
+    return () => { cancelled = true; };
+  }, [contractRef]);
+
+  // Auto-redirect after contract URL is resolved
+  useEffect(() => {
+    if (!contractUrl) return;
+    const timer = setTimeout(() => {
+      window.location.href = contractUrl;
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [contractUrl]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white dark:from-emerald-950/20 dark:to-background flex items-center justify-center p-4">
@@ -72,13 +102,16 @@ export default function PaymentSuccess() {
           {loading ? (
             <div className="flex items-center justify-center gap-2 text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="text-sm">Localizando seu contrato…</span>
+            </div>
+          ) : contractUrl ? (
+            <div className="flex items-center justify-center gap-2 text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
               <span className="text-sm">Redirecionando para seu contrato…</span>
             </div>
-          ) : error ? (
-            <p className="text-sm text-destructive">{error}</p>
           ) : (
             <p className="text-sm text-muted-foreground">
-              Agora você já pode acessar seu contrato e acompanhar tudo online.
+              {error || "Pagamento concluído. Estamos verificando seu status."}
             </p>
           )}
 
@@ -86,6 +119,14 @@ export default function PaymentSuccess() {
             {contractUrl && (
               <Button asChild className="w-full h-12 rounded-xl text-base font-semibold">
                 <a href={contractUrl}>Acessar meu contrato</a>
+              </Button>
+            )}
+            {!contractUrl && !loading && (
+              <Button
+                className="w-full h-12 rounded-xl text-base font-semibold"
+                onClick={() => window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Olá! Acabei de realizar o pagamento do sinal. Podem me ajudar a acessar meu contrato?")}`, "_blank")}
+              >
+                Falar conosco para acessar o contrato
               </Button>
             )}
             <Button
