@@ -286,7 +286,7 @@ export default function SignContractPayment({
                 </div>
                 <div>
                   <p className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors">Cartão de crédito</p>
-                  <p className="text-xs text-muted-foreground">Parcelamento em até 6x via WhatsApp</p>
+                  <p className="text-xs text-muted-foreground">Pagamento em até 12x com juros da maquininha</p>
                 </div>
               </div>
             </button>
