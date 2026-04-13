@@ -537,28 +537,42 @@ export default function SignContract() {
     setError("");
     try {
       const sigDataUrl = canvasRef.current!.toDataURL("image/png");
-      const pdfDataUri = await generateSignedPDF(data, sigDataUrl);
-      const rawBase64 = pdfDataUri.split(",")[1];
-
-      const res = await fetch(FUNC_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({ token: sigToken, pdf_base64: rawBase64, user_agent: navigator.userAgent }),
+      
+      // Generate PDF in background - don't block UI
+      const pdfPromise = generateSignedPDF(data, sigDataUrl);
+      
+      // Show payment immediately while PDF generates
+      setSigning(false);
+      setShowPayment(true);
+      
+      // Track Meta: CompleteRegistration (contract signed)
+      import("@/lib/metaPixel").then(({ trackPixelEvent, generateEventId }) => {
+        trackPixelEvent("CompleteRegistration", { content_name: data.event_type }, generateEventId());
+      }).catch(() => {});
+      
+      // Send PDF to backend asynchronously
+      pdfPromise.then(async (pdfDataUri) => {
+        const rawBase64 = pdfDataUri.split(",")[1];
+        try {
+          await fetch(FUNC_URL, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            },
+            body: JSON.stringify({ token: sigToken, pdf_base64: rawBase64, user_agent: navigator.userAgent }),
+          });
+        } catch (e) {
+          console.error("Erro ao salvar assinatura:", e);
+        }
+      }).catch((e) => {
+        console.error("Erro ao gerar PDF:", e);
       });
-      const result = await res.json();
-      if (result.error) { setError(result.error); }
-      else {
-        setShowPayment(true);
-        // Track Meta: CompleteRegistration (contract signed)
-        import("@/lib/metaPixel").then(({ trackPixelEvent, generateEventId }) => {
-          trackPixelEvent("CompleteRegistration", { content_name: data.event_type }, generateEventId());
-        }).catch(() => {});
-      }
-    } catch { setError("Erro ao assinar contrato"); }
-    finally { setSigning(false); }
+      
+    } catch { 
+      setError("Erro ao assinar contrato"); 
+      setSigning(false);
+    }
   };
 
   const depositValue = data ? (Number(data.total_value) * Number(data.deposit_percent)) / 100 : 0;
@@ -639,7 +653,7 @@ export default function SignContract() {
             </div>
             <h2 className="text-2xl font-display font-semibold text-foreground mb-2">Tudo certo!</h2>
             <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
-              Seu contrato foi assinado e o pagamento está sendo processado. O Espaço Lamoniê entrará em contato para confirmar os detalhes do seu evento.
+              Seu contrato foi assinado e o pagamento está sendo processado.
             </p>
             <div className="bg-secondary rounded-xl p-5 text-left space-y-2 text-sm max-w-sm mx-auto">
               <Row label="Evento" value={data.event_type} />
@@ -649,6 +663,12 @@ export default function SignContract() {
                   : formatDate(data.event_date)
               } />
             </div>
+            <Button
+              onClick={() => window.location.href = `/contrato/acesso?token=${data.token}`}
+              className="mt-6 w-full h-11 rounded-xl"
+            >
+              Acessar meu contrato
+            </Button>
           </div>
         )}
 

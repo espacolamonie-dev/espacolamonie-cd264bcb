@@ -80,6 +80,7 @@ export default function SignContractPayment({
   const [paidAmount, setPaidAmount] = useState<number | null>(null);
   const [remainingAmount, setRemainingAmount] = useState<number | null>(null);
   const [cardLoading, setCardLoading] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const depositValue = (totalValue * depositPercent) / 100;
@@ -159,6 +160,11 @@ export default function SignContractPayment({
         setPaidAmount(result.payment_registered || depositValue);
         setRemainingAmount(result.remaining ?? null);
         savePaymentChoice("pagar_agora", "pix");
+        // Auto-redirect to contract view after 2 seconds
+        setRedirecting(true);
+        setTimeout(() => {
+          window.location.href = `/contrato/acesso?token=${token}`;
+        }, 2000);
       } else {
         throw new Error(result.error || "Erro ao processar comprovante");
       }
@@ -316,42 +322,48 @@ export default function SignContractPayment({
       return (
         <div className="space-y-5 animate-in fade-in duration-300">
           <div className="bg-card rounded-2xl border border-border shadow-sm p-8 text-center">
-            <div className="bg-emerald-500/15 rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="h-8 w-8 text-emerald-600" />
+            <div className="relative mx-auto w-16 h-16 mb-4">
+              {redirecting && <div className="absolute inset-0 rounded-full bg-emerald-500/20 animate-ping" />}
+              <div className="relative bg-emerald-500/15 rounded-full h-16 w-16 flex items-center justify-center">
+                <CheckCircle className="h-8 w-8 text-emerald-600" />
+              </div>
             </div>
             <h2 className="text-xl font-display font-semibold text-foreground mb-2">Comprovante enviado!</h2>
             <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-              Recebemos seu comprovante. O Espaço Lamoniê irá confirmar o pagamento e entrar em contato em breve.
+              {redirecting
+                ? "Redirecionando para seu contrato…"
+                : "Recebemos seu comprovante. Aguardando validação."
+              }
             </p>
+
+            {redirecting && (
+              <div className="flex items-center justify-center gap-2 mt-4 text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm">Abrindo área do contrato…</span>
+              </div>
+            )}
 
             {/* Payment summary */}
             <div className="bg-secondary rounded-xl p-4 mt-5 text-left space-y-2 max-w-sm mx-auto">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Valor pago:</span>
+                <span className="text-muted-foreground">Valor enviado:</span>
                 <span className="font-semibold text-foreground">{fmt(paidAmount || depositValue)}</span>
               </div>
-              {remainingAmount !== null && remainingAmount > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Valor restante:</span>
-                  <span className="font-semibold text-foreground">{fmt(remainingAmount)}</span>
-                </div>
-              )}
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Método:</span>
                 <span className="font-semibold text-foreground">PIX</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Status:</span>
-                <span className="font-semibold text-emerald-600">Comprovante recebido ✓</span>
+                <span className="font-semibold text-amber-600">Comprovante enviado ⏳</span>
               </div>
             </div>
 
-            <p className="text-xs text-muted-foreground mt-4">
-              O comprovante foi salvo automaticamente nos documentos do contrato.
-            </p>
-
-            <Button onClick={() => onComplete({ payment_choice: "pagar_agora", payment_method_selected: "pix" })} className="mt-6 w-full h-11 rounded-xl">
-              Concluir
+            <Button
+              onClick={() => window.location.href = `/contrato/acesso?token=${token}`}
+              className="mt-6 w-full h-11 rounded-xl"
+            >
+              Acessar meu contrato
             </Button>
           </div>
         </div>
