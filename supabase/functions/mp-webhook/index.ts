@@ -6,121 +6,136 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const jsonResponse = (body: Record<string, unknown>) =>
+  new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Handle GET for health check
   if (req.method === "GET") {
-    return new Response(JSON.stringify({ status: "ok", message: "mp-webhook online" }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return jsonResponse({ status: "ok", message: "mp-webhook online" });
   }
 
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-  );
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    console.error("mp-webhook missing environment variables", {
+      hasSupabaseUrl: Boolean(supabaseUrl),
+      hasServiceRoleKey: Boolean(serviceRoleKey),
+    });
+
+    return jsonResponse({ status: "received", note: "server_misconfigured" });
+  }
+
+  const supabase = createClient(supabaseUrl, serviceRoleKey);
 
   try {
-    let body: any;
-    try {
-      body = await req.json();
-    } catch {
-      return new Response(JSON.stringify({ status: "received", note: "empty or invalid body" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const rawBody = (await req.text()).trim();
+
+    if (!rawBody) {
+      console.error("mp-webhook received empty body");
+      return jsonResponse({ status: "received", note: "empty_body" });
     }
+
+    let body: any;
+
+    try {
+      body = JSON.parse(rawBody);
+    } catch (parseError) {
+      console.error("mp-webhook invalid JSON body", parseError);
+      return jsonResponse({ status: "received", note: "invalid_json" });
+    }
+
     console.log("MP webhook received:", JSON.stringify(body));
 
-    // Mercado Pago sends { action, type, data: { id } }
-    const { type, data: webhookData, action } = body;
+    const { type, data: webhookData, action } = body ?? {};
 
-    // Only process payment notifications
     if (type !== "payment" && action !== "payment.updated" && action !== "payment.created") {
-      return new Response(JSON.stringify({ received: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResponse({ status: "received" });
     }
 
     const mpPaymentId = webhookData?.id;
+
     if (!mpPaymentId) {
-      return new Response(JSON.stringify({ error: "Payment ID não encontrado" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      console.error("MP webhook without payment id", body);
+      return jsonResponse({ status: "received", note: "missing_payment_id" });
     }
 
-    // We need the access_token. Since webhook doesn't tell us which user,
-    // we'll try to find it from the external_reference after fetching the payment.
-    // First, try all active MP settings to find the right one
-    const { data: allSettings } = await supabase
+    const { data: allSettings, error: settingsError } = await supabase
       .from("mercado_pago_settings")
       .select("*")
       .eq("is_active", true);
 
+    if (settingsError) {
+      console.error("Error loading MP settings:", settingsError);
+      return jsonResponse({ status: "received", note: "settings_lookup_failed" });
+    }
+
     if (!allSettings || allSettings.length === 0) {
       console.error("No active MP settings found");
-      return new Response(JSON.stringify({ error: "MP não configurado" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResponse({ status: "received", note: "mp_not_configured" });
     }
 
     let paymentData: any = null;
-    let usedSettings: any = null;
 
-    // Try each settings to fetch the payment
     for (const settings of allSettings) {
       try {
         const paymentRes = await fetch(`https://api.mercadopago.com/v1/payments/${mpPaymentId}`, {
           headers: { Authorization: `Bearer ${settings.access_token}` },
         });
+
         if (paymentRes.ok) {
           paymentData = await paymentRes.json();
-          usedSettings = settings;
           break;
         }
-      } catch {}
+
+        console.error("Mercado Pago payment lookup failed", {
+          mpPaymentId: String(mpPaymentId),
+          status: paymentRes.status,
+          userId: settings.user_id,
+        });
+      } catch (lookupError) {
+        console.error("Mercado Pago payment lookup error", lookupError);
+      }
     }
 
     if (!paymentData) {
-      console.error("Could not fetch payment from MP");
-      return new Response(JSON.stringify({ error: "Pagamento não encontrado no Mercado Pago" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      console.error("Could not fetch payment from MP", { mpPaymentId: String(mpPaymentId) });
+      return jsonResponse({ status: "received", note: "payment_not_found" });
     }
 
     const externalReference = paymentData.external_reference;
-    const mpStatus = paymentData.status; // approved, pending, rejected, cancelled, etc.
+    const mpStatus = paymentData.status;
     const paidAmount = Number(paymentData.transaction_amount) || 0;
 
     if (!externalReference) {
-      console.error("No external_reference in payment");
-      return new Response(JSON.stringify({ received: true, skipped: "no external_reference" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      console.error("No external_reference in payment", { mpPaymentId: String(mpPaymentId) });
+      return jsonResponse({ status: "received", note: "no_external_reference" });
     }
 
-    // Find contract by external_reference (which is the contract ID)
-    const { data: contract } = await supabase
+    const { data: contract, error: contractError } = await supabase
       .from("contracts")
       .select("*")
       .eq("id", externalReference)
       .maybeSingle();
 
-    if (!contract) {
-      console.error("Contract not found for external_reference:", externalReference);
-      return new Response(JSON.stringify({ error: "Contrato não encontrado" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (contractError) {
+      console.error("Error loading contract for payment", contractError);
+      return jsonResponse({ status: "received", note: "contract_lookup_failed" });
     }
 
-    // Idempotency: check if we already processed this payment
-    const { data: existingLog } = await supabase
+    if (!contract) {
+      console.error("Contract not found for external_reference:", externalReference);
+      return jsonResponse({ status: "received", note: "contract_not_found" });
+    }
+
+    const { data: existingLog, error: existingLogError } = await supabase
       .from("mp_payment_logs")
       .select("id")
       .eq("contract_id", contract.id)
@@ -128,17 +143,19 @@ serve(async (req) => {
       .eq("status", mpStatus)
       .maybeSingle();
 
-    if (existingLog) {
-      console.log("Payment already processed, skipping:", mpPaymentId, mpStatus);
-      return new Response(JSON.stringify({ received: true, skipped: "already_processed" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (existingLogError) {
+      console.error("Error checking existing MP log", existingLogError);
     }
 
-    // Don't reactivate cancelled contracts
+    if (existingLog) {
+      console.log("Payment already processed, skipping:", mpPaymentId, mpStatus);
+      return jsonResponse({ status: "received", skipped: "already_processed" });
+    }
+
     if (contract.status === "cancelled") {
       console.log("Contract is cancelled, logging but not updating:", contract.id);
-      await supabase.from("mp_payment_logs").insert({
+
+      const { error: cancelledLogError } = await supabase.from("mp_payment_logs").insert({
         user_id: contract.user_id,
         contract_id: contract.id,
         mp_payment_id: String(mpPaymentId),
@@ -146,13 +163,15 @@ serve(async (req) => {
         amount: paidAmount,
         raw_payload: paymentData,
       });
-      return new Response(JSON.stringify({ received: true, skipped: "contract_cancelled" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+
+      if (cancelledLogError) {
+        console.error("Error logging cancelled contract payment", cancelledLogError);
+      }
+
+      return jsonResponse({ status: "received", skipped: "contract_cancelled" });
     }
 
-    // Log this webhook event
-    await supabase.from("mp_payment_logs").insert({
+    const { error: logInsertError } = await supabase.from("mp_payment_logs").insert({
       user_id: contract.user_id,
       contract_id: contract.id,
       mp_payment_id: String(mpPaymentId),
@@ -161,13 +180,19 @@ serve(async (req) => {
       raw_payload: paymentData,
     });
 
-    // Handle status
+    if (logInsertError) {
+      console.error("Error inserting MP payment log", logInsertError);
+    }
+
     if (mpStatus === "approved") {
-      // Check existing payments to avoid duplicates
-      const { data: existingPayments } = await supabase
+      const { data: existingPayments, error: existingPaymentsError } = await supabase
         .from("payments")
         .select("amount, description")
         .eq("contract_id", contract.id);
+
+      if (existingPaymentsError) {
+        console.error("Error loading existing payments", existingPaymentsError);
+      }
 
       const alreadyHasMpPayment = (existingPayments || []).some(
         (p: any) => p.description?.includes(`MP#${mpPaymentId}`)
@@ -176,8 +201,7 @@ serve(async (req) => {
       if (!alreadyHasMpPayment) {
         const today = new Date().toISOString().split("T")[0];
 
-        // Insert payment
-        await supabase.from("payments").insert({
+        const { error: insertPaymentError } = await supabase.from("payments").insert({
           user_id: contract.user_id,
           contract_id: contract.id,
           amount: paidAmount,
@@ -185,11 +209,20 @@ serve(async (req) => {
           description: `Pagamento via Cartão (Mercado Pago) - MP#${mpPaymentId}`,
         });
 
-        // Recalculate totals
-        const { data: allPayments } = await supabase
+        if (insertPaymentError) {
+          console.error("Error inserting payment", insertPaymentError);
+          return jsonResponse({ status: "received", note: "payment_insert_failed" });
+        }
+
+        const { data: allPayments, error: allPaymentsError } = await supabase
           .from("payments")
           .select("amount")
           .eq("contract_id", contract.id);
+
+        if (allPaymentsError) {
+          console.error("Error recalculating payments", allPaymentsError);
+          return jsonResponse({ status: "received", note: "payment_recalc_failed" });
+        }
 
         const totalPaid = (allPayments || []).reduce((s: number, p: any) => s + Number(p.amount), 0);
         const contractTotal = Number(contract.total_value);
@@ -199,29 +232,38 @@ serve(async (req) => {
         if (remaining <= 0) paymentStatus = "paid_full";
         else if (totalPaid > 0) paymentStatus = "deposit_paid";
 
-        await supabase.from("contracts").update({
-          remaining_value: remaining,
-          payment_status: paymentStatus,
-          mp_payment_id: String(mpPaymentId),
-          mp_payment_status: "approved",
-        }).eq("id", contract.id);
+        const { error: updateContractError } = await supabase
+          .from("contracts")
+          .update({
+            remaining_value: remaining,
+            payment_status: paymentStatus,
+            mp_payment_id: String(mpPaymentId),
+            mp_payment_status: "approved",
+          })
+          .eq("id", contract.id);
 
-        // Send push notification
+        if (updateContractError) {
+          console.error("Error updating approved contract payment state", updateContractError);
+        }
+
         try {
           const fmtVal = `R$ ${paidAmount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
-          
-          // Get client name
-          const { data: clientData } = await supabase
+
+          const { data: clientData, error: clientError } = await supabase
             .from("clients")
             .select("name")
             .eq("id", contract.client_id)
             .maybeSingle();
 
-          await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/manage-push`, {
+          if (clientError) {
+            console.error("Error loading client for push notification", clientError);
+          }
+
+          await fetch(`${supabaseUrl}/functions/v1/manage-push`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+              Authorization: `Bearer ${serviceRoleKey}`,
             },
             body: JSON.stringify({
               action: "send-notification",
@@ -231,31 +273,39 @@ serve(async (req) => {
               tag: `mp-approved-${contract.id}`,
             }),
           });
-        } catch (e) {
-          console.error("Push error:", e);
+        } catch (pushError) {
+          console.error("Push error:", pushError);
         }
       }
     } else if (mpStatus === "pending" || mpStatus === "in_process") {
-      await supabase.from("contracts").update({
-        mp_payment_id: String(mpPaymentId),
-        mp_payment_status: "pending",
-      }).eq("id", contract.id);
+      const { error: pendingUpdateError } = await supabase
+        .from("contracts")
+        .update({
+          mp_payment_id: String(mpPaymentId),
+          mp_payment_status: "pending",
+        })
+        .eq("id", contract.id);
+
+      if (pendingUpdateError) {
+        console.error("Error updating pending MP payment status", pendingUpdateError);
+      }
     } else if (mpStatus === "rejected" || mpStatus === "cancelled" || mpStatus === "refunded") {
-      await supabase.from("contracts").update({
-        mp_payment_id: String(mpPaymentId),
-        mp_payment_status: mpStatus,
-      }).eq("id", contract.id);
+      const { error: rejectedUpdateError } = await supabase
+        .from("contracts")
+        .update({
+          mp_payment_id: String(mpPaymentId),
+          mp_payment_status: mpStatus,
+        })
+        .eq("id", contract.id);
+
+      if (rejectedUpdateError) {
+        console.error("Error updating rejected MP payment status", rejectedUpdateError);
+      }
     }
 
-    return new Response(JSON.stringify({ received: true, status: mpStatus }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-
+    return jsonResponse({ status: "received", mp_status: mpStatus });
   } catch (e) {
     console.error("mp-webhook error:", e);
-    return new Response(JSON.stringify({ error: "Erro interno" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return jsonResponse({ status: "received", note: "internal_error" });
   }
 });
