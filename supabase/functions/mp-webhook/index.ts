@@ -11,13 +11,27 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Handle GET for health check
+  if (req.method === "GET") {
+    return new Response(JSON.stringify({ status: "ok", message: "mp-webhook online" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
   try {
-    const body = await req.json();
+    let body: any;
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(JSON.stringify({ status: "received", note: "empty or invalid body" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     console.log("MP webhook received:", JSON.stringify(body));
 
     // Mercado Pago sends { action, type, data: { id } }
