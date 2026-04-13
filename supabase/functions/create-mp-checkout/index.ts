@@ -101,10 +101,13 @@ serve(async (req) => {
     // Build back_urls
     const projectUrl = Deno.env.get("SUPABASE_URL")?.replace(".supabase.co", "").replace("https://", "") || "";
     
-    const backUrls: Record<string, string> = {};
-    if (mpSettings.success_url) backUrls.success = mpSettings.success_url;
-    if (mpSettings.failure_url) backUrls.failure = mpSettings.failure_url;
-    if (mpSettings.pending_url) backUrls.pending = mpSettings.pending_url;
+    // Build back_urls - use configured or generate defaults from sign-contract page
+    const signContractUrl = `https://espacolamonie.lovable.app/sign-contract/${token}`;
+    const backUrls: Record<string, string> = {
+      success: mpSettings.success_url || signContractUrl,
+      failure: mpSettings.failure_url || signContractUrl,
+      pending: mpSettings.pending_url || signContractUrl,
+    };
 
     // Create Mercado Pago preference
     const preferencePayload: Record<string, any> = {
@@ -120,11 +123,8 @@ serve(async (req) => {
       external_reference: externalReference,
       notification_url: mpSettings.webhook_url || `${Deno.env.get("SUPABASE_URL")}/functions/v1/mp-webhook`,
       auto_return: "approved",
+      back_urls: backUrls,
     };
-
-    if (Object.keys(backUrls).length > 0) {
-      preferencePayload.back_urls = backUrls;
-    }
 
     if (client?.email) {
       preferencePayload.payer = { email: client.email };
