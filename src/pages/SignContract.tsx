@@ -37,6 +37,7 @@ interface SignatureData {
   event_date_end: string | null;
   rental_type: string;
   event_type: string;
+  event_time: string;
   total_value: number;
   deposit_percent: number;
   status: string;
@@ -69,7 +70,10 @@ Telefone: ${d.client_phone || "Não informado"}
 Têm entre si justo e contratado o seguinte:
 
 CLÁUSULA 1 – DO OBJETO
-1.1. O presente contrato tem por objeto a locação do espaço físico do Espaço Lamoniê, exclusivamente para realização de evento privado, sem fins lucrativos, ${d.rental_type === "Locação (2 dias)" && d.event_date_end ? `na modalidade de Locação de 2 (dois) dias, compreendendo os dias ${formatDate(d.event_date)} e ${formatDate(d.event_date_end)}` : `na data ${formatDate(d.event_date)}`}, no horário de dia inteiro, com devolução das chaves dentro do horário acordado.
+1.1. O presente contrato tem por objeto a locação do espaço físico do Espaço Lamoniê, exclusivamente para realização de evento privado, sem fins lucrativos, ${d.rental_type === "Locação (2 dias)" && d.event_date_end ? `na modalidade de Locação de 2 (dois) dias, compreendendo os dias ${formatDate(d.event_date)} e ${formatDate(d.event_date_end)}` : `na data ${formatDate(d.event_date)}`}, no horário acordado, com devolução das chaves dentro do horário acordado.
+
+CLÁUSULA 1.1 – DO HORÁRIO
+O evento ocorrerá no horário de ${(d as any).event_time || "dia inteiro"}, conforme acordado entre as partes.
 
 CLÁUSULA 2 – DO VALOR E FORMA DE PAGAMENTO
 2.1. O valor total da locação é de ${fmt(d.total_value)}.
@@ -211,7 +215,13 @@ async function generateSignedPDF(d: SignatureData, signatureDataUrl: string): Pr
   const dateClausePdf = d.rental_type === "Locação (2 dias)" && d.event_date_end
     ? `na modalidade de Locação de 2 (dois) dias, compreendendo os dias ${formatDate(d.event_date)} e ${formatDate(d.event_date_end)}`
     : `na data ${formatDate(d.event_date)}`;
-  addText(`1.1. O presente contrato tem por objeto a locação do espaço físico do Espaço Lamoniê, exclusivamente para realização de evento privado, sem fins lucrativos, ${dateClausePdf}, no horário de dia inteiro, com devolução das chaves dentro do horário acordado.`);
+  addText(`1.1. O presente contrato tem por objeto a locação do espaço físico do Espaço Lamoniê, exclusivamente para realização de evento privado, sem fins lucrativos, ${dateClausePdf}, no horário acordado, com devolução das chaves dentro do horário acordado.`);
+  addSpace(5);
+
+  checkPage();
+  addText("CLÁUSULA 1.1 – DO HORÁRIO", { bold: true, size: 12 }); addSpace(2);
+  addText(`O evento ocorrerá no horário de ${(d as any).event_time || "dia inteiro"}, conforme acordado entre as partes.`);
+  addSpace(5);
   addSpace(5);
 
   checkPage();
@@ -381,10 +391,34 @@ export default function SignContract() {
   // Rule checkboxes
   const [checkedRules, setCheckedRules] = useState<boolean[]>(new Array(RULES.length).fill(false));
   const allRulesChecked = checkedRules.every(Boolean);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Step: 1=Leitura, 2=Aceite, 3=Assinatura, 4=Pagamento, 5=Conclusão
   const [showSignature, setShowSignature] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
+
+  // Countdown effect: start 5s timer when all rules are checked
+  useEffect(() => {
+    if (allRulesChecked && countdown === null && !showSignature) {
+      setCountdown(5);
+      countdownRef.current = setInterval(() => {
+        setCountdown(prev => {
+          if (prev === null || prev <= 1) {
+            if (countdownRef.current) clearInterval(countdownRef.current);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    if (!allRulesChecked) {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+      setCountdown(null);
+    }
+    return () => { if (countdownRef.current) clearInterval(countdownRef.current); };
+  }, [allRulesChecked, showSignature]);
+
 
   const currentStep = signed ? 5 : showPayment ? 4 : showSignature ? 3 : allRulesChecked ? 2 : 1;
   const stepProgress = signed ? 100 : showPayment ? 80 : showSignature ? 60 : allRulesChecked ? 40 : (checkedRules.filter(Boolean).length / RULES.length) * 20;
@@ -659,6 +693,7 @@ export default function SignContract() {
                     ? `${formatDate(data.event_date)} – ${formatDate(data.event_date_end)}`
                     : formatDate(data.event_date)
                 } />
+                {data.event_time && <Row label="Horário reservado" value={data.event_time} />}
                 <div className="border-t border-border my-2" />
                 <Row label="Valor Total" value={fmt(data.total_value)} bold />
                 <Row label={`Sinal (${data.deposit_percent}%)`} value={fmt(depositValue)} />
@@ -671,18 +706,7 @@ export default function SignContract() {
               <h2 className="text-lg font-display font-semibold text-foreground mb-1">📋 Como funciona o Espaço Lamoniê</h2>
               <p className="text-xs text-muted-foreground mb-4">Leia cada regra e marque a caixa de concordância para continuar.</p>
 
-              {/* Master checkbox */}
-              <label className="flex items-center gap-3 mb-4 p-4 bg-primary/5 rounded-xl border border-primary/20 cursor-pointer group hover:bg-primary/10 transition-colors">
-                <Checkbox
-                  checked={allRulesChecked}
-                  onCheckedChange={(checked) => {
-                    setCheckedRules(new Array(RULES.length).fill(!!checked));
-                  }}
-                />
-                <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
-                  Li e concordo com todas as regras acima
-                </span>
-              </label>
+              
 
               <div className="grid gap-3">
                 {RULES.map((rule, i) => {
@@ -749,9 +773,15 @@ export default function SignContract() {
             {/* 4 — Continue / Signature area */}
             {!showSignature ? (
               <div className="text-center">
+                {allRulesChecked && countdown !== null && countdown > 0 && (
+                  <div className="mb-4 p-4 bg-primary/5 rounded-xl border border-primary/20">
+                    <p className="text-sm font-medium text-foreground mb-2">Aguarde alguns segundos para prosseguir...</p>
+                    <p className="text-3xl font-bold text-primary tabular-nums">{countdown}</p>
+                  </div>
+                )}
                 <Button
                   onClick={() => setShowSignature(true)}
-                  disabled={!allRulesChecked}
+                  disabled={!allRulesChecked || (countdown !== null && countdown > 0)}
                   className="w-full h-12 text-base font-semibold rounded-xl gap-2 disabled:opacity-40"
                 >
                   Continuar para assinatura

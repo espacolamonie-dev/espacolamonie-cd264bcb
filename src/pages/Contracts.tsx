@@ -38,6 +38,13 @@ const EVENT_TYPES: EventType[] = [
 
 const RENTAL_TYPES: RentalType[] = ["Locação (1 dia)", "Locação (2 dias)"];
 
+const EVENT_TIME_SLOTS = [
+  "08:00 às 20:00",
+  "09:00 às 21:00",
+  "10:00 às 22:00",
+  "11:00 às 23:00",
+];
+
 const emptyForm = {
   clientId: "", eventType: "Aniversário Infantil" as EventType, eventDate: "", eventDateEnd: "",
   rentalType: "Locação (1 dia)" as RentalType, eventTime: "",
@@ -185,6 +192,7 @@ export default function Contracts() {
 
   const handleSave = async () => {
     if (!form.clientId || !form.eventDate) { toast.error("Cliente e data são obrigatórios"); return; }
+    if (!form.eventTime) { toast.error("Selecione o horário do evento"); return; }
     if (form.rentalType === "Locação (2 dias)" && !form.eventDateEnd) { toast.error("Informe a data fim para locação de 2 dias"); return; }
     if (!editing || form.eventDate !== editing.eventDate) {
       const conflict = contracts.find(
@@ -668,6 +676,13 @@ export default function Contracts() {
                   <Input type="date" value={form.eventDateEnd} onChange={(e) => set("eventDateEnd", e.target.value)} className="rounded-lg" min={form.eventDate || undefined} />
                 </div>
               )}
+              <div className="grid gap-1.5">
+                <Label className="text-xs font-medium text-muted-foreground">Horário do evento *</Label>
+                <Select value={form.eventTime} onValueChange={(v) => set("eventTime", v)}>
+                  <SelectTrigger className="rounded-lg"><SelectValue placeholder="Selecione o horário" /></SelectTrigger>
+                  <SelectContent>{EVENT_TIME_SLOTS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
               <div className="grid gap-1.5">
                 <Label className="text-xs font-medium text-muted-foreground">Convidados</Label>
                 <NumericInput value={form.guestCount} onChange={(v) => set("guestCount", v)} placeholder="Nº de convidados" />

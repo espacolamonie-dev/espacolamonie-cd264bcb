@@ -88,12 +88,13 @@ serve(async (req) => {
       });
     }
 
-    // Check if contract is cancelled or fetch reserved_until (only if there's a contract_id)
+    // Check if contract is cancelled or fetch reserved_until and event_time
     let contractReservedUntil: string | null = null;
+    let eventTime = "";
     if (data.contract_id) {
       const { data: contract } = await supabase
         .from("contracts")
-        .select("status, reserved_until")
+        .select("status, reserved_until, event_time")
         .eq("id", data.contract_id)
         .maybeSingle();
       
@@ -105,6 +106,7 @@ serve(async (req) => {
       }
       if (contract) {
         contractReservedUntil = contract.reserved_until || null;
+        eventTime = contract.event_time || "";
       }
     }
 
@@ -114,6 +116,7 @@ serve(async (req) => {
       client_cpf: data.client_cpf ? data.client_cpf.replace(/^(\d{3}).*(\d{2})$/, "$1.***.***-$2") : null,
       client_phone: data.client_phone ? data.client_phone.replace(/^(.{4}).*(.{2})$/, "$1*****$2") : null,
       reserved_until: contractReservedUntil,
+      event_time: eventTime,
     };
 
     return new Response(JSON.stringify(safeData), {
