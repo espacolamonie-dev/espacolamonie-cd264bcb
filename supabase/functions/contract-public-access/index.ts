@@ -138,16 +138,21 @@ serve(async (req) => {
       let pdfUrl: string | null = null;
       const { data: docs } = await supabase
         .from("documents")
-        .select("file_name")
+        .select("file_name, name")
         .eq("contract_id", sig.contract_id)
-        .eq("type", "signed_contract")
-        .order("created_at", { ascending: false })
-        .limit(1);
+        .order("created_at", { ascending: false });
 
-      if (docs && docs.length > 0 && docs[0].file_name) {
+      // Find signed contract: check type "signed_contract" or name containing "Assinado"
+      const signedDoc = (docs || []).find(
+        (d: any) => d.name?.includes("Assinado")
+      ) || (docs || []).find(
+        (d: any) => d.file_name?.endsWith(".pdf")
+      );
+
+      if (signedDoc && signedDoc.file_name) {
         const { data: signedUrl } = await supabase.storage
           .from("documents")
-          .createSignedUrl(docs[0].file_name, 3600); // 1 hour
+          .createSignedUrl(signedDoc.file_name, 3600);
         pdfUrl = signedUrl?.signedUrl || null;
       }
 
