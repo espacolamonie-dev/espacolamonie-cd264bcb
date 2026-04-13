@@ -212,6 +212,33 @@ export default function MercadoPagoSettingsTab() {
             </div>
 
             <div>
+              <Label className="text-xs">Client ID</Label>
+              <Input
+                value={settings.client_id}
+                onChange={(e) => update("client_id", e.target.value)}
+                placeholder="Cole aqui o Client ID..."
+                className="mt-1 font-mono text-xs"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Encontre em: Mercado Pago → Suas integrações → Detalhes da aplicação → Client ID
+              </p>
+            </div>
+
+            <div>
+              <Label className="text-xs">Client Secret</Label>
+              <Input
+                type="password"
+                value={settings.client_secret}
+                onChange={(e) => update("client_secret", e.target.value)}
+                placeholder="Cole aqui o Client Secret..."
+                className="mt-1 font-mono text-xs"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Encontre em: Mercado Pago → Suas integrações → Detalhes da aplicação → Client Secret
+              </p>
+            </div>
+
+            <div>
               <Label className="text-xs">Assinatura Secreta do Webhook (Secret)</Label>
               <Input
                 type="password"
