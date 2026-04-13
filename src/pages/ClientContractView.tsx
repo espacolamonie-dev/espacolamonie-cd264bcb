@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useParams } from "react-router-dom";
 import {
   CheckCircle, Clock, AlertCircle, Download, MessageCircle,
   CreditCard, Calendar, Users, FileText, Loader2, ShieldCheck
@@ -53,30 +53,39 @@ interface ContractData {
   };
   payments: { amount: number; date: string; description: string }[];
   company: { phone: string; name: string };
+  slug: string | null;
+  pdfUrl: string | null;
 }
 
 export default function ClientContractView() {
   const [params] = useSearchParams();
+  const { slug: urlSlug } = useParams<{ slug: string }>();
   const token = params.get("token");
   const [data, setData] = useState<ContractData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!token) {
+    if (!token && !urlSlug) {
       setLoading(false);
       setError("Token de acesso não informado.");
       return;
     }
     const load = async () => {
       try {
-        const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/contract-public-access?action=get-contract&token=${token}`;
+        const qp = urlSlug ? `action=get-contract&slug=${urlSlug}` : `action=get-contract&token=${token}`;
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/contract-public-access?${qp}`;
         const res = await fetch(url, {
           headers: { Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
         });
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || "Erro ao carregar contrato");
         setData(json);
+
+        // If accessed via token and slug is available, replace URL for cleaner look
+        if (token && json.slug) {
+          window.history.replaceState(null, "", `/contrato/${json.slug}`);
+        }
       } catch (e: any) {
         setError(e.message || "Erro ao carregar contrato");
       } finally {
@@ -84,7 +93,7 @@ export default function ClientContractView() {
       }
     };
     load();
-  }, [token]);
+  }, [token, urlSlug]);
 
   if (loading) {
     return (
@@ -270,11 +279,22 @@ export default function ClientContractView() {
 
         {/* Actions */}
         <div className="space-y-3 pt-2">
+          {/* Download signed contract */}
+          {isSigned && data.pdfUrl && (
+            <Button
+              variant="outline"
+              className="w-full h-12 rounded-xl text-base font-semibold gap-2 border-emerald-500/30 text-emerald-700 hover:bg-emerald-500/10"
+              onClick={() => window.open(data.pdfUrl!, "_blank")}
+            >
+              <Download size={18} />
+              Baixar contrato assinado
+            </Button>
+          )}
+
           {!isPaid && Number(contract.remaining_value) > 0 && (
             <Button
               className="w-full h-12 rounded-xl text-base font-semibold gap-2"
               onClick={() => {
-                // If there's an MP preference, redirect to it
                 if (contract.mp_preference_id) {
                   window.location.href = `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${contract.mp_preference_id}`;
                 } else {
@@ -300,7 +320,7 @@ export default function ClientContractView() {
         {/* Footer */}
         <div className="text-center py-6 text-xs text-muted-foreground">
           <p>{company.name} • Área do Cliente</p>
-          <p className="mt-1">Acesso seguro via token exclusivo</p>
+          <p className="mt-1">Acesso seguro via link exclusivo</p>
         </div>
       </main>
     </div>

@@ -664,8 +664,10 @@ export default function SignContract() {
               } />
             </div>
             <Button
-              onClick={() => window.location.href = `/contrato/acesso?token=${data.token}`}
-              className="mt-6 w-full h-11 rounded-xl"
+              onClick={() => {
+                const slug = data.client_name?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+                window.location.href = slug ? `/contrato/${slug}` : `/contrato/acesso?token=${data.token}`;
+              }}
             >
               Acessar meu contrato
             </Button>

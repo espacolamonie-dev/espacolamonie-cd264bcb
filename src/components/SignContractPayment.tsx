@@ -68,9 +68,20 @@ function crc16ccitt(str: string): string {
   return crc.toString(16).toUpperCase().padStart(4, "0");
 }
 
+function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
 export default function SignContractPayment({
   clientName, totalValue, depositPercent, contractId, token, userId, onComplete
 }: Props) {
+  const clientSlug = generateSlug(clientName);
+  const clientAreaUrl = `/contrato/${clientSlug}`;
   const [method, setMethod] = useState<PaymentMethod>(null);
   const [copied, setCopied] = useState(false);
   const [installments, setInstallments] = useState<number | null>(null);
@@ -163,7 +174,7 @@ export default function SignContractPayment({
         // Auto-redirect to contract view after 2 seconds
         setRedirecting(true);
         setTimeout(() => {
-          window.location.href = `/contrato/acesso?token=${token}`;
+          window.location.href = clientAreaUrl;
         }, 2000);
       } else {
         throw new Error(result.error || "Erro ao processar comprovante");
@@ -360,7 +371,7 @@ export default function SignContractPayment({
             </div>
 
             <Button
-              onClick={() => window.location.href = `/contrato/acesso?token=${token}`}
+              onClick={() => window.location.href = clientAreaUrl}
               className="mt-6 w-full h-11 rounded-xl"
             >
               Acessar meu contrato

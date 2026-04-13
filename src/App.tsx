@@ -122,6 +122,7 @@ const App = () => {
             <Route path="/pagamento/pendente" element={<PaymentPending />} />
             <Route path="/pagamento/falha" element={<PaymentFailure />} />
             <Route path="/contrato/acesso" element={<ClientContractView />} />
+            <Route path="/contrato/:slug" element={<ClientContractView />} />
             <Route
               path="/*"
               element={

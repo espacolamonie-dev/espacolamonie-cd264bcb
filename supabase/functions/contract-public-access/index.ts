@@ -6,6 +6,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -32,7 +41,7 @@ serve(async (req) => {
 
       const { data: sig, error } = await supabase
         .from("contract_signatures")
-        .select("token, slug")
+        .select("token, slug, client_name")
         .eq("contract_id", externalRef)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -45,30 +54,44 @@ serve(async (req) => {
         });
       }
 
-      return new Response(JSON.stringify({ token: sig.token, slug: sig.slug }), {
+      // Auto-generate slug if missing
+      let slug = sig.slug;
+      if (!slug && sig.client_name) {
+        slug = generateSlug(sig.client_name);
+        await supabase
+          .from("contract_signatures")
+          .update({ slug })
+          .eq("contract_id", externalRef);
+      }
+
+      return new Response(JSON.stringify({ token: sig.token, slug }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // ACTION 2: Get full contract data by token
+    // ACTION 2: Get full contract data by token or slug
     if (action === "get-contract") {
       const token = url.searchParams.get("token");
-      if (!token) {
-        return new Response(JSON.stringify({ error: "Token é obrigatório" }), {
+      const slug = url.searchParams.get("slug");
+
+      if (!token && !slug) {
+        return new Response(JSON.stringify({ error: "Token ou slug é obrigatório" }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      // Find signature by token
-      const { data: sig, error: sigErr } = await supabase
-        .from("contract_signatures")
-        .select("*")
-        .eq("token", token)
-        .maybeSingle();
+      // Find signature by token or slug
+      let query = supabase.from("contract_signatures").select("*");
+      if (slug) {
+        query = query.eq("slug", slug);
+      } else {
+        query = query.eq("token", token);
+      }
+      const { data: sig, error: sigErr } = await query.maybeSingle();
 
       if (sigErr || !sig) {
-        return new Response(JSON.stringify({ error: "Token inválido" }), {
+        return new Response(JSON.stringify({ error: "Acesso inválido" }), {
           status: 404,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -95,13 +118,6 @@ serve(async (req) => {
         });
       }
 
-      // Get client info
-      const { data: client } = await supabase
-        .from("clients")
-        .select("name, phone, email")
-        .eq("id", (await supabase.from("contracts").select("client_id").eq("id", sig.contract_id).single()).data?.client_id)
-        .maybeSingle();
-
       // Get payments
       const { data: payments } = await supabase
         .from("payments")
@@ -117,6 +133,33 @@ serve(async (req) => {
         .maybeSingle();
 
       const totalPaid = (payments || []).reduce((sum, p) => sum + Number(p.amount), 0);
+
+      // Get signed contract PDF URL from documents
+      let pdfUrl: string | null = null;
+      const { data: docs } = await supabase
+        .from("documents")
+        .select("file_name")
+        .eq("contract_id", sig.contract_id)
+        .eq("type", "signed_contract")
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (docs && docs.length > 0 && docs[0].file_name) {
+        const { data: signedUrl } = await supabase.storage
+          .from("documents")
+          .createSignedUrl(docs[0].file_name, 3600); // 1 hour
+        pdfUrl = signedUrl?.signedUrl || null;
+      }
+
+      // Auto-generate slug if missing
+      let currentSlug = sig.slug;
+      if (!currentSlug && sig.client_name) {
+        currentSlug = generateSlug(sig.client_name);
+        await supabase
+          .from("contract_signatures")
+          .update({ slug: currentSlug })
+          .eq("id", sig.id);
+      }
 
       return new Response(JSON.stringify({
         signature: {
@@ -141,6 +184,8 @@ serve(async (req) => {
           phone: company?.phone || "",
           name: company?.company_name || "Espaço Lamoniê",
         },
+        slug: currentSlug,
+        pdfUrl,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
