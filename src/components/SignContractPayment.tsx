@@ -461,11 +461,14 @@ export default function SignContractPayment({
 
             <Button
               onClick={handleCardPayment}
+              disabled={cardLoading}
               className="w-full h-12 rounded-xl text-base font-semibold gap-2"
             >
-              <CreditCard size={18} />
-              Pagar com cartão
-              <ExternalLink size={14} />
+              {cardLoading ? (
+                <><Loader2 className="h-5 w-5 animate-spin" /> Criando pagamento...</>
+              ) : (
+                <><CreditCard size={18} /> Pagar com cartão <ExternalLink size={14} /></>
+              )}
             </Button>
           </div>
         </div>
