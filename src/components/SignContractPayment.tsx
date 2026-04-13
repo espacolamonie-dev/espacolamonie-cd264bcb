@@ -174,7 +174,7 @@ export default function SignContractPayment({
         // Auto-redirect to contract view after 2 seconds
         setRedirecting(true);
         setTimeout(() => {
-          window.location.href = `/contrato/acesso?token=${token}`;
+          window.location.href = clientAreaUrl;
         }, 2000);
       } else {
         throw new Error(result.error || "Erro ao processar comprovante");
@@ -371,7 +371,7 @@ export default function SignContractPayment({
             </div>
 
             <Button
-              onClick={() => window.location.href = `/contrato/acesso?token=${token}`}
+              onClick={() => window.location.href = clientAreaUrl}
               className="mt-6 w-full h-11 rounded-xl"
             >
               Acessar meu contrato
