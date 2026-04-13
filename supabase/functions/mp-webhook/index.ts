@@ -54,6 +54,70 @@ serve(async (req) => {
 
     console.log("MP webhook received:", JSON.stringify(body));
 
+    // Validate webhook signature if configured
+    const xSignature = req.headers.get("x-signature");
+    const xRequestId = req.headers.get("x-request-id");
+
+    if (xSignature && body?.data?.id) {
+      const { data: allSettingsForSig } = await supabase
+        .from("mercado_pago_settings")
+        .select("webhook_secret")
+        .eq("is_active", true)
+        .neq("webhook_secret", "");
+
+      const secrets = (allSettingsForSig || [])
+        .map((s: any) => s.webhook_secret)
+        .filter(Boolean);
+
+      if (secrets.length > 0) {
+        // Parse x-signature: ts=...,v1=...
+        const parts: Record<string, string> = {};
+        for (const part of xSignature.split(",")) {
+          const [key, ...val] = part.split("=");
+          parts[key.trim()] = val.join("=").trim();
+        }
+        const ts = parts["ts"];
+        const v1 = parts["v1"];
+
+        if (ts && v1) {
+          const dataId = String(body.data.id);
+          const manifest = `id:${dataId};request-id:${xRequestId || ""};ts:${ts};`;
+
+          let signatureValid = false;
+          for (const secret of secrets) {
+            try {
+              const encoder = new TextEncoder();
+              const key = await crypto.subtle.importKey(
+                "raw",
+                encoder.encode(secret),
+                { name: "HMAC", hash: "SHA-256" },
+                false,
+                ["sign"]
+              );
+              const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(manifest));
+              const hexHash = Array.from(new Uint8Array(sig))
+                .map((b) => b.toString(16).padStart(2, "0"))
+                .join("");
+
+              if (hexHash === v1) {
+                signatureValid = true;
+                break;
+              }
+            } catch (hmacErr) {
+              console.error("HMAC validation error", hmacErr);
+            }
+          }
+
+          if (!signatureValid) {
+            console.error("mp-webhook signature mismatch", { xSignature, xRequestId });
+            return jsonResponse({ status: "received", note: "invalid_signature" });
+          }
+
+          console.log("mp-webhook signature validated successfully");
+        }
+      }
+    }
+
     const { type, data: webhookData, action } = body ?? {};
 
     if (type !== "payment" && action !== "payment.updated" && action !== "payment.created") {
