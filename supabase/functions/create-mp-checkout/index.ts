@@ -99,7 +99,7 @@ serve(async (req) => {
     const externalReference = contract.id;
 
     // Build back_urls for payment result pages
-    const siteUrl = "https://espacolamonie.lovable.app";
+    const siteUrl = "https://espacolamonie.com.br";
     const backUrls: Record<string, string> = {
       success: mpSettings.success_url || `${siteUrl}/pagamento/sucesso`,
       failure: mpSettings.failure_url || `${siteUrl}/pagamento/falha`,
