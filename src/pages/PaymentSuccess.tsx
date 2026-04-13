@@ -27,11 +27,12 @@ export default function PaymentSuccess() {
           headers: { Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
         });
         const data = await res.json();
-        if (data.token) {
+        if (data.slug || data.token) {
+          const dest = data.slug ? `/contrato/${data.slug}` : `/contrato/acesso?token=${data.token}`;
           setContractToken(data.token);
           // Auto redirect after 2s
           setTimeout(() => {
-            window.location.href = `/contrato/acesso?token=${data.token}`;
+            window.location.href = dest;
           }, 2000);
         } else {
           setError("Não foi possível localizar o contrato.");
@@ -45,7 +46,7 @@ export default function PaymentSuccess() {
     fetchToken();
   }, [externalRef]);
 
-  const contractUrl = contractToken ? `/contrato/acesso?token=${contractToken}` : null;
+  const contractUrl = contractToken ? (contractToken.includes("/") ? contractToken : `/contrato/acesso?token=${contractToken}`) : null;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white dark:from-emerald-950/20 dark:to-background flex items-center justify-center p-4">
