@@ -93,7 +93,7 @@ serve(async (req) => {
     if (data.contract_id) {
       const { data: contract } = await supabase
         .from("contracts")
-        .select("status, reserved_until")
+        .select("status, reserved_until, event_time")
         .eq("id", data.contract_id)
         .maybeSingle();
       
@@ -108,12 +108,24 @@ serve(async (req) => {
       }
     }
 
+    // Fetch event_time from contract if available
+    let eventTime = "";
+    if (data.contract_id) {
+      const { data: contractData } = await supabase
+        .from("contracts")
+        .select("event_time")
+        .eq("id", data.contract_id)
+        .maybeSingle();
+      eventTime = contractData?.event_time || "";
+    }
+
     // Mask sensitive fields before returning
     const safeData = {
       ...data,
       client_cpf: data.client_cpf ? data.client_cpf.replace(/^(\d{3}).*(\d{2})$/, "$1.***.***-$2") : null,
       client_phone: data.client_phone ? data.client_phone.replace(/^(.{4}).*(.{2})$/, "$1*****$2") : null,
       reserved_until: contractReservedUntil,
+      event_time: eventTime,
     };
 
     return new Response(JSON.stringify(safeData), {
