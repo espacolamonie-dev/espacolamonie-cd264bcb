@@ -3,7 +3,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
 serve(async (req) => {
@@ -18,7 +19,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { contract_id, token } = body;
+    const { contract_id, token, custom_amount, custom_description } = body;
 
     if (!contract_id || !token) {
       return new Response(JSON.stringify({ error: "contract_id e token são obrigatórios" }), {
@@ -62,8 +63,8 @@ serve(async (req) => {
       });
     }
 
-    // If preference already exists, return it
-    if (contract.mp_preference_id) {
+    // If custom_amount is provided (e.g. paying remaining balance), always create a new preference
+    if (!custom_amount && contract.mp_preference_id) {
       return new Response(JSON.stringify({ 
         preference_id: contract.mp_preference_id,
         init_point: `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${contract.mp_preference_id}`,
@@ -96,7 +97,8 @@ serve(async (req) => {
       .maybeSingle();
 
     const depositValue = Number(contract.deposit_value) || (Number(contract.total_value) * Number(contract.deposit_percent)) / 100;
-    const externalReference = contract.id;
+    const checkoutAmount = custom_amount ? Number(custom_amount) : depositValue;
+    const checkoutTitle = custom_description || `Sinal - ${contract.event_type} - Espaço Lamoniê`;
 
     // Build back_urls for payment result pages
     const siteUrl = "https://espacolamonie.com.br";
@@ -107,14 +109,15 @@ serve(async (req) => {
     };
 
     // Create Mercado Pago preference
+    const externalReference = contract.id;
     const preferencePayload: Record<string, any> = {
       items: [
         {
-          title: `Sinal - ${contract.event_type} - Espaço Lamoniê`,
-          description: `Sinal do contrato para ${client?.name || sig.client_name} - ${contract.event_type} em ${contract.event_date}`,
+          title: checkoutTitle,
+          description: `Pagamento para ${client?.name || sig.client_name} - ${contract.event_type} em ${contract.event_date}`,
           quantity: 1,
           currency_id: "BRL",
-          unit_price: depositValue,
+          unit_price: checkoutAmount,
         },
       ],
       external_reference: externalReference,

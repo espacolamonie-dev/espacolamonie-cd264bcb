@@ -3,7 +3,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
 function generateSlug(name: string): string {
@@ -190,6 +191,8 @@ serve(async (req) => {
           name: company?.company_name || "Espaço Lamoniê",
         },
         slug: currentSlug,
+        token: sig.token,
+        userId: sig.user_id,
         pdfUrl,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
