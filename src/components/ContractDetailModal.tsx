@@ -674,6 +674,7 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
                     </div>
 
                     <div className="grid gap-2 sm:grid-cols-2">
+                      <AuditRow icon={Hash} label="ID do Contrato" value={log.contract_id} />
                       <AuditRow icon={FileText} label="Cliente" value={log.client_name} />
                       {log.client_cpf && <AuditRow icon={FileText} label="CPF" value={log.client_cpf} />}
                       <AuditRow icon={FileText} label="Arquivo" value={log.signed_file_name} />
