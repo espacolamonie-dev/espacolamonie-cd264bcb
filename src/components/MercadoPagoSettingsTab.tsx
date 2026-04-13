@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 interface MpSettings {
   access_token: string;
   public_key: string;
+  webhook_secret: string;
   success_url: string;
   failure_url: string;
   pending_url: string;
@@ -22,6 +23,7 @@ interface MpSettings {
 const defaultMpSettings: MpSettings = {
   access_token: "",
   public_key: "",
+  webhook_secret: "",
   success_url: "",
   failure_url: "",
   pending_url: "",
@@ -57,6 +59,7 @@ export default function MercadoPagoSettingsTab() {
         setSettings({
           access_token: (data as any).access_token || "",
           public_key: (data as any).public_key || "",
+          webhook_secret: (data as any).webhook_secret || "",
           success_url: (data as any).success_url || "",
           failure_url: (data as any).failure_url || "",
           pending_url: (data as any).pending_url || "",
@@ -200,6 +203,20 @@ export default function MercadoPagoSettingsTab() {
                 placeholder="APP_USR-..."
                 className="mt-1 font-mono text-xs"
               />
+            </div>
+
+            <div>
+              <Label className="text-xs">Assinatura Secreta do Webhook (Secret)</Label>
+              <Input
+                type="password"
+                value={settings.webhook_secret}
+                onChange={(e) => update("webhook_secret", e.target.value)}
+                placeholder="Cole aqui a assinatura secreta..."
+                className="mt-1 font-mono text-xs"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Encontre em: Mercado Pago → Suas integrações → Webhooks → Assinatura secreta
+              </p>
             </div>
           </div>
 

@@ -1069,6 +1069,7 @@ export type Database = {
           success_url: string
           updated_at: string
           user_id: string
+          webhook_secret: string
           webhook_url: string
         }
         Insert: {
@@ -1082,6 +1083,7 @@ export type Database = {
           success_url?: string
           updated_at?: string
           user_id: string
+          webhook_secret?: string
           webhook_url?: string
         }
         Update: {
@@ -1095,6 +1097,7 @@ export type Database = {
           success_url?: string
           updated_at?: string
           user_id?: string
+          webhook_secret?: string
           webhook_url?: string
         }
         Relationships: []

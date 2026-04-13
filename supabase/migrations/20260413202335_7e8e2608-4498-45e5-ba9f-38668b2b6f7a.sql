@@ -1,0 +1,1 @@
+ALTER TABLE public.mercado_pago_settings ADD COLUMN webhook_secret text NOT NULL DEFAULT '';
