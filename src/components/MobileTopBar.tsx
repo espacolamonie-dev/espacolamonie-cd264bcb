@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { ArrowLeft, Bell, BellOff, BellRing } from "lucide-react";
-import { useNotificationPermission } from "@/hooks/useContractNotifications";
+import { ArrowLeft } from "lucide-react";
+import NotificationCenter from "@/components/NotificationCenter";
 
 const PAGE_TITLES: Record<string, string> = {
   "/": "Lamoniê CRM",
@@ -12,6 +12,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/visits": "Visitas",
   "/settings": "Configurações",
   "/budgets": "Orçamentos",
+  "/marketing": "Marketing",
 };
 
 export default function MobileTopBar() {
@@ -20,9 +21,6 @@ export default function MobileTopBar() {
   const title = PAGE_TITLES[pathname] || "Lamoniê CRM";
   const isHome = pathname === "/";
   const isMainTab = ["/visits", "/contracts", "/clients"].includes(pathname);
-  const { permission, subscribeToPush } = useNotificationPermission();
-
-  const notifSupported = "Notification" in window;
 
   return (
     <header
@@ -53,38 +51,8 @@ export default function MobileTopBar() {
           {title}
         </h1>
 
-        {/* Notification permission button */}
-        {notifSupported && (
-          <button
-            onClick={async () => {
-              if (permission !== "granted") {
-                await subscribeToPush();
-              }
-            }}
-            className={`flex items-center justify-center w-10 h-10 -mr-1 rounded-xl transition-colors ${
-              permission === "granted"
-                ? "text-emerald-600"
-                : permission === "denied"
-                ? "text-red-400"
-                : "text-amber-500 animate-pulse"
-            }`}
-            title={
-              permission === "granted"
-                ? "Notificações ativas"
-                : permission === "denied"
-                ? "Notificações bloqueadas"
-                : "Ativar notificações"
-            }
-          >
-            {permission === "granted" ? (
-              <BellRing size={20} />
-            ) : permission === "denied" ? (
-              <BellOff size={20} />
-            ) : (
-              <Bell size={20} />
-            )}
-          </button>
-        )}
+        {/* Notification center */}
+        <NotificationCenter />
       </div>
     </header>
   );
