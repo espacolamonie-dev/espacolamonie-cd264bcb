@@ -63,6 +63,8 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [generateOpen, setGenerateOpen] = useState(false);
   const [keyDeliveryOpen, setKeyDeliveryOpen] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [existingCheckout, setExistingCheckout] = useState<any>(null);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
   const [signingLink, setSigningLink] = useState<string | null>(null);
