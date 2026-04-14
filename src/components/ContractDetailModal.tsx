@@ -110,6 +110,16 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
       } else {
         setSigningLink(null);
       }
+
+      // Load existing checkout
+      const { data: checkoutData } = await supabase
+        .from("event_checkouts")
+        .select("*")
+        .eq("contract_id", contractId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      setExistingCheckout(checkoutData);
     } catch {}
   };
   useEffect(() => { load(); }, [contractId]);
