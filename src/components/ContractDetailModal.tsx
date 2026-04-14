@@ -450,9 +450,12 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
               )}
 
               {contract.status !== "cancelled" && (
-                <div className={isMobile ? "flex flex-col gap-3 mt-4" : "flex gap-2 mt-4"}>
+                <div className={isMobile ? "flex flex-col gap-3 mt-4" : "flex flex-wrap gap-2 mt-4"}>
                   <Button size="sm" onClick={() => setGenerateOpen(true)} className={`gap-1.5 text-xs ${isMobile ? "h-12 w-full text-sm font-semibold" : "h-8"}`}>
                     <FileOutput size={isMobile ? 18 : 13} /> Gerar Contrato
+                  </Button>
+                  <Button variant="secondary" size="sm" onClick={() => setKeyDeliveryOpen(true)} className={`gap-1.5 text-xs ${isMobile ? "h-12 w-full text-sm font-semibold" : "h-8"}`}>
+                    <Key size={isMobile ? 18 : 13} /> Termo de Chaves
                   </Button>
                   <Button variant="destructive" size="sm" onClick={handleCancel} className={`text-xs ${isMobile ? "h-12 w-full text-sm font-semibold" : "h-8"}`}>
                     Cancelar Contrato
