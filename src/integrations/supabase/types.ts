@@ -536,6 +536,7 @@ export type Database = {
           deposit_value: number
           event_date: string
           event_date_end: string | null
+          event_status: string
           event_time: string
           event_type: string
           fbclid: string
@@ -577,6 +578,7 @@ export type Database = {
           deposit_value?: number
           event_date: string
           event_date_end?: string | null
+          event_status?: string
           event_time?: string
           event_type: string
           fbclid?: string
@@ -618,6 +620,7 @@ export type Database = {
           deposit_value?: number
           event_date?: string
           event_date_end?: string | null
+          event_status?: string
           event_time?: string
           event_type?: string
           fbclid?: string
@@ -804,6 +807,75 @@ export type Database = {
           payment_value?: number
           phone?: string
           roles?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      event_checkouts: {
+        Row: {
+          checklist_clean: boolean
+          checklist_equipment: boolean
+          checklist_no_damage: boolean
+          checklist_trash: boolean
+          checkout_time: string
+          client_name: string
+          client_signature: string | null
+          contract_id: string
+          created_at: string
+          delay_minutes: number
+          event_date: string
+          event_time_contracted: string
+          fine_amount: number
+          fine_status: string
+          id: string
+          observations: string
+          staff_signature: string | null
+          token: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          checklist_clean?: boolean
+          checklist_equipment?: boolean
+          checklist_no_damage?: boolean
+          checklist_trash?: boolean
+          checkout_time?: string
+          client_name: string
+          client_signature?: string | null
+          contract_id: string
+          created_at?: string
+          delay_minutes?: number
+          event_date: string
+          event_time_contracted?: string
+          fine_amount?: number
+          fine_status?: string
+          id?: string
+          observations?: string
+          staff_signature?: string | null
+          token?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          checklist_clean?: boolean
+          checklist_equipment?: boolean
+          checklist_no_damage?: boolean
+          checklist_trash?: boolean
+          checkout_time?: string
+          client_name?: string
+          client_signature?: string | null
+          contract_id?: string
+          created_at?: string
+          delay_minutes?: number
+          event_date?: string
+          event_time_contracted?: string
+          fine_amount?: number
+          fine_status?: string
+          id?: string
+          observations?: string
+          staff_signature?: string | null
+          token?: string
           updated_at?: string
           user_id?: string
         }

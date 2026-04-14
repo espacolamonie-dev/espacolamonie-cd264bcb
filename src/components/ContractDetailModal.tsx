@@ -11,12 +11,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { getSafeErrorMessage } from "@/lib/errorSanitizer";
-import { CalendarDays, Users, DollarSign, FileText, Plus, AlertTriangle, Upload, Trash2, Download, FileOutput, ShieldCheck, Monitor, Smartphone, Globe, Hash, Clock, Pencil, X, Receipt, Link, Copy, ExternalLink, CheckCircle, Key } from "lucide-react";
+import { CalendarDays, Users, DollarSign, FileText, Plus, AlertTriangle, Upload, Trash2, Download, FileOutput, ShieldCheck, Monitor, Smartphone, Globe, Hash, Clock, Pencil, X, Receipt, Link, Copy, ExternalLink, CheckCircle, Key, ClipboardCheck } from "lucide-react";
 import ReservationCountdown from "@/components/ReservationCountdown";
 import ImportReceiptModal from "@/components/ImportReceiptModal";
 import { AttributionBadge } from "@/components/AttributionBadge";
 import GenerateContractModal from "@/components/GenerateContractModal";
 import KeyDeliveryModal from "@/components/KeyDeliveryModal";
+import EventCheckoutModal from "@/components/EventCheckoutModal";
 import ContractTimeline from "@/components/ContractTimeline";
 import { supabase } from "@/integrations/supabase/client";
 import { triggerGoogleSync } from "@/lib/googleSync";
@@ -62,6 +63,8 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [generateOpen, setGenerateOpen] = useState(false);
   const [keyDeliveryOpen, setKeyDeliveryOpen] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [existingCheckout, setExistingCheckout] = useState<any>(null);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
   const [signingLink, setSigningLink] = useState<string | null>(null);
@@ -107,6 +110,16 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
       } else {
         setSigningLink(null);
       }
+
+      // Load existing checkout
+      const { data: checkoutData } = await supabase
+        .from("event_checkouts")
+        .select("*")
+        .eq("contract_id", contractId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      setExistingCheckout(checkoutData);
     } catch {}
   };
   useEffect(() => { load(); }, [contractId]);
@@ -449,6 +462,21 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
                 </div>
               )}
 
+              {/* Event status badge */}
+              {existingCheckout && (
+                <div className="rounded-xl border border-emerald-300 bg-emerald-50 dark:bg-emerald-950/20 p-3 mt-3 flex items-center gap-3">
+                  <CheckCircle size={18} className="text-emerald-600 shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">✅ Evento Finalizado</p>
+                    <p className="text-xs text-muted-foreground">
+                      Saída: {new Date(existingCheckout.checkout_time).toLocaleString("pt-BR")}
+                      {existingCheckout.delay_minutes > 0 && ` • Atraso: ${existingCheckout.delay_minutes} min`}
+                      {existingCheckout.fine_amount > 0 && ` • Multa: R$ ${Number(existingCheckout.fine_amount).toFixed(2)}`}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {contract.status !== "cancelled" && (
                 <div className={isMobile ? "flex flex-col gap-3 mt-4" : "flex flex-wrap gap-2 mt-4"}>
                   <Button size="sm" onClick={() => setGenerateOpen(true)} className={`gap-1.5 text-xs ${isMobile ? "h-12 w-full text-sm font-semibold" : "h-8"}`}>
@@ -457,6 +485,11 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
                   <Button variant="secondary" size="sm" onClick={() => setKeyDeliveryOpen(true)} className={`gap-1.5 text-xs ${isMobile ? "h-12 w-full text-sm font-semibold" : "h-8"}`}>
                     <Key size={isMobile ? 18 : 13} /> Termo de Chaves
                   </Button>
+                  {!existingCheckout && (
+                    <Button variant="outline" size="sm" onClick={() => setCheckoutOpen(true)} className={`gap-1.5 text-xs border-warning/50 text-warning hover:bg-warning/10 ${isMobile ? "h-12 w-full text-sm font-semibold" : "h-8"}`}>
+                      <ClipboardCheck size={isMobile ? 18 : 13} /> Finalizar Evento
+                    </Button>
+                  )}
                   <Button variant="destructive" size="sm" onClick={handleCancel} className={`text-xs ${isMobile ? "h-12 w-full text-sm font-semibold" : "h-8"}`}>
                     Cancelar Contrato
                   </Button>
@@ -761,6 +794,16 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
           open={keyDeliveryOpen}
           onOpenChange={setKeyDeliveryOpen}
           onGenerated={load}
+        />
+      )}
+
+      {client && (
+        <EventCheckoutModal
+          contract={contract}
+          client={client}
+          open={checkoutOpen}
+          onOpenChange={setCheckoutOpen}
+          onCompleted={load}
         />
       )}
 
