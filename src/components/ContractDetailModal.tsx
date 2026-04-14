@@ -11,11 +11,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { getSafeErrorMessage } from "@/lib/errorSanitizer";
-import { CalendarDays, Users, DollarSign, FileText, Plus, AlertTriangle, Upload, Trash2, Download, FileOutput, ShieldCheck, Monitor, Smartphone, Globe, Hash, Clock, Pencil, X, Receipt, Link, Copy, ExternalLink, CheckCircle } from "lucide-react";
+import { CalendarDays, Users, DollarSign, FileText, Plus, AlertTriangle, Upload, Trash2, Download, FileOutput, ShieldCheck, Monitor, Smartphone, Globe, Hash, Clock, Pencil, X, Receipt, Link, Copy, ExternalLink, CheckCircle, Key } from "lucide-react";
 import ReservationCountdown from "@/components/ReservationCountdown";
 import ImportReceiptModal from "@/components/ImportReceiptModal";
 import { AttributionBadge } from "@/components/AttributionBadge";
 import GenerateContractModal from "@/components/GenerateContractModal";
+import KeyDeliveryModal from "@/components/KeyDeliveryModal";
 import ContractTimeline from "@/components/ContractTimeline";
 import { supabase } from "@/integrations/supabase/client";
 import { triggerGoogleSync } from "@/lib/googleSync";
@@ -60,6 +61,7 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
   const [docType, setDocType] = useState<string>("outro");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [generateOpen, setGenerateOpen] = useState(false);
+  const [keyDeliveryOpen, setKeyDeliveryOpen] = useState(false);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
   const [signingLink, setSigningLink] = useState<string | null>(null);
@@ -448,9 +450,12 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
               )}
 
               {contract.status !== "cancelled" && (
-                <div className={isMobile ? "flex flex-col gap-3 mt-4" : "flex gap-2 mt-4"}>
+                <div className={isMobile ? "flex flex-col gap-3 mt-4" : "flex flex-wrap gap-2 mt-4"}>
                   <Button size="sm" onClick={() => setGenerateOpen(true)} className={`gap-1.5 text-xs ${isMobile ? "h-12 w-full text-sm font-semibold" : "h-8"}`}>
                     <FileOutput size={isMobile ? 18 : 13} /> Gerar Contrato
+                  </Button>
+                  <Button variant="secondary" size="sm" onClick={() => setKeyDeliveryOpen(true)} className={`gap-1.5 text-xs ${isMobile ? "h-12 w-full text-sm font-semibold" : "h-8"}`}>
+                    <Key size={isMobile ? 18 : 13} /> Termo de Chaves
                   </Button>
                   <Button variant="destructive" size="sm" onClick={handleCancel} className={`text-xs ${isMobile ? "h-12 w-full text-sm font-semibold" : "h-8"}`}>
                     Cancelar Contrato
@@ -745,6 +750,16 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
           client={client}
           open={generateOpen}
           onOpenChange={setGenerateOpen}
+          onGenerated={load}
+        />
+      )}
+
+      {client && (
+        <KeyDeliveryModal
+          contract={contract}
+          client={client}
+          open={keyDeliveryOpen}
+          onOpenChange={setKeyDeliveryOpen}
           onGenerated={load}
         />
       )}

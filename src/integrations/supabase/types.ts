@@ -917,6 +917,72 @@ export type Database = {
         }
         Relationships: []
       }
+      key_delivery_terms: {
+        Row: {
+          client_cpf: string
+          client_name: string
+          contract_id: string
+          created_at: string
+          delivery_datetime: string
+          event_date: string
+          event_time: string
+          event_type: string
+          id: string
+          pdf_url: string | null
+          rubric_image: string | null
+          signature_image: string | null
+          signed_at: string | null
+          signed_ip: string | null
+          status: string
+          token: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          client_cpf?: string
+          client_name: string
+          contract_id: string
+          created_at?: string
+          delivery_datetime?: string
+          event_date: string
+          event_time?: string
+          event_type?: string
+          id?: string
+          pdf_url?: string | null
+          rubric_image?: string | null
+          signature_image?: string | null
+          signed_at?: string | null
+          signed_ip?: string | null
+          status?: string
+          token?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          client_cpf?: string
+          client_name?: string
+          contract_id?: string
+          created_at?: string
+          delivery_datetime?: string
+          event_date?: string
+          event_time?: string
+          event_type?: string
+          id?: string
+          pdf_url?: string | null
+          rubric_image?: string | null
+          signature_image?: string | null
+          signed_at?: string | null
+          signed_ip?: string | null
+          status?: string
+          token?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       lead_status_history: {
         Row: {
           changed_at: string
