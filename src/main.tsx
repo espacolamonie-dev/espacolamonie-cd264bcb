@@ -76,9 +76,16 @@ async function bootstrap() {
 void bootstrap();
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch((error) => {
-      console.error("[SW] Falha ao registrar service worker:", error);
+  const isInIframe = (() => { try { return window.self !== window.top; } catch { return true; } })();
+  const isPreview = window.location.hostname.includes("id-preview--") || window.location.hostname.includes("lovableproject.com");
+
+  if (isPreview || isInIframe) {
+    navigator.serviceWorker.getRegistrations().then((regs) => regs.forEach((r) => r.unregister()));
+  } else {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/sw.js").catch((error) => {
+        console.error("[SW] Falha ao registrar service worker:", error);
+      });
     });
-  });
+  }
 }
