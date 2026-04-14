@@ -797,6 +797,16 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
         />
       )}
 
+      {client && (
+        <EventCheckoutModal
+          contract={contract}
+          client={client}
+          open={checkoutOpen}
+          onOpenChange={setCheckoutOpen}
+          onCompleted={load}
+        />
+      )}
+
       {/* Delete confirmation dialog */}
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogContent>
