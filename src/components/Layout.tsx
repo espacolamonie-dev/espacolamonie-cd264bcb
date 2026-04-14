@@ -15,6 +15,7 @@ import {
 import { useState, useEffect } from "react";
 import { useContractNotifications } from "@/hooks/useContractNotifications";
 import logo from "@/assets/logo.png";
+import NotificationCenter from "@/components/NotificationCenter";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import MobileBottomNav from "@/components/MobileBottomNav";
@@ -182,6 +183,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             {navGroups.flatMap(g => g.items).find(i => i.to === location.pathname)?.label || ""}
           </h2>
           <div className="flex-1" />
+          <NotificationCenter />
         </header>
 
         {/* Mobile header */}
