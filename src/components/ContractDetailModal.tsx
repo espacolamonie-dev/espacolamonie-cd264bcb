@@ -754,6 +754,16 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
         />
       )}
 
+      {client && (
+        <KeyDeliveryModal
+          contract={contract}
+          client={client}
+          open={keyDeliveryOpen}
+          onOpenChange={setKeyDeliveryOpen}
+          onGenerated={load}
+        />
+      )}
+
       {/* Delete confirmation dialog */}
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogContent>
