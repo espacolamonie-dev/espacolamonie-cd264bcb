@@ -80,6 +80,26 @@ export default function VisitConfirmation() {
         .eq("id", visit.id)
         .eq("confirmation_token", visit.confirmation_token);
       setConfirmed(true);
+
+      // Send push notification to admin
+      const timeFmt = visit.visit_time.slice(0, 5);
+      const dateFmt = visit.visit_date.split("-").reverse().join("/");
+      try {
+        await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-push`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            action: "send-notification",
+            title: "✅ Visita Confirmada!",
+            body: `${visit.client_name} confirmou a visita para ${dateFmt} às ${timeFmt}h.`,
+            url: "/visits",
+            tag: `visit-confirmed-${visit.id}`,
+          }),
+        });
+      } catch {}
     } catch {
       // silent
     } finally {
