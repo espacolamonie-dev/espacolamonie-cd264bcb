@@ -4,6 +4,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Fix date/time input overflow */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"] {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  -webkit-appearance: none;
+}
+
 @layer base {
   :root {
     --safe-top: env(safe-area-inset-top, 0px);
