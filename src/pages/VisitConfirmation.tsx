@@ -307,6 +307,21 @@ export default function VisitConfirmation() {
           Espaço Lamoniê © {new Date().getFullYear()}
         </p>
       </div>
+
+      {visit && (
+        <RescheduleVisitModal
+          open={showReschedule}
+          onClose={() => setShowReschedule(false)}
+          visitId={visit.id}
+          confirmationToken={visit.confirmation_token}
+          clientName={visit.client_name}
+          onSuccess={(newDate, newTime) => {
+            setVisit({ ...visit, visit_date: newDate, visit_time: newTime, confirmed_at: null, status: "Agendada" });
+            setConfirmed(false);
+            setShowReschedule(false);
+          }}
+        />
+      )}
     </div>
   );
 }
