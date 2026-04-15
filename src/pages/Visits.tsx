@@ -332,8 +332,22 @@ export default function Visits() {
         depositPercent: formDepositPercent,
         guestCount: formGuestCount,
       });
-      toast.success("Visita agendada e cliente criado automaticamente!");
       syncVisitToGoogle(visit.id);
+
+      // Auto-generate confirmation link
+      const slug = generateSlug(formName.trim());
+      const { data: existing } = await (supabase.from("visits" as any) as any)
+        .select("id")
+        .eq("confirmation_slug", slug)
+        .neq("id", visit.id)
+        .limit(1);
+      const finalSlug = existing && existing.length > 0 ? `${slug}-${visit.id.slice(0, 6)}` : slug;
+      await updateVisit(visit.id, { confirmation_slug: finalSlug } as any);
+
+      const url = `${window.location.origin}/visita/${finalSlug}`;
+      setCreatedVisitLink({ visit: { ...visit, confirmationSlug: finalSlug }, url });
+
+      toast.success("Visita agendada!");
       setModalOpen(false);
       resetForm();
       loadVisits();
