@@ -1635,6 +1635,9 @@ export type Database = {
           client_id: string | null
           client_name: string
           client_phone: string
+          confirmation_slug: string | null
+          confirmation_token: string | null
+          confirmed_at: string | null
           created_at: string
           deposit_percent: number
           event_type_desired: string
@@ -1664,6 +1667,9 @@ export type Database = {
           client_id?: string | null
           client_name: string
           client_phone: string
+          confirmation_slug?: string | null
+          confirmation_token?: string | null
+          confirmed_at?: string | null
           created_at?: string
           deposit_percent?: number
           event_type_desired?: string
@@ -1693,6 +1699,9 @@ export type Database = {
           client_id?: string | null
           client_name?: string
           client_phone?: string
+          confirmation_slug?: string | null
+          confirmation_token?: string | null
+          confirmed_at?: string | null
           created_at?: string
           deposit_percent?: number
           event_type_desired?: string

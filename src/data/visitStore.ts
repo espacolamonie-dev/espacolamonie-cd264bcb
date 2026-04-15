@@ -40,6 +40,9 @@ export interface Visit {
   metaCampaignId: string;
   metaAdsetId: string;
   metaAdId: string;
+  confirmationSlug: string;
+  confirmationToken: string;
+  confirmedAt: string | null;
 }
 
 function mapVisit(row: any): Visit {
@@ -70,6 +73,9 @@ function mapVisit(row: any): Visit {
     metaCampaignId: row.meta_campaign_id || "",
     metaAdsetId: row.meta_adset_id || "",
     metaAdId: row.meta_ad_id || "",
+    confirmationSlug: row.confirmation_slug || "",
+    confirmationToken: row.confirmation_token || "",
+    confirmedAt: row.confirmed_at || null,
   };
 }
 
@@ -193,6 +199,9 @@ export const updateVisit = async (id: string, updates: Record<string, any>): Pro
     depositPercent: "deposit_percent",
     guestCount: "guest_count",
     clientId: "client_id",
+    confirmationSlug: "confirmation_slug",
+    confirmationToken: "confirmation_token",
+    confirmedAt: "confirmed_at",
   };
   for (const [k, v] of Object.entries(updates)) {
     mapped[keyMap[k] || k] = v;
