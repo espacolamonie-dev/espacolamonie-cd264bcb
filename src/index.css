@@ -121,7 +121,7 @@
 
 @layer utilities {
   .sidebar-gradient {
-    background: linear-gradient(180deg, hsl(153 42% 22%), hsl(153 38% 16%));
+    background: linear-gradient(180deg, hsl(153 60% 18%), hsl(153 55% 13%));
   }
 
   .gold-gradient {
@@ -129,13 +129,13 @@
   }
 
   .stat-card {
-    @apply relative overflow-hidden rounded-2xl border border-border bg-card p-6 transition-all duration-200;
-    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+    @apply relative overflow-hidden rounded-2xl border border-border bg-card p-5 transition-all duration-200;
+    box-shadow: 0 4px 12px 0 rgb(0 0 0 / 0.04);
   }
 
   .stat-card:hover {
-    box-shadow: 0 8px 24px -4px rgb(0 0 0 / 0.08), 0 4px 10px -4px rgb(0 0 0 / 0.04);
-    transform: translateY(-2px) scale(1.01);
+    box-shadow: 0 8px 24px -4px rgb(0 0 0 / 0.06);
+    transform: translateY(-1px);
   }
 
   .table-premium {
@@ -169,7 +169,7 @@
 
   .card-premium {
     @apply rounded-2xl border border-border bg-card overflow-hidden;
-    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+    box-shadow: 0 4px 12px 0 rgb(0 0 0 / 0.04);
     transition: box-shadow 0.2s ease;
   }
 
