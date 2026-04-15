@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Check, MapPin, CalendarPlus, Navigation, ExternalLink } from "lucide-react";
+import { Check, MapPin, CalendarPlus, Navigation, ExternalLink, CalendarDays } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import RescheduleVisitModal from "@/components/RescheduleVisitModal";
 
 interface VisitData {
   id: string;
@@ -35,6 +36,7 @@ export default function VisitConfirmation() {
   const [confirmed, setConfirmed] = useState(false);
   const [address, setAddress] = useState("");
   const [error, setError] = useState("");
+  const [showReschedule, setShowReschedule] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -226,15 +228,26 @@ export default function VisitConfirmation() {
 
         {/* Confirm / Confirmed */}
         {!confirmed ? (
-          <Button
-            onClick={handleConfirm}
-            disabled={confirming}
-            className="w-full h-14 text-base font-bold rounded-2xl gap-2"
-            size="lg"
-          >
-            <Check size={20} />
-            {confirming ? "Confirmando..." : "Confirmar visita"}
-          </Button>
+          <div className="space-y-3">
+            <Button
+              onClick={handleConfirm}
+              disabled={confirming}
+              className="w-full h-14 text-base font-bold rounded-2xl gap-2"
+              size="lg"
+            >
+              <Check size={20} />
+              {confirming ? "Confirmando..." : "Confirmar visita"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowReschedule(true)}
+              className="w-full h-14 text-base font-semibold rounded-2xl gap-2"
+              size="lg"
+            >
+              <CalendarDays size={20} />
+              Reagendar visita
+            </Button>
+          </div>
         ) : (
           <div className="space-y-4">
             <div className="rounded-2xl bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-5 text-center space-y-2">
@@ -294,6 +307,21 @@ export default function VisitConfirmation() {
           Espaço Lamoniê © {new Date().getFullYear()}
         </p>
       </div>
+
+      {visit && (
+        <RescheduleVisitModal
+          open={showReschedule}
+          onClose={() => setShowReschedule(false)}
+          visitId={visit.id}
+          confirmationToken={visit.confirmation_token}
+          clientName={visit.client_name}
+          onSuccess={(newDate, newTime) => {
+            setVisit({ ...visit, visit_date: newDate, visit_time: newTime, confirmed_at: null, status: "Agendada" });
+            setConfirmed(false);
+            setShowReschedule(false);
+          }}
+        />
+      )}
     </div>
   );
 }
