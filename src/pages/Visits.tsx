@@ -647,6 +647,42 @@ export default function Visits() {
     setEditing(true);
   };
 
+  const generateSlug = (name: string) => {
+    return name
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "");
+  };
+
+  const handleGenerateLink = async (visit: Visit) => {
+    try {
+      const slug = generateSlug(visit.clientName);
+      // Check for slug collision and append short id if needed
+      const { data: existing } = await (supabase.from("visits" as any) as any)
+        .select("id")
+        .eq("confirmation_slug", slug)
+        .neq("id", visit.id)
+        .limit(1);
+      const finalSlug = existing && existing.length > 0 ? `${slug}-${visit.id.slice(0, 6)}` : slug;
+
+      await updateVisit(visit.id, { confirmation_slug: finalSlug } as any);
+      toast.success("Link de confirmação gerado!");
+      loadVisits();
+      // Update detail visit with new slug
+      setDetailVisit(prev => prev ? { ...prev, confirmationSlug: finalSlug } as Visit : null);
+    } catch (e: any) {
+      toast.error(getSafeErrorMessage(e));
+    }
+  };
+
+  const getConfirmationUrl = (visit: Visit) => {
+    return `${window.location.origin}/visita/${visit.confirmationSlug}`;
+  };
+
   const renderDetailView = (visit: Visit) => (
     <div className="space-y-3 text-sm">
       <div className="flex justify-between"><span className="text-muted-foreground">Cliente</span><span className="font-medium">{visit.clientName}</span></div>
@@ -669,9 +705,56 @@ export default function Visits() {
       <div className="flex justify-between"><span className="text-muted-foreground">Status</span><Badge className={`text-[10px] font-medium border rounded-full px-2.5 py-0.5 ${VISIT_STATUS_COLORS[visit.status as VisitStatus] || ""}`}>{visit.status}</Badge></div>
       <div className="flex justify-between items-center"><span className="text-muted-foreground">Origem</span><AttributionBadge origin={visit.leadSource} utmSource={visit.utmSource} utmCampaign={visit.utmCampaign} utmMedium={visit.utmMedium} metaAdId={visit.metaAdId} metaAdsetId={visit.metaAdsetId} compact /></div>
       <div className="flex justify-between"><span className="text-muted-foreground">Data de cadastro</span><span className="text-sm">{format(new Date(visit.createdAt), "dd/MM/yyyy 'às' HH:mm")}</span></div>
+      {visit.confirmedAt && (
+        <div className="flex justify-between"><span className="text-muted-foreground">Confirmada em</span><span className="text-sm text-green-600 font-medium">{format(new Date(visit.confirmedAt), "dd/MM/yyyy 'às' HH:mm")}</span></div>
+      )}
       {visit.notes && (
         <div><span className="text-muted-foreground block mb-1">Observações</span><p className="text-sm bg-muted/50 rounded-lg p-3">{visit.notes}</p></div>
       )}
+
+      {/* Confirmation Link Section */}
+      <div className="pt-2 border-t border-border space-y-2">
+        <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium flex items-center gap-1.5">
+          <LinkIcon size={12} /> Link de confirmação
+        </p>
+        {visit.confirmationSlug ? (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-2.5">
+              <span className="text-xs truncate flex-1 text-muted-foreground">{getConfirmationUrl(visit)}</span>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1 gap-1.5 h-9"
+                onClick={() => {
+                  navigator.clipboard.writeText(getConfirmationUrl(visit));
+                  toast.success("Link copiado com sucesso!");
+                }}
+              >
+                <Copy size={13} /> Copiar link
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5 h-9"
+                onClick={() => window.open(`/visita/${visit.confirmationSlug}`, "_blank")}
+              >
+                <ExternalLink size={13} />
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button
+            size="sm"
+            variant="outline"
+            className="w-full gap-1.5 h-10"
+            onClick={() => handleGenerateLink(visit)}
+          >
+            <LinkIcon size={14} /> Gerar link de confirmação
+          </Button>
+        )}
+      </div>
     </div>
   );
 
