@@ -40,6 +40,9 @@ export interface Visit {
   metaCampaignId: string;
   metaAdsetId: string;
   metaAdId: string;
+  confirmationSlug: string;
+  confirmationToken: string;
+  confirmedAt: string | null;
 }
 
 function mapVisit(row: any): Visit {
@@ -70,6 +73,9 @@ function mapVisit(row: any): Visit {
     metaCampaignId: row.meta_campaign_id || "",
     metaAdsetId: row.meta_adset_id || "",
     metaAdId: row.meta_ad_id || "",
+    confirmationSlug: row.confirmation_slug || "",
+    confirmationToken: row.confirmation_token || "",
+    confirmedAt: row.confirmed_at || null,
   };
 }
 
