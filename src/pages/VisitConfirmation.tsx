@@ -270,6 +270,7 @@ export default function VisitConfirmation() {
           </div>
         ) : (
           <div className="space-y-4">
+            {/* Success banner */}
             <div className="rounded-2xl bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-5 text-center space-y-2">
               <div className="mx-auto w-12 h-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
                 <Check size={24} className="text-green-600" />
@@ -311,7 +312,7 @@ export default function VisitConfirmation() {
               </div>
             )}
 
-            {/* Add to Calendar */}
+            {/* Action buttons */}
             <Button
               variant="outline"
               className="w-full h-14 text-base font-semibold rounded-2xl gap-2"
@@ -319,6 +320,16 @@ export default function VisitConfirmation() {
             >
               <CalendarPlus size={20} />
               Adicionar à agenda
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => setShowReschedule(true)}
+              className="w-full h-14 text-base font-semibold rounded-2xl gap-2"
+              size="lg"
+            >
+              <CalendarDays size={20} />
+              Reagendar visita
             </Button>
           </div>
         )}
