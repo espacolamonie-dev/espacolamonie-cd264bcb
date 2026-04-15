@@ -713,34 +713,45 @@ export default function Visits() {
       )}
 
       {/* Confirmation Link Section */}
-      <div className="pt-2 border-t border-border space-y-2">
-        <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium flex items-center gap-1.5">
-          <LinkIcon size={12} /> Link de confirmação
-        </p>
+      <div className="pt-3 border-t border-border">
         {visit.confirmationSlug ? (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-2.5">
-              <span className="text-xs truncate flex-1 text-muted-foreground">{getConfirmationUrl(visit)}</span>
+          <div className="rounded-2xl border border-border bg-muted/30 p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <LinkIcon size={14} className="text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold">Link de confirmação</p>
+                <p className="text-[11px] text-muted-foreground">Envie ao cliente para confirmar a visita</p>
+              </div>
+            </div>
+            <div
+              className="bg-background rounded-xl p-3 border border-border cursor-pointer hover:bg-muted/50 transition-colors"
+              onClick={() => {
+                navigator.clipboard.writeText(getConfirmationUrl(visit));
+                toast.success("Link copiado com sucesso! ✅");
+              }}
+            >
+              <p className="text-xs text-muted-foreground break-all select-all leading-relaxed">{getConfirmationUrl(visit)}</p>
             </div>
             <div className="flex gap-2">
               <Button
                 size="sm"
-                variant="outline"
-                className="flex-1 gap-1.5 h-9"
+                className="flex-1 gap-1.5 h-11 rounded-xl font-semibold"
                 onClick={() => {
                   navigator.clipboard.writeText(getConfirmationUrl(visit));
-                  toast.success("Link copiado com sucesso!");
+                  toast.success("Link copiado com sucesso! ✅");
                 }}
               >
-                <Copy size={13} /> Copiar link
+                <Copy size={14} /> Copiar link
               </Button>
               <Button
                 size="sm"
                 variant="outline"
-                className="gap-1.5 h-9"
+                className="gap-1.5 h-11 rounded-xl px-4"
                 onClick={() => window.open(`/visita/${visit.confirmationSlug}`, "_blank")}
               >
-                <ExternalLink size={13} />
+                <ExternalLink size={14} /> Abrir
               </Button>
             </div>
           </div>
@@ -748,7 +759,7 @@ export default function Visits() {
           <Button
             size="sm"
             variant="outline"
-            className="w-full gap-1.5 h-10"
+            className="w-full gap-1.5 h-11 rounded-xl"
             onClick={() => handleGenerateLink(visit)}
           >
             <LinkIcon size={14} /> Gerar link de confirmação
@@ -981,15 +992,6 @@ export default function Visits() {
 
                 {v.status !== "Cancelada" ? (
                   <div className="flex gap-2">
-                    {v.status !== "Confirmada" && (
-                      <Button
-                        size="sm"
-                        className="flex-1 gap-1.5 h-12 bg-success hover:bg-success/90 text-success-foreground font-semibold rounded-xl"
-                        onClick={() => handleStatusChange(v, "Confirmada")}
-                      >
-                        <Check size={16} /> Confirmar
-                      </Button>
-                    )}
                     <Button
                       size="sm"
                       variant="outline"
@@ -1180,11 +1182,6 @@ export default function Visits() {
                     </>
                   ) : detailVisit.status !== "Cancelada" ? (
                     <>
-                      {detailVisit.status !== "Confirmada" && (
-                        <Button className="h-12 w-full gap-1.5 bg-success hover:bg-success/90 text-success-foreground font-semibold" onClick={() => handleStatusChange(detailVisit, "Confirmada")}>
-                          <Check size={16} /> Confirmar
-                        </Button>
-                      )}
                       <Button variant="destructive" className="h-12 w-full gap-1.5" onClick={() => handleStatusChange(detailVisit, "Cancelada")}>
                         <XIcon size={16} /> Cancelar visita
                       </Button>
@@ -1224,11 +1221,6 @@ export default function Visits() {
                     {renderDetailView(detailVisit)}
                     {detailVisit.status !== "Cancelada" ? (
                       <DialogFooter className="flex-wrap gap-2">
-                        {detailVisit.status !== "Confirmada" && (
-                          <Button size="sm" className="gap-1.5 h-11 bg-success hover:bg-success/90 text-success-foreground" onClick={() => handleStatusChange(detailVisit, "Confirmada")}>
-                            <Check size={14} /> Confirmar
-                          </Button>
-                        )}
                         {detailVisit.status !== "Remarcada" && (
                           <Button size="sm" variant="outline" className="gap-1.5 h-11" onClick={() => handleStatusChange(detailVisit, "Remarcada")}>
                             <RotateCcw size={14} /> Remarcar
