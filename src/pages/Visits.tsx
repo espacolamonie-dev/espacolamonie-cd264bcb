@@ -81,6 +81,8 @@ export default function Visits() {
 
   // Confirmation WhatsApp modal
   const [confirmMsgVisit, setConfirmMsgVisit] = useState<Visit | null>(null);
+  // Post-create link modal
+  const [createdVisitLink, setCreatedVisitLink] = useState<{ visit: Visit; url: string } | null>(null);
 
   const [formName, setFormName] = useState("");
   const [formPhone, setFormPhone] = useState("");
@@ -330,8 +332,22 @@ export default function Visits() {
         depositPercent: formDepositPercent,
         guestCount: formGuestCount,
       });
-      toast.success("Visita agendada e cliente criado automaticamente!");
       syncVisitToGoogle(visit.id);
+
+      // Auto-generate confirmation link
+      const slug = generateSlug(formName.trim());
+      const { data: existing } = await (supabase.from("visits" as any) as any)
+        .select("id")
+        .eq("confirmation_slug", slug)
+        .neq("id", visit.id)
+        .limit(1);
+      const finalSlug = existing && existing.length > 0 ? `${slug}-${visit.id.slice(0, 6)}` : slug;
+      await updateVisit(visit.id, { confirmation_slug: finalSlug } as any);
+
+      const url = `${window.location.origin}/visita/${finalSlug}`;
+      setCreatedVisitLink({ visit: { ...visit, confirmationSlug: finalSlug }, url });
+
+      toast.success("Visita agendada!");
       setModalOpen(false);
       resetForm();
       loadVisits();
@@ -1315,6 +1331,58 @@ export default function Visits() {
                   <Trash2 size={14} /> Excluir
                 </Button>
               </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Post-Create Link Modal */}
+      <Dialog open={!!createdVisitLink} onOpenChange={(open) => { if (!open) setCreatedVisitLink(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-display flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-success/15 flex items-center justify-center">
+                <Check size={16} className="text-success" />
+              </div>
+              Visita agendada!
+            </DialogTitle>
+          </DialogHeader>
+          {createdVisitLink && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Copie o link abaixo e envie ao cliente <strong>{createdVisitLink.visit.clientName}</strong> para confirmar a visita.
+              </p>
+              <div
+                className="bg-muted/50 rounded-xl p-3 border border-border cursor-pointer hover:bg-muted transition-colors"
+                onClick={() => {
+                  navigator.clipboard.writeText(createdVisitLink.url);
+                  toast.success("Link copiado com sucesso! ✅");
+                }}
+              >
+                <p className="text-xs text-muted-foreground break-all select-all leading-relaxed">{createdVisitLink.url}</p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  className="flex-1 gap-1.5 h-11 rounded-xl font-semibold"
+                  onClick={() => {
+                    navigator.clipboard.writeText(createdVisitLink.url);
+                    toast.success("Link copiado com sucesso! ✅");
+                  }}
+                >
+                  <Copy size={14} /> Copiar link
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 h-11 rounded-xl px-4"
+                  onClick={() => window.open(createdVisitLink.url, "_blank")}
+                >
+                  <ExternalLink size={14} /> Abrir
+                </Button>
+              </div>
+              <Button variant="ghost" className="w-full text-xs" onClick={() => setCreatedVisitLink(null)}>
+                Fechar
+              </Button>
             </div>
           )}
         </DialogContent>
