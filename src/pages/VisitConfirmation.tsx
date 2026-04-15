@@ -60,6 +60,9 @@ export default function VisitConfirmation() {
   const [address, setAddress] = useState("");
   const [error, setError] = useState("");
   const [showReschedule, setShowReschedule] = useState(false);
+  const [distanceKm, setDistanceKm] = useState<number | null>(null);
+  const [travelTime, setTravelTime] = useState<string>("");
+  const [geoStatus, setGeoStatus] = useState<"idle" | "loading" | "done" | "denied">("idle");
 
   useEffect(() => {
     if (!slug) return;
@@ -89,6 +92,26 @@ export default function VisitConfirmation() {
       }
     })();
   }, [slug]);
+
+  // Geolocation for travel time
+  useEffect(() => {
+    if (!confirmed) return;
+    setGeoStatus("loading");
+    if (!navigator.geolocation) {
+      setGeoStatus("denied");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const km = haversineDistance(pos.coords.latitude, pos.coords.longitude, DEST_LAT, DEST_LNG);
+        setDistanceKm(Math.round(km * 10) / 10);
+        setTravelTime(estimateTime(km));
+        setGeoStatus("done");
+      },
+      () => setGeoStatus("denied"),
+      { timeout: 10000 }
+    );
+  }, [confirmed]);
 
   const handleConfirm = async () => {
     if (!visit || confirming) return;
