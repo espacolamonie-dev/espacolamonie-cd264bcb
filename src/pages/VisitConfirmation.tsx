@@ -377,70 +377,90 @@ export default function VisitConfirmation() {
               <p className="text-sm text-green-600 dark:text-green-500">Obrigado pela confirmação. Nos vemos em breve!</p>
             </div>
 
-            {/* Map & Address */}
+            {/* Map Section — Airbnb style */}
             <div
-              className="rounded-2xl border bg-card p-5 space-y-4 shadow-sm animate-fade-in overflow-hidden"
+              className="rounded-2xl border bg-card shadow-sm animate-fade-in overflow-hidden"
               style={{ animationDelay: "100ms", animationFillMode: "both" }}
             >
-              {/* Animated Pin + Address */}
-              <div className="flex items-start gap-4">
-                <div className="relative flex-shrink-0 mt-1">
-                  <div className="w-11 h-11 rounded-full bg-primary flex items-center justify-center relative z-10">
-                    <MapPin size={20} className="text-primary-foreground" />
-                  </div>
-                  <div className="absolute inset-0 w-11 h-11 rounded-full bg-primary/20 animate-[map-pulse_2s_ease-in-out_infinite]" />
-                </div>
-                <div className="space-y-1 min-w-0">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Endereço</p>
-                  <p className="text-sm font-semibold">Espaço Lamoniê</p>
-                  <p className="text-sm text-muted-foreground">{address || "Rua Cascadura, 380 — Ribeirão das Neves, MG"}</p>
-                </div>
+              {/* Title */}
+              <div className="px-5 pt-5 pb-2">
+                <h2 className="text-base font-bold">Onde você estará</h2>
+                <p className="text-sm text-muted-foreground mt-0.5">Espaço Lamoniê — Ribeirão das Neves, MG</p>
               </div>
 
-              {/* Travel info */}
-              <div className="rounded-xl bg-muted/50 p-3 flex items-center gap-3">
-                {geoStatus === "loading" && (
-                  <>
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                    <span className="text-sm text-muted-foreground">Calculando distância...</span>
-                  </>
-                )}
-                {geoStatus === "done" && distanceKm !== null && (
-                  <>
-                    <Route size={16} className="text-primary flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold">{distanceKm} km — ~{travelTime}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {distanceKm <= 5 ? "Você está pertinho! 🎉" : "Tempo estimado de carro"}
-                      </p>
+              {/* Map iframe with pin overlay */}
+              <div className="relative w-full h-[240px]">
+                <iframe
+                  title="Mapa Espaço Lamoniê"
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3749.5!2d-44.0868!3d-19.7667!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTnCsDQ2JzAwLjEiUyA0NMKwMDUnMTIuNSJX!5e0!3m2!1spt-BR!2sbr!4v1"
+                  className="w-full h-full border-0"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  allowFullScreen
+                />
+                {/* Animated pin overlay */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full pointer-events-none z-10">
+                  <div className="relative flex flex-col items-center">
+                    <div className="w-11 h-11 rounded-full bg-foreground flex items-center justify-center shadow-lg z-10">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-background">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                        <polyline points="9 22 9 12 15 12 15 22" />
+                      </svg>
                     </div>
-                    <Clock size={14} className="text-muted-foreground flex-shrink-0" />
-                  </>
-                )}
-                {geoStatus === "denied" && (
-                  <>
-                    <MapPin size={16} className="text-muted-foreground flex-shrink-0" />
-                    <span className="text-sm text-muted-foreground">📍 Veja a rota no mapa abaixo</span>
-                  </>
-                )}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-foreground/10 animate-[map-pulse_2s_ease-in-out_infinite]" />
+                  </div>
+                </div>
               </div>
 
-              {/* Nav buttons */}
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  className="h-12 gap-2 rounded-xl text-sm font-semibold bg-[#34A853] hover:bg-[#2d9249] text-white transition-all duration-150 active:scale-[0.97]"
-                  onClick={() => window.open(mapsUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent("Espaço Lamoniê Rua Cascadura 380 Ribeirão das Neves MG")}`, "_blank")}
-                >
-                  <Navigation size={18} />
-                  Google Maps
-                </Button>
-                <Button
-                  className="h-12 gap-2 rounded-xl text-sm font-semibold bg-[#33CCFF] hover:bg-[#2bb8e8] text-white transition-all duration-150 active:scale-[0.97]"
-                  onClick={() => window.open(wazeUrl || `https://waze.com/ul?q=${encodeURIComponent("Espaço Lamoniê Rua Cascadura 380 Ribeirão das Neves MG")}`, "_blank")}
-                >
-                  <ExternalLink size={18} />
-                  Waze
-                </Button>
+              {/* Address + travel info */}
+              <div className="px-5 py-4 space-y-3">
+                <p className="text-sm font-medium">{address || "Rua Cascadura, 380 — Ribeirão das Neves, MG"}</p>
+
+                {/* Travel time */}
+                <div className="rounded-xl bg-muted/50 p-3 flex items-center gap-3">
+                  {geoStatus === "loading" && (
+                    <>
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                      <span className="text-sm text-muted-foreground">Calculando distância...</span>
+                    </>
+                  )}
+                  {geoStatus === "done" && distanceKm !== null && (
+                    <>
+                      <Route size={16} className="text-primary flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold">{distanceKm} km — ~{travelTime}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {distanceKm <= 5 ? "Você está pertinho! 🎉" : "Tempo estimado de carro"}
+                        </p>
+                      </div>
+                      <Clock size={14} className="text-muted-foreground flex-shrink-0" />
+                    </>
+                  )}
+                  {geoStatus === "denied" && (
+                    <>
+                      <MapPin size={16} className="text-muted-foreground flex-shrink-0" />
+                      <span className="text-sm text-muted-foreground">📍 Veja a rota no mapa acima</span>
+                    </>
+                  )}
+                </div>
+
+                {/* Nav buttons */}
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    className="h-12 gap-2 rounded-xl text-sm font-semibold bg-[#34A853] hover:bg-[#2d9249] text-white transition-all duration-150 active:scale-[0.97]"
+                    onClick={() => window.open(mapsUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent("Espaço Lamoniê Rua Cascadura 380 Ribeirão das Neves MG")}`, "_blank")}
+                  >
+                    <Navigation size={18} />
+                    Google Maps
+                  </Button>
+                  <Button
+                    className="h-12 gap-2 rounded-xl text-sm font-semibold bg-[#33CCFF] hover:bg-[#2bb8e8] text-white transition-all duration-150 active:scale-[0.97]"
+                    onClick={() => window.open(wazeUrl || `https://waze.com/ul?q=${encodeURIComponent("Espaço Lamoniê Rua Cascadura 380 Ribeirão das Neves MG")}`, "_blank")}
+                  >
+                    <ExternalLink size={18} />
+                    Waze
+                  </Button>
+                </div>
               </div>
             </div>
 
