@@ -200,6 +200,45 @@ export function useContractNotifications() {
           );
         }
       )
+      // Visit confirmed or rescheduled
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "visits" },
+        (payload) => {
+          const oldRow = payload.old as any;
+          const newRow = payload.new as any;
+
+          // Visit confirmed
+          if (newRow.status === "Confirmada" && oldRow.status !== "Confirmada" && newRow.confirmed_at) {
+            const time = newRow.visit_time ? newRow.visit_time.slice(0, 5) : "";
+            showNotif(
+              "Visita Confirmada!",
+              `${newRow.client_name} confirmou a visita para ${fmtDate(newRow.visit_date)} às ${time}h.`,
+              `visit-confirmed-${newRow.id}`,
+              "/visits",
+              "✅"
+            );
+          }
+
+          // Visit rescheduled (date or time changed)
+          if (
+            (oldRow.visit_date && oldRow.visit_date !== newRow.visit_date) ||
+            (oldRow.visit_time && oldRow.visit_time !== newRow.visit_time)
+          ) {
+            // Only if not a confirmation (status going back to Agendada means reschedule)
+            if (newRow.status === "Agendada" && oldRow.status !== "Agendada") {
+              const time = newRow.visit_time ? newRow.visit_time.slice(0, 5) : "";
+              showNotif(
+                "Visita Reagendada!",
+                `${newRow.client_name} reagendou para ${fmtDate(newRow.visit_date)} às ${time}h.`,
+                `visit-rescheduled-${newRow.id}-${newRow.visit_date}`,
+                "/visits",
+                "🔄"
+              );
+            }
+          }
+        }
+      )
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
