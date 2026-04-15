@@ -11,7 +11,7 @@
     --mobile-header-h: 56px;
     --mobile-bottom-h: 72px;
 
-    --background: 228 14% 97%;
+    --background: 220 14% 96%;
     --foreground: 220 26% 10%;
 
     --card: 0 0% 100%;
@@ -20,10 +20,10 @@
     --popover: 0 0% 100%;
     --popover-foreground: 220 26% 10%;
 
-    --primary: 153 42% 26%;
+    --primary: 153 60% 22%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 13% 95%;
+    --secondary: 220 13% 91%;
     --secondary-foreground: 220 26% 10%;
 
     --muted: 220 13% 95%;
@@ -37,18 +37,18 @@
 
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 153 42% 26%;
+    --ring: 153 60% 22%;
 
-    --radius: 0.75rem;
+    --radius: 0.875rem;
 
-    --sidebar-background: 153 42% 22%;
+    --sidebar-background: 153 60% 18%;
     --sidebar-foreground: 0 0% 96%;
-    --sidebar-primary: 153 42% 26%;
+    --sidebar-primary: 153 60% 22%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 153 30% 96%;
-    --sidebar-accent-foreground: 153 42% 22%;
-    --sidebar-border: 153 30% 30%;
-    --sidebar-ring: 153 42% 26%;
+    --sidebar-accent-foreground: 153 60% 18%;
+    --sidebar-border: 153 30% 26%;
+    --sidebar-ring: 153 60% 22%;
 
     --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
@@ -99,6 +99,7 @@
 @layer base {
   * {
     @apply border-border;
+    box-sizing: border-box;
   }
 
   body {
@@ -106,6 +107,9 @@
     font-family: var(--font-body);
     font-weight: 400;
     letter-spacing: -0.01em;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   h1, h2, h3, h4 {
@@ -117,7 +121,7 @@
 
 @layer utilities {
   .sidebar-gradient {
-    background: linear-gradient(180deg, hsl(153 42% 22%), hsl(153 38% 16%));
+    background: linear-gradient(180deg, hsl(153 60% 18%), hsl(153 55% 13%));
   }
 
   .gold-gradient {
@@ -125,13 +129,13 @@
   }
 
   .stat-card {
-    @apply relative overflow-hidden rounded-2xl border border-border bg-card p-6 transition-all duration-200;
-    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+    @apply relative overflow-hidden rounded-2xl border border-border bg-card p-5 transition-all duration-200;
+    box-shadow: 0 4px 12px 0 rgb(0 0 0 / 0.04);
   }
 
   .stat-card:hover {
-    box-shadow: 0 8px 24px -4px rgb(0 0 0 / 0.08), 0 4px 10px -4px rgb(0 0 0 / 0.04);
-    transform: translateY(-2px) scale(1.01);
+    box-shadow: 0 8px 24px -4px rgb(0 0 0 / 0.06);
+    transform: translateY(-1px);
   }
 
   .table-premium {
@@ -165,7 +169,7 @@
 
   .card-premium {
     @apply rounded-2xl border border-border bg-card overflow-hidden;
-    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+    box-shadow: 0 4px 12px 0 rgb(0 0 0 / 0.04);
     transition: box-shadow 0.2s ease;
   }
 
