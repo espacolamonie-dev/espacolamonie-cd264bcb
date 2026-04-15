@@ -7,9 +7,9 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import RescheduleVisitModal from "@/components/RescheduleVisitModal";
 
-// Espaço Lamoniê coordinates
-const DEST_LAT = -19.7667;
-const DEST_LNG = -44.0868;
+// Espaço Lamoniê coordinates - R. Cascadura, 380 - Botafogo (Justinópolis), Ribeirão das Neves - MG
+const DEST_LAT = -19.7925565;
+const DEST_LNG = -44.0099977;
 
 function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number) {
   const R = 6371;
@@ -388,33 +388,22 @@ export default function VisitConfirmation() {
                 <p className="text-sm text-muted-foreground mt-0.5">Espaço Lamoniê — Ribeirão das Neves, MG</p>
               </div>
 
-              {/* Map iframe with pin overlay */}
+              {/* Map iframe - usando o embed oficial do Espaço Lamoniê */}
               <div className="relative w-full h-[240px]">
                 <iframe
                   title="Mapa Espaço Lamoniê"
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3749.5!2d-44.0868!3d-19.7667!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTnCsDQ2JzAwLjEiUyA0NMKwMDUnMTIuNSJX!5e0!3m2!1spt-BR!2sbr!4v1"
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3749.5!2d-44.01!3d-19.7926!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xa68f59ef5f5b1d%3A0x4d97bdc51aceaa15!2sEspa%C3%A7o%20Lamoni%C3%AA!5e0!3m2!1spt-BR!2sbr!4v1"
                   className="w-full h-full border-0"
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
                   allowFullScreen
                 />
-                {/* Animated pin overlay */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full pointer-events-none z-10">
-                  <div className="relative flex flex-col items-center">
-                    <div className="w-11 h-11 rounded-full bg-foreground flex items-center justify-center shadow-lg z-10">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-background">
-                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                        <polyline points="9 22 9 12 15 12 15 22" />
-                      </svg>
-                    </div>
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-foreground/10 animate-[map-pulse_2s_ease-in-out_infinite]" />
-                  </div>
-                </div>
+                {/* Sem ícone customizado - usando o pin padrão do Google Maps */}
               </div>
 
               {/* Address + travel info */}
               <div className="px-5 py-4 space-y-3">
-                <p className="text-sm font-medium">{address || "Rua Cascadura, 380 — Ribeirão das Neves, MG"}</p>
+                <p className="text-sm font-medium">R. Cascadura, 380 - Botafogo (Justinópolis), Ribeirão das Neves - MG, 33933-440</p>
 
                 {/* Travel time */}
                 <div className="rounded-xl bg-muted/50 p-3 flex items-center gap-3">
