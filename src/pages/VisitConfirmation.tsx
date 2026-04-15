@@ -228,15 +228,26 @@ export default function VisitConfirmation() {
 
         {/* Confirm / Confirmed */}
         {!confirmed ? (
-          <Button
-            onClick={handleConfirm}
-            disabled={confirming}
-            className="w-full h-14 text-base font-bold rounded-2xl gap-2"
-            size="lg"
-          >
-            <Check size={20} />
-            {confirming ? "Confirmando..." : "Confirmar visita"}
-          </Button>
+          <div className="space-y-3">
+            <Button
+              onClick={handleConfirm}
+              disabled={confirming}
+              className="w-full h-14 text-base font-bold rounded-2xl gap-2"
+              size="lg"
+            >
+              <Check size={20} />
+              {confirming ? "Confirmando..." : "Confirmar visita"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowReschedule(true)}
+              className="w-full h-14 text-base font-semibold rounded-2xl gap-2"
+              size="lg"
+            >
+              <CalendarDays size={20} />
+              Reagendar visita
+            </Button>
+          </div>
         ) : (
           <div className="space-y-4">
             <div className="rounded-2xl bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-5 text-center space-y-2">
