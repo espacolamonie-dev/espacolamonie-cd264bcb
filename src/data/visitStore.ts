@@ -199,6 +199,9 @@ export const updateVisit = async (id: string, updates: Record<string, any>): Pro
     depositPercent: "deposit_percent",
     guestCount: "guest_count",
     clientId: "client_id",
+    confirmationSlug: "confirmation_slug",
+    confirmationToken: "confirmation_token",
+    confirmedAt: "confirmed_at",
   };
   for (const [k, v] of Object.entries(updates)) {
     mapped[keyMap[k] || k] = v;
