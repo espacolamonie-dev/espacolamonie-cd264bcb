@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Check, MapPin, CalendarPlus, Navigation, ExternalLink } from "lucide-react";
+import { Check, MapPin, CalendarPlus, Navigation, ExternalLink, CalendarDays } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import RescheduleVisitModal from "@/components/RescheduleVisitModal";
 
 interface VisitData {
   id: string;
