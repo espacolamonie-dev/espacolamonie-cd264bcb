@@ -81,6 +81,8 @@ export default function Visits() {
 
   // Confirmation WhatsApp modal
   const [confirmMsgVisit, setConfirmMsgVisit] = useState<Visit | null>(null);
+  // Post-create link modal
+  const [createdVisitLink, setCreatedVisitLink] = useState<{ visit: Visit; url: string } | null>(null);
 
   const [formName, setFormName] = useState("");
   const [formPhone, setFormPhone] = useState("");
