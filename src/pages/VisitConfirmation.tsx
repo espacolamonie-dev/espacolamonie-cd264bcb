@@ -34,6 +34,7 @@ export default function VisitConfirmation() {
   const [loading, setLoading] = useState(true);
   const [confirming, setConfirming] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+  const [justConfirmed, setJustConfirmed] = useState(false);
   const [address, setAddress] = useState("");
   const [error, setError] = useState("");
   const [showReschedule, setShowReschedule] = useState(false);
@@ -53,7 +54,6 @@ export default function VisitConfirmation() {
         setVisit(data);
         setConfirmed(!!data.confirmed_at || data.status === "Confirmada");
 
-        // Fetch company address
         const { data: settings } = await supabase
           .from("company_settings")
           .select("address")
@@ -69,7 +69,7 @@ export default function VisitConfirmation() {
   }, [slug]);
 
   const handleConfirm = async () => {
-    if (!visit) return;
+    if (!visit || confirming) return;
     setConfirming(true);
     try {
       await (supabase.from("visits" as any) as any)
@@ -79,9 +79,15 @@ export default function VisitConfirmation() {
         })
         .eq("id", visit.id)
         .eq("confirmation_token", visit.confirmation_token);
-      setConfirmed(true);
 
-      // Send push notification to admin
+      setJustConfirmed(true);
+
+      // Show celebration then transition
+      setTimeout(() => {
+        setConfirmed(true);
+        setTimeout(() => setJustConfirmed(false), 600);
+      }, 2000);
+
       const timeFmt = visit.visit_time.slice(0, 5);
       const dateFmt = visit.visit_date.split("-").reverse().join("/");
       try {
@@ -89,7 +95,7 @@ export default function VisitConfirmation() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
           body: JSON.stringify({
             action: "send-notification",
@@ -110,7 +116,6 @@ export default function VisitConfirmation() {
   const generateICS = () => {
     if (!visit) return;
     const dtStart = `${visit.visit_date.replace(/-/g, "")}T${visit.visit_time.replace(/:/g, "").slice(0, 4)}00`;
-    // Assume 1h duration
     const startH = parseInt(visit.visit_time.slice(0, 2));
     const endH = String(startH + 1).padStart(2, "0");
     const dtEnd = `${visit.visit_date.replace(/-/g, "")}T${endH}${visit.visit_time.slice(3, 5)}00`;
@@ -147,14 +152,14 @@ export default function VisitConfirmation() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
   }
 
   if (error || !visit) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+      <div className="min-h-screen flex items-center justify-center bg-background px-4 animate-fade-in">
         <div className="text-center space-y-3">
           <p className="text-lg font-semibold text-destructive">{error || "Visita não encontrada"}</p>
           <p className="text-sm text-muted-foreground">Verifique o link e tente novamente.</p>
@@ -176,17 +181,49 @@ export default function VisitConfirmation() {
     ? `https://waze.com/ul?q=${encodeURIComponent(address)}`
     : "";
 
+  // Celebration overlay
+  if (justConfirmed && !confirmed) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+        <div className="text-center space-y-4 animate-scale-in">
+          <div
+            className="mx-auto w-20 h-20 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center"
+            style={{ animation: "pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards" }}
+          >
+            <Check size={40} className="text-green-600" />
+          </div>
+          <p className="text-xl font-bold text-green-700 dark:text-green-400 animate-fade-in" style={{ animationDelay: "0.3s", animationFillMode: "both" }}>
+            Visita confirmada com sucesso! 🎉
+          </p>
+          <p className="text-sm text-muted-foreground animate-fade-in" style={{ animationDelay: "0.6s", animationFillMode: "both" }}>
+            Preparando detalhes...
+          </p>
+        </div>
+        <style>{`
+          @keyframes pop {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1); opacity: 1; }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 flex items-start justify-center px-4 py-8">
       <div className="w-full max-w-md space-y-6">
         {/* Header */}
-        <div className="text-center space-y-2">
+        <div className="text-center space-y-2 animate-fade-in">
           <h1 className="text-2xl font-bold tracking-tight">Espaço Lamoniê</h1>
           <p className="text-muted-foreground text-sm">Confirmação de Visita</p>
         </div>
 
         {/* Client Info */}
-        <div className="rounded-2xl border bg-card p-5 space-y-4 shadow-sm">
+        <div
+          className="rounded-2xl border bg-card p-5 space-y-4 shadow-sm animate-fade-in"
+          style={{ animationDelay: "100ms", animationFillMode: "both" }}
+        >
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Cliente</p>
             <p className="text-lg font-semibold">{visit.client_name}</p>
@@ -222,6 +259,16 @@ export default function VisitConfirmation() {
               <span className="text-sm text-muted-foreground">Horário</span>
               <span className="text-sm font-semibold">{timeFmt}</span>
             </div>
+
+            {confirmed && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Status</span>
+                <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-green-600 dark:text-green-400">
+                  <Check size={14} />
+                  Confirmada
+                </span>
+              </div>
+            )}
           </div>
 
           {(visit.event_value > 0 || depositValue > 0) && (
@@ -246,13 +293,16 @@ export default function VisitConfirmation() {
           )}
         </div>
 
-        {/* Confirm / Confirmed */}
+        {/* Actions */}
         {!confirmed ? (
-          <div className="space-y-3">
+          <div
+            className="space-y-3 animate-fade-in"
+            style={{ animationDelay: "200ms", animationFillMode: "both" }}
+          >
             <Button
               onClick={handleConfirm}
               disabled={confirming}
-              className="w-full h-14 text-base font-bold rounded-2xl gap-2"
+              className="w-full h-14 text-base font-bold rounded-2xl gap-2 shadow-lg shadow-primary/20 transition-all duration-150 active:scale-[0.97] hover:scale-[1.02] hover:shadow-xl hover:shadow-primary/30"
               size="lg"
             >
               <Check size={20} />
@@ -261,7 +311,7 @@ export default function VisitConfirmation() {
             <Button
               variant="outline"
               onClick={() => setShowReschedule(true)}
-              className="w-full h-14 text-base font-semibold rounded-2xl gap-2"
+              className="w-full h-14 text-base font-semibold rounded-2xl gap-2 transition-all duration-150 active:scale-[0.97] hover:scale-[1.02]"
               size="lg"
             >
               <CalendarDays size={20} />
@@ -271,7 +321,10 @@ export default function VisitConfirmation() {
         ) : (
           <div className="space-y-4">
             {/* Success banner */}
-            <div className="rounded-2xl bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-5 text-center space-y-2">
+            <div
+              className="rounded-2xl bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-5 text-center space-y-2 animate-fade-in"
+              style={{ animationDelay: "0ms", animationFillMode: "both" }}
+            >
               <div className="mx-auto w-12 h-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
                 <Check size={24} className="text-green-600" />
               </div>
@@ -281,7 +334,10 @@ export default function VisitConfirmation() {
 
             {/* Address */}
             {address && (
-              <div className="rounded-2xl border bg-card p-5 space-y-3 shadow-sm">
+              <div
+                className="rounded-2xl border bg-card p-5 space-y-3 shadow-sm animate-fade-in"
+                style={{ animationDelay: "100ms", animationFillMode: "both" }}
+              >
                 <div className="flex items-center gap-2">
                   <MapPin size={16} className="text-primary" />
                   <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Endereço</p>
@@ -291,20 +347,20 @@ export default function VisitConfirmation() {
                   {mapsUrl && (
                     <Button
                       variant="outline"
-                      className="h-12 gap-2 rounded-xl"
+                      className="h-12 gap-2 rounded-xl transition-all duration-150 active:scale-[0.97] hover:scale-[1.03]"
                       onClick={() => window.open(mapsUrl, "_blank")}
                     >
-                      <Navigation size={16} />
+                      <Navigation size={18} />
                       Google Maps
                     </Button>
                   )}
                   {wazeUrl && (
                     <Button
                       variant="outline"
-                      className="h-12 gap-2 rounded-xl"
+                      className="h-12 gap-2 rounded-xl transition-all duration-150 active:scale-[0.97] hover:scale-[1.03]"
                       onClick={() => window.open(wazeUrl, "_blank")}
                     >
-                      <ExternalLink size={16} />
+                      <ExternalLink size={18} />
                       Waze
                     </Button>
                   )}
@@ -312,20 +368,23 @@ export default function VisitConfirmation() {
               </div>
             )}
 
-            {/* Action buttons */}
+            {/* Calendar button */}
             <Button
               variant="outline"
-              className="w-full h-14 text-base font-semibold rounded-2xl gap-2"
+              className="w-full h-14 text-base font-semibold rounded-2xl gap-2 animate-fade-in transition-all duration-150 active:scale-[0.97] hover:scale-[1.02]"
+              style={{ animationDelay: "200ms", animationFillMode: "both" }}
               onClick={generateICS}
             >
               <CalendarPlus size={20} />
               Adicionar à agenda
             </Button>
 
+            {/* Reschedule button */}
             <Button
               variant="outline"
               onClick={() => setShowReschedule(true)}
-              className="w-full h-14 text-base font-semibold rounded-2xl gap-2"
+              className="w-full h-14 text-base font-semibold rounded-2xl gap-2 animate-fade-in transition-all duration-150 active:scale-[0.97] hover:scale-[1.02]"
+              style={{ animationDelay: "300ms", animationFillMode: "both" }}
               size="lg"
             >
               <CalendarDays size={20} />
@@ -334,7 +393,10 @@ export default function VisitConfirmation() {
           </div>
         )}
 
-        <p className="text-center text-xs text-muted-foreground pt-4">
+        <p
+          className="text-center text-xs text-muted-foreground pt-4 animate-fade-in"
+          style={{ animationDelay: "400ms", animationFillMode: "both" }}
+        >
           Espaço Lamoniê © {new Date().getFullYear()}
         </p>
       </div>
