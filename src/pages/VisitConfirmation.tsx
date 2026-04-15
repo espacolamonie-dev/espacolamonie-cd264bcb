@@ -36,6 +36,7 @@ export default function VisitConfirmation() {
   const [confirmed, setConfirmed] = useState(false);
   const [address, setAddress] = useState("");
   const [error, setError] = useState("");
+  const [showReschedule, setShowReschedule] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
