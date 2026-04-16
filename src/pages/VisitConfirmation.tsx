@@ -135,6 +135,24 @@ export default function VisitConfirmation() {
 
       const timeFmt = visit.visit_time.slice(0, 5);
       const dateFmt = visit.visit_date.split("-").reverse().join("/");
+
+      // Sync Google Calendar (public action, no auth needed)
+      try {
+        await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-calendar-sync`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            action: "public-sync-visit",
+            visit_id: visit.id,
+            confirmation_token: visit.confirmation_token,
+          }),
+        });
+      } catch {}
+
+      // Send push notification
       try {
         await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-push`, {
           method: "POST",
