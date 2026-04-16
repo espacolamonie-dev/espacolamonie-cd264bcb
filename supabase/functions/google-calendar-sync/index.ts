@@ -169,8 +169,8 @@ Deno.serve(async (req) => {
       console.error('sync-all-contracts-cron error:', err);
       return new Response(JSON.stringify({ error: String(err) }), { status: 500, headers: corsHeaders });
     }
-    }
   }
+
 
   // Public action: sync visit after client confirms (no user auth needed)
   if (action === 'public-sync-visit') {
