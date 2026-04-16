@@ -60,7 +60,12 @@ self.addEventListener('notificationclick', (event) => {
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
       for (const client of clients) {
         if (client.url.includes(self.location.origin)) {
-          client.navigate(url);
+          // navigate may reject for cross-origin or older browsers; fall back to postMessage
+          try {
+            client.navigate(url);
+          } catch {
+            client.postMessage({ type: 'navigate', url });
+          }
           return client.focus();
         }
       }

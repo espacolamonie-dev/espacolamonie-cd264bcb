@@ -991,7 +991,7 @@ async function sendVisitConfirmationPush(visit: Record<string, any>) {
         action: 'send-notification',
         title: '✅ Visita Confirmada!',
         body: `${visit.client_name} confirmou a visita para ${formatDateBR(visit.visit_date)} às ${String(visit.visit_time || '').slice(0, 5)}h.`,
-        url: '/visits',
+        url: `/visits?visit=${visit.id}`,
         tag: `visit-confirmed-${visit.id}`,
       }),
     });
