@@ -59,6 +59,7 @@ export default function VisitConfirmation() {
   const [justConfirmed, setJustConfirmed] = useState(false);
   const [address, setAddress] = useState("");
   const [error, setError] = useState("");
+  const [actionError, setActionError] = useState("");
   const [showReschedule, setShowReschedule] = useState(false);
   const [distanceKm, setDistanceKm] = useState<number | null>(null);
   const [travelTime, setTravelTime] = useState<string>("");
@@ -116,14 +117,30 @@ export default function VisitConfirmation() {
   const handleConfirm = async () => {
     if (!visit || confirming) return;
     setConfirming(true);
+    setActionError("");
     try {
-      await (supabase.from("visits" as any) as any)
-        .update({
-          status: "Confirmada",
-          confirmed_at: new Date().toISOString(),
-        })
-        .eq("id", visit.id)
-        .eq("confirmation_token", visit.confirmation_token);
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-calendar-sync`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        keepalive: true,
+        body: JSON.stringify({
+          action: "confirm-visit-public",
+          visit_id: visit.id,
+          confirmation_token: visit.confirmation_token,
+        }),
+      });
+
+      const result = await res.json().catch(() => ({}));
+
+      if (!res.ok || result?.ok === false) {
+        throw new Error(result?.error || "Não foi possível confirmar a visita.");
+      }
+
+      const confirmedAt = result?.confirmed_at || new Date().toISOString();
+      setVisit((current) => current ? { ...current, status: "Confirmada", confirmed_at: confirmedAt } : current);
 
       setJustConfirmed(true);
 
@@ -132,45 +149,9 @@ export default function VisitConfirmation() {
         setConfirmed(true);
         setTimeout(() => setJustConfirmed(false), 600);
       }, 2000);
-
-      const timeFmt = visit.visit_time.slice(0, 5);
-      const dateFmt = visit.visit_date.split("-").reverse().join("/");
-
-      // Sync Google Calendar (public action, no auth needed)
-      try {
-        await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-calendar-sync`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify({
-            action: "public-sync-visit",
-            visit_id: visit.id,
-            confirmation_token: visit.confirmation_token,
-          }),
-        });
-      } catch {}
-
-      // Send push notification
-      try {
-        await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-push`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify({
-            action: "send-notification",
-            title: "✅ Visita Confirmada!",
-            body: `${visit.client_name} confirmou a visita para ${dateFmt} às ${timeFmt}h.`,
-            url: "/visits",
-            tag: `visit-confirmed-${visit.id}`,
-          }),
-        });
-      } catch {}
-    } catch {
-      // silent
+    } catch (err) {
+      console.error("visit confirmation failed:", err);
+      setActionError("Não foi possível confirmar agora. Tente novamente.");
     } finally {
       setConfirming(false);
     }
@@ -380,6 +361,11 @@ export default function VisitConfirmation() {
               <CalendarDays size={20} />
               Reagendar visita
             </Button>
+            {actionError && (
+              <p className="text-sm text-center text-destructive" role="alert">
+                {actionError}
+              </p>
+            )}
           </div>
         ) : (
           <div className="space-y-4">
