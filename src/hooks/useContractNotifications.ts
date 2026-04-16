@@ -122,7 +122,7 @@ export function useContractNotifications() {
             "Nova Visita Agendada!",
             `${row.client_name} agendou visita para ${fmtDate(row.visit_date)} às ${time}h.`,
             `visit-booked-${row.id}`,
-            "/visits",
+            `/visits?visit=${row.id}`,
             "📅"
           );
         }
@@ -215,7 +215,7 @@ export function useContractNotifications() {
               "Visita Confirmada!",
               `${newRow.client_name} confirmou a visita para ${fmtDate(newRow.visit_date)} às ${time}h.`,
               `visit-confirmed-${newRow.id}`,
-              "/visits",
+              `/visits?visit=${newRow.id}`,
               "✅"
             );
           }
@@ -232,7 +232,7 @@ export function useContractNotifications() {
                 "Visita Reagendada!",
                 `${newRow.client_name} reagendou para ${fmtDate(newRow.visit_date)} às ${time}h.`,
                 `visit-rescheduled-${newRow.id}-${newRow.visit_date}`,
-                "/visits",
+                `/visits?visit=${newRow.id}`,
                 "🔄"
               );
             }

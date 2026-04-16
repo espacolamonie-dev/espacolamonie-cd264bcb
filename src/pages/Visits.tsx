@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Plus, Search, Phone, CalendarDays, Clock, Filter, Eye, Check, RotateCcw, X as XIcon, AlertTriangle, Pencil, Users, Megaphone, TrendingUp, Link2, ExternalLink, MessageCircle, DollarSign, Copy, Trash2, UserPlus, LinkIcon } from "lucide-react";
 import { AttributionBadge } from "@/components/AttributionBadge";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
@@ -64,6 +65,7 @@ function formatCurrency(v: number): string {
 
 export default function Visits() {
   const [visits, setVisits] = useState<Visit[]>([]);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
@@ -123,6 +125,20 @@ export default function Visits() {
   }, []);
 
   useEffect(() => { loadVisits(); }, [loadVisits]);
+
+  // Auto-open visit details when arriving via notification link (e.g. /visits?visit=ID)
+  useEffect(() => {
+    const visitId = searchParams.get("visit");
+    if (!visitId || visits.length === 0) return;
+    const target = visits.find((v) => v.id === visitId);
+    if (target) {
+      setDetailVisit(target);
+      // Clean the param so the modal can be closed normally
+      const next = new URLSearchParams(searchParams);
+      next.delete("visit");
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, visits, setSearchParams]);
 
   // Close suggestions when clicking outside
   useEffect(() => {
