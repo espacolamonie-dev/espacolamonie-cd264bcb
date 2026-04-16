@@ -169,7 +169,117 @@ Deno.serve(async (req) => {
       console.error('sync-all-contracts-cron error:', err);
       return new Response(JSON.stringify({ error: String(err) }), { status: 500, headers: corsHeaders });
     }
+    }
   }
+
+  // Public action: sync visit after client confirms (no user auth needed)
+  if (action === 'public-sync-visit') {
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    try {
+      const { visit_id, confirmation_token } = body;
+      if (!visit_id || !confirmation_token) {
+        return new Response(JSON.stringify({ error: 'visit_id and confirmation_token required' }), { status: 400, headers: corsHeaders });
+      }
+
+      // Validate the token matches the visit (security check)
+      const { data: visit } = await supabase.from('visits').select('*').eq('id', visit_id).eq('confirmation_token', confirmation_token).single();
+      if (!visit) {
+        return new Response(JSON.stringify({ error: 'Visit not found or invalid token' }), { status: 404, headers: corsHeaders });
+      }
+
+      // Get the visit owner's google settings
+      const { data: settings } = await supabase.from('google_settings').select('*').eq('user_id', visit.user_id).single();
+      if (!settings?.is_connected) {
+        return new Response(JSON.stringify({ success: true, message: 'Google Calendar not connected' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const token = await getValidToken(supabase, visit.user_id, settings);
+      const calendarId = settings.calendar_id || 'primary';
+
+      const visitStatusLabels: Record<string, string> = {
+        Agendada: 'Agendada', Confirmada: 'Confirmada', Remarcada: 'Remarcada', Cancelada: 'Cancelada',
+      };
+
+      const visitTitle = `[Visita Lamoniê] ${visit.client_name}`;
+      const formatDateBR = (d: string) => { const [y, m, day] = d.split('-'); return `${day}/${m}/${y}`; };
+      const formatCurrency = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      const createdAt = new Date(visit.created_at);
+      const createdAtStr = `${createdAt.toLocaleDateString('pt-BR')} às ${createdAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+
+      const visitDesc = [
+        `👤 Cliente: ${visit.client_name} | ${visit.client_phone}`,
+        `📅 Data de interesse do evento: ${visit.interest_event_date ? formatDateBR(visit.interest_event_date) : '—'}`,
+        `🎉 Evento desejado: ${visit.event_type_desired || '—'}`,
+        `💰 Valor do evento: ${visit.event_value ? formatCurrency(Number(visit.event_value)) : '—'}`,
+        `👥 Qtd. de pessoas: ${visit.guest_count || '—'}`,
+        `📆 Data da visita: ${formatDateBR(visit.visit_date)}`,
+        `🕐 Horário: ${visit.visit_time?.slice(0, 5) || '—'}`,
+        `📊 Status: ${visitStatusLabels[visit.status] || visit.status}`,
+        `📣 Fonte do Lead: ${visit.lead_source || '—'}`,
+        `🗓️ Data de cadastro: ${createdAtStr}`,
+        visit.notes ? `📝 Observações: ${visit.notes}` : '',
+        '', '— Criado automaticamente pelo CRM Lamoniê',
+      ].filter(Boolean).join('\n');
+
+      const visitColorId = visit.status === 'Confirmada' ? '10' : visit.status === 'Remarcada' ? '5' : '7';
+
+      const startDateTime = `${visit.visit_date}T${visit.visit_time}`;
+      const endDate = new Date(`${visit.visit_date}T${visit.visit_time}`);
+      endDate.setHours(endDate.getHours() + 1);
+      const endDateTime = endDate.toISOString().replace('Z', '');
+
+      const eventBody = {
+        summary: visitTitle,
+        description: visitDesc,
+        location: 'Espaço Lamoniê',
+        start: { dateTime: startDateTime, timeZone: 'America/Sao_Paulo' },
+        end: { dateTime: endDateTime.slice(0, 19), timeZone: 'America/Sao_Paulo' },
+        colorId: visitColorId,
+        extendedProperties: { private: { visit_id: visit.id, crm: 'lamonie' } },
+      };
+
+      let googleEventId = visit.google_event_id;
+      let googleRes;
+      let resBody;
+
+      if (googleEventId) {
+        googleRes = await fetch(
+          `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${googleEventId}`,
+          { method: 'PUT', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(eventBody) }
+        );
+        resBody = await googleRes.json();
+        if (!googleRes.ok && googleRes.status === 404) googleEventId = null;
+      }
+
+      if (!googleEventId) {
+        googleRes = await fetch(
+          `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`,
+          { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(eventBody) }
+        );
+        resBody = await googleRes.json();
+        if (googleRes.ok && resBody.id) {
+          googleEventId = resBody.id;
+          await supabase.from('visits').update({ google_event_id: googleEventId }).eq('id', visit_id);
+        }
+      }
+
+      await supabase.from('google_sync_logs').insert({
+        user_id: visit.user_id,
+        action: 'public-sync-visit',
+        status: googleRes?.ok ? 'success' : 'error',
+        message: googleRes?.ok ? `Visit confirmed & synced: ${googleEventId}` : JSON.stringify(resBody),
+        google_event_id: googleEventId,
+      });
+
+      return new Response(JSON.stringify({ success: googleRes?.ok, google_event_id: googleEventId }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    } catch (err) {
+      console.error('public-sync-visit error:', err);
+      return new Response(JSON.stringify({ error: String(err) }), { status: 500, headers: corsHeaders });
+    }
 
   // Regular user-authenticated actions
   const authHeader = req.headers.get('Authorization');
