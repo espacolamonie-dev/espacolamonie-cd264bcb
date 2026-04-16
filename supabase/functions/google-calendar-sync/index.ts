@@ -280,6 +280,7 @@ Deno.serve(async (req) => {
       console.error('public-sync-visit error:', err);
       return new Response(JSON.stringify({ error: String(err) }), { status: 500, headers: corsHeaders });
     }
+  }
 
   // Regular user-authenticated actions
   const authHeader = req.headers.get('Authorization');
