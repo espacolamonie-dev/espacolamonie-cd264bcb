@@ -468,10 +468,15 @@ function NewExpenseDialog({ onSaved }: { onSaved: () => void }) {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     description: "", amount: "", category: "Outros", payment_method: "pix",
-    is_fixed: false, due_date: todayISO(), parcelado: false, total_installments: "1",
+    is_fixed: false, due_date: todayISO(), parcelado: false,
+    total_installments: "1", paid_installments: "0",
   });
 
-  const reset = () => setForm({ description: "", amount: "", category: "Outros", payment_method: "pix", is_fixed: false, due_date: todayISO(), parcelado: false, total_installments: "1" });
+  const reset = () => setForm({
+    description: "", amount: "", category: "Outros", payment_method: "pix",
+    is_fixed: false, due_date: todayISO(), parcelado: false,
+    total_installments: "1", paid_installments: "0",
+  });
 
   const save = async () => {
     if (!form.description.trim() || !form.amount) { toast.error("Preencha descrição e valor"); return; }
@@ -481,8 +486,10 @@ function NewExpenseDialog({ onSaved }: { onSaved: () => void }) {
 
     const totalAmount = parseFloat(form.amount.replace(",", "."));
     const parcelas = form.parcelado ? Math.max(1, parseInt(form.total_installments) || 1) : 1;
+    const jaPagas = form.parcelado ? Math.min(parcelas, Math.max(0, parseInt(form.paid_installments) || 0)) : 0;
     const valorParcela = totalAmount / parcelas;
-    const baseDate = new Date(form.due_date + "T12:00:00");
+    // due_date informada = vencimento da PRÓXIMA parcela (a primeira ainda não paga)
+    const proximaDate = new Date(form.due_date + "T12:00:00");
 
     if (parcelas === 1) {
       const { error } = await supabase.from("expenses").insert({
@@ -497,14 +504,24 @@ function NewExpenseDialog({ onSaved }: { onSaved: () => void }) {
       });
       if (error) { toast.error(error.message); setSaving(false); return; }
     } else {
-      // Cria primeira como "pai" e depois as filhas
+      // A parcela #(jaPagas + 1) vence em "proximaDate"
+      // Parcelas 1..jaPagas têm datas anteriores (já pagas)
+      // Parcelas (jaPagas+2)..N têm datas futuras
+      const dateForInstallment = (n: number) => {
+        const offset = n - (jaPagas + 1); // offset em meses em relação à próxima
+        const d = new Date(proximaDate);
+        d.setMonth(d.getMonth() + offset);
+        return d.toISOString().slice(0, 10);
+      };
+
+      const firstIso = dateForInstallment(1);
       const { data: parent, error: e1 } = await supabase.from("expenses").insert({
         user_id: user.id,
-        description: `${form.description} (1/${parcelas})`,
+        description: `${form.description} (1/${parcelas})${jaPagas >= 1 ? " ✓" : ""}`,
         amount: valorParcela,
         category: form.category,
-        date: form.due_date,
-        due_date: form.due_date,
+        date: firstIso,
+        due_date: firstIso,
         payment_method: form.payment_method,
         is_fixed: false,
         installment_number: 1,
@@ -514,12 +531,10 @@ function NewExpenseDialog({ onSaved }: { onSaved: () => void }) {
 
       const restantes = [];
       for (let i = 2; i <= parcelas; i++) {
-        const d = new Date(baseDate);
-        d.setMonth(d.getMonth() + (i - 1));
-        const iso = d.toISOString().slice(0, 10);
+        const iso = dateForInstallment(i);
         restantes.push({
           user_id: user.id,
-          description: `${form.description} (${i}/${parcelas})`,
+          description: `${form.description} (${i}/${parcelas})${i <= jaPagas ? " ✓" : ""}`,
           amount: valorParcela,
           category: form.category,
           date: iso,
@@ -531,23 +546,33 @@ function NewExpenseDialog({ onSaved }: { onSaved: () => void }) {
           total_installments: parcelas,
         });
       }
-      const { error: e2 } = await supabase.from("expenses").insert(restantes);
-      if (e2) { toast.error(e2.message); setSaving(false); return; }
+      if (restantes.length > 0) {
+        const { error: e2 } = await supabase.from("expenses").insert(restantes);
+        if (e2) { toast.error(e2.message); setSaving(false); return; }
+      }
     }
 
-    toast.success(parcelas > 1 ? `${parcelas} parcelas criadas` : "Despesa criada");
+    toast.success(parcelas > 1
+      ? `${parcelas} parcelas criadas${jaPagas > 0 ? ` (${jaPagas} já pagas)` : ""}`
+      : "Despesa criada");
     setSaving(false);
     setOpen(false);
     reset();
     onSaved();
   };
 
+  const totalNum = parseFloat(form.amount.replace(",", ".")) || 0;
+  const parcelasNum = Math.max(1, parseInt(form.total_installments) || 1);
+  const pagasNum = Math.min(parcelasNum, Math.max(0, parseInt(form.paid_installments) || 0));
+  const restantesNum = parcelasNum - pagasNum;
+  const valorParcelaPreview = totalNum / parcelasNum;
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button><Plus className="h-4 w-4" />Nova despesa</Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>Nova despesa</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div>
@@ -560,7 +585,7 @@ function NewExpenseDialog({ onSaved }: { onSaved: () => void }) {
               <Input type="number" step="0.01" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} />
             </div>
             <div>
-              <Label>Vencimento</Label>
+              <Label>{form.parcelado ? "Próx. vencimento" : "Vencimento"}</Label>
               <Input type="date" value={form.due_date} onChange={e => setForm({ ...form, due_date: e.target.value })} />
             </div>
           </div>
@@ -599,19 +624,39 @@ function NewExpenseDialog({ onSaved }: { onSaved: () => void }) {
           </div>
           <div className="flex items-center justify-between border rounded-lg p-3">
             <div>
-              <p className="text-sm font-medium">Parcelado</p>
+              <p className="text-sm font-medium">Parcelado (cartão)</p>
               <p className="text-xs text-muted-foreground">Divide o valor em parcelas mensais</p>
             </div>
             <Switch checked={form.parcelado} onCheckedChange={v => setForm({ ...form, parcelado: v })} />
           </div>
           {form.parcelado && (
-            <div>
-              <Label>Número de parcelas</Label>
-              <Input type="number" min="2" max="36" value={form.total_installments} onChange={e => setForm({ ...form, total_installments: e.target.value })} />
-              {form.amount && parseInt(form.total_installments) > 0 && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  {form.total_installments}x de {BRL(parseFloat(form.amount.replace(",", ".")) / parseInt(form.total_installments))}
-                </p>
+            <div className="space-y-3 border rounded-lg p-3 bg-muted/30">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Total de parcelas</Label>
+                  <Input
+                    type="number" min="2" max="36"
+                    value={form.total_installments}
+                    onChange={e => setForm({ ...form, total_installments: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label>Já pagas</Label>
+                  <Input
+                    type="number" min="0" max={parcelasNum - 1}
+                    value={form.paid_installments}
+                    onChange={e => setForm({ ...form, paid_installments: e.target.value })}
+                  />
+                </div>
+              </div>
+              {totalNum > 0 && (
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <p>💳 <strong>{parcelasNum}x</strong> de <strong>{BRL(valorParcelaPreview)}</strong></p>
+                  {pagasNum > 0 && (
+                    <p>✅ {pagasNum} já paga{pagasNum > 1 ? "s" : ""} — restam <strong>{restantesNum}</strong> ({BRL(valorParcelaPreview * restantesNum)})</p>
+                  )}
+                  <p>📅 Próxima parcela ({pagasNum + 1}/{parcelasNum}) vence em {new Date(form.due_date + "T12:00:00").toLocaleDateString("pt-BR")}</p>
+                </div>
               )}
             </div>
           )}
@@ -624,6 +669,7 @@ function NewExpenseDialog({ onSaved }: { onSaved: () => void }) {
     </Dialog>
   );
 }
+
 
 function ExpensesList({ expenses, onChanged }: { expenses: Expense[]; onChanged: () => void }) {
   const remove = async (e: Expense) => {
