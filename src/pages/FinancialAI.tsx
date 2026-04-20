@@ -894,3 +894,131 @@ function ImportStatementButton({ onImported }: { onImported: () => void }) {
     </>
   );
 }
+
+function CashBalanceCard({
+  balance, hasAdjustment, lastDate, lastNotes, history, onSaved,
+}: {
+  balance: number;
+  hasAdjustment: boolean;
+  lastDate: string | null;
+  lastNotes: string;
+  history: CashAdjustment[];
+  onSaved: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [valueStr, setValueStr] = useState("");
+  const [date, setDate] = useState(todayISO());
+  const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    const v = Number(valueStr.replace(",", "."));
+    if (Number.isNaN(v)) { toast.error("Informe um valor válido."); return; }
+    setSaving(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setSaving(false); return; }
+    const { error } = await supabase.from("cash_balance_adjustments" as any).insert({
+      user_id: user.id, balance: v, adjustment_date: date, notes,
+    });
+    setSaving(false);
+    if (error) { toast.error("Erro ao salvar ajuste."); return; }
+    toast.success("Saldo da conta atualizado.");
+    setValueStr(""); setNotes(""); setDate(todayISO()); setOpen(false);
+    onSaved();
+  };
+
+  const remove = async (id: string) => {
+    if (!confirm("Excluir este ajuste de saldo?")) return;
+    const { error } = await supabase.from("cash_balance_adjustments" as any).delete().eq("id", id);
+    if (error) { toast.error("Erro ao excluir."); return; }
+    toast.success("Ajuste removido.");
+    onSaved();
+  };
+
+  return (
+    <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-transparent">
+      <CardContent className="pt-5">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Wallet className="h-4 w-4" /> Saldo da conta do espaço
+            </div>
+            <p className={`text-3xl font-semibold mt-1 ${balance >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+              {BRL(balance)}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {hasAdjustment && lastDate
+                ? <>Atualizado em {new Date(lastDate + "T12:00:00").toLocaleDateString("pt-BR")} · entradas/despesas pagas após essa data já consideradas{lastNotes ? ` · ${lastNotes}` : ""}</>
+                : "Sem ajuste manual ainda — calculando pelo fluxo total. Informe o saldo real para precisão."}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => setHistoryOpen(true)} disabled={history.length === 0}>
+              Histórico
+            </Button>
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm">
+                  <Plus className="h-4 w-4 mr-1" /> Ajustar saldo
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Ajustar saldo da conta</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-3">
+                  <div>
+                    <Label>Saldo real na conta (R$)</Label>
+                    <Input value={valueStr} onChange={e => setValueStr(e.target.value)} placeholder="Ex: 5000.00" inputMode="decimal" />
+                  </div>
+                  <div>
+                    <Label>Data do saldo</Label>
+                    <Input type="date" value={date} onChange={e => setDate(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label>Observação (opcional)</Label>
+                    <Input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Ex: Conferido via app do banco" />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    A partir desta data, o saldo será recalculado somando entradas e subtraindo despesas pagas posteriores.
+                  </p>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+                  <Button onClick={save} disabled={saving}>
+                    {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+
+        <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Histórico de ajustes</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+              {history.map(h => (
+                <div key={h.id} className="flex items-center justify-between border rounded-lg p-3">
+                  <div>
+                    <p className="font-medium text-sm">{BRL(Number(h.balance))}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(h.adjustment_date + "T12:00:00").toLocaleDateString("pt-BR")}
+                      {h.notes ? ` · ${h.notes}` : ""}
+                    </p>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => remove(h.id)}>
+                    <Trash2 className="h-4 w-4 text-rose-500" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </DialogContent>
+        </Dialog>
+      </CardContent>
+    </Card>
+  );
+}
