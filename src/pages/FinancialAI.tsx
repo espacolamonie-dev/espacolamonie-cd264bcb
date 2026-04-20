@@ -52,6 +52,7 @@ export default function FinancialAI() {
   const [manualEntries, setManualEntries] = useState<ManualEntry[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [visits, setVisits] = useState<Visit[]>([]);
+  const [cashAdjustments, setCashAdjustments] = useState<CashAdjustment[]>([]);
 
   // Filtro de período
   const [periodKey, setPeriodKey] = useState<PeriodKey>("month");
