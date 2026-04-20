@@ -159,6 +159,35 @@ export default function FinancialAI() {
     };
   }, [expenses, payments, manualEntries, contracts, periodStart, periodEnd]);
 
+  // Saldo da conta: último ajuste manual + entradas posteriores − despesas pagas posteriores
+  const accountBalance = useMemo(() => {
+    const last = cashAdjustments[0];
+    if (!last) {
+      // Sem ajuste — usa só o fluxo total de pagas
+      const entradas = payments.reduce((s, p) => s + Number(p.amount), 0)
+        + manualEntries.reduce((s, m) => s + Number(m.amount), 0);
+      const saidas = expenses
+        .filter(e => (e.due_date || e.date) <= todayISO())
+        .reduce((s, e) => s + Number(e.amount), 0);
+      return { value: entradas - saidas, hasAdjustment: false, lastDate: null as string | null, lastNotes: "" };
+    }
+    const cutoff = last.adjustment_date;
+    const entradas = payments.filter(p => p.date > cutoff).reduce((s, p) => s + Number(p.amount), 0)
+      + manualEntries.filter(m => m.date > cutoff).reduce((s, m) => s + Number(m.amount), 0);
+    const saidas = expenses
+      .filter(e => {
+        const ref = e.due_date || e.date;
+        return ref > cutoff && ref <= todayISO();
+      })
+      .reduce((s, e) => s + Number(e.amount), 0);
+    return {
+      value: Number(last.balance) + entradas - saidas,
+      hasAdjustment: true,
+      lastDate: last.adjustment_date,
+      lastNotes: last.notes,
+    };
+  }, [cashAdjustments, payments, manualEntries, expenses]);
+
   const indicadores = useMemo(() => {
     const ativos = contracts.filter(c => c.status !== "cancelled");
     const ticketMedio = ativos.length ? ativos.reduce((s, c) => s + Number(c.total_value), 0) / ativos.length : 0;
