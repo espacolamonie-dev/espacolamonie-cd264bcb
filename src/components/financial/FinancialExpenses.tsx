@@ -184,7 +184,15 @@ export default function FinancialExpenses({ data, onReload }: Props) {
                   <ArrowDownCircle size={16} className="text-danger" />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-medium text-sm truncate">{item.description}</p>
+                  <button
+                    type="button"
+                    onClick={() => openEdit(item)}
+                    className="font-medium text-sm truncate text-left hover:underline disabled:no-underline disabled:cursor-default"
+                    disabled={item.source !== "expense"}
+                    title={item.source === "expense" ? "Editar nome e categoria" : ""}
+                  >
+                    {item.description}
+                  </button>
                   <div className="flex items-center gap-2 mt-0.5">
                     <p className="text-xs text-muted-foreground">{new Date(item.date + "T12:00:00").toLocaleDateString("pt-BR")}</p>
                     <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{item.category}</Badge>
