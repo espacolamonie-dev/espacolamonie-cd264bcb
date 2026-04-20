@@ -383,6 +383,8 @@ export default function FinancialAI() {
             </Card>
           </div>
 
+          <PricingRecommendationCard expenses={expenses} contracts={contracts} />
+
           {/* Indicadores estratégicos */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <KpiCard icon={<Trophy className="h-4 w-4 text-amber-500" />} label="Ticket médio" value={BRL(indicadores.ticketMedio)} />
