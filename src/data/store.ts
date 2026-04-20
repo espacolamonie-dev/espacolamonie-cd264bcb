@@ -153,24 +153,31 @@ export const updateContract = async (id: string, updates: Record<string, any>) =
     mapped.remaining_value = 0;
   }
 
-  // Payment status changed — always clear and recreate from scratch
+  // Payment status changed — preserve existing payments, only add the difference
   if (updates.paymentStatus !== undefined && updates.status !== "cancelled") {
     const userId = await getUserId();
-    // Always remove all existing payments for this contract first
-    await supabase.from("payments").delete().eq("contract_id", id);
 
     const contractRes = await supabase.from("contracts").select("*").eq("id", id).single();
     if (contractRes.data) {
       const contract = mapContract(contractRes.data);
 
+      // Get current total paid (preserve historical payments)
+      const { data: existingPayments } = await supabase.from("payments").select("amount").eq("contract_id", id);
+      const currentPaid = (existingPayments || []).reduce((s, p) => s + Number(p.amount || 0), 0);
+
       if (updates.paymentStatus === "deposit_paid") {
         const depositValue = (contract.totalValue * contract.depositPercent) / 100;
-        await supabase.from("payments").insert({
-          user_id: userId, contract_id: id, amount: depositValue,
-          date: todayLocalStr(),
-          description: "Sinal pago automaticamente",
-        });
-        mapped.remaining_value = Math.max(0, contract.totalValue - depositValue);
+        const diff = depositValue - currentPaid;
+        if (diff > 0.009) {
+          await supabase.from("payments").insert({
+            user_id: userId, contract_id: id, amount: diff,
+            date: todayLocalStr(),
+            description: currentPaid > 0 ? "Complemento do sinal" : "Sinal pago automaticamente",
+          });
+        }
+        // If currentPaid already >= depositValue, do not delete or alter history
+        const newTotal = Math.max(currentPaid, depositValue);
+        mapped.remaining_value = Math.max(0, contract.totalValue - newTotal);
 
         // Track Meta: Purchase — only for paid traffic
         if (contract.source === "Tráfego Pago") {
