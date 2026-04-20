@@ -888,7 +888,13 @@ export type Database = {
           created_at: string
           date: string
           description: string
+          due_date: string | null
           id: string
+          installment_number: number | null
+          is_fixed: boolean
+          parent_expense_id: string | null
+          payment_method: string
+          total_installments: number | null
           user_id: string
         }
         Insert: {
@@ -897,7 +903,13 @@ export type Database = {
           created_at?: string
           date: string
           description: string
+          due_date?: string | null
           id?: string
+          installment_number?: number | null
+          is_fixed?: boolean
+          parent_expense_id?: string | null
+          payment_method?: string
+          total_installments?: number | null
           user_id: string
         }
         Update: {
@@ -906,10 +918,24 @@ export type Database = {
           created_at?: string
           date?: string
           description?: string
+          due_date?: string | null
           id?: string
+          installment_number?: number | null
+          is_fixed?: boolean
+          parent_expense_id?: string | null
+          payment_method?: string
+          total_installments?: number | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "expenses_parent_expense_id_fkey"
+            columns: ["parent_expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       google_settings: {
         Row: {
