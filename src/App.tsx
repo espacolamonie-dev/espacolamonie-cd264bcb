@@ -15,6 +15,7 @@ const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const Clients = lazy(() => import("@/pages/Clients"));
 const Contracts = lazy(() => import("@/pages/Contracts"));
 const Financial = lazy(() => import("@/pages/Financial"));
+const FinancialAI = lazy(() => import("@/pages/FinancialAI"));
 const Agenda = lazy(() => import("@/pages/Agenda"));
 const Reports = lazy(() => import("@/pages/Reports"));
 const Settings = lazy(() => import("@/pages/Settings"));
@@ -138,6 +139,7 @@ const App = () => {
                         <Route path="/clients" element={<Clients />} />
                         <Route path="/contracts" element={<Contracts />} />
                         <Route path="/financial" element={<Financial />} />
+                        <Route path="/financial-ai" element={<FinancialAI />} />
                         <Route path="/agenda" element={<Agenda />} />
                         <Route path="/reports" element={<Reports />} />
                         <Route path="/budgets" element={<Budgets />} />
