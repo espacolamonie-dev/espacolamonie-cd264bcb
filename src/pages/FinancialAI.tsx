@@ -49,78 +49,94 @@ export default function FinancialAI() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [manualEntries, setManualEntries] = useState<ManualEntry[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
+  const [visits, setVisits] = useState<Visit[]>([]);
+
+  // Filtro de período
+  const [periodKey, setPeriodKey] = useState<PeriodKey>("month");
+  const [customStart, setCustomStart] = useState(todayISO());
+  const [customEnd, setCustomEnd] = useState(todayISO());
 
   const today = new Date();
-  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-  const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-  const monthEndISO = monthEnd.toISOString().slice(0, 10);
-  const monthStartISO = monthStart.toISOString().slice(0, 10);
 
-  // ---- Load data ----
+  const { periodStart, periodEnd, periodLabel } = useMemo(() => {
+    const fmt = (d: Date) => d.toISOString().slice(0, 10);
+    if (periodKey === "day") {
+      const iso = fmt(today);
+      return { periodStart: iso, periodEnd: iso, periodLabel: "Hoje" };
+    }
+    if (periodKey === "week") {
+      const start = new Date(today);
+      const dow = start.getDay();
+      start.setDate(start.getDate() - dow);
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      return { periodStart: fmt(start), periodEnd: fmt(end), periodLabel: "Esta semana" };
+    }
+    if (periodKey === "custom") {
+      return { periodStart: customStart, periodEnd: customEnd, periodLabel: "Personalizado" };
+    }
+    const s = new Date(today.getFullYear(), today.getMonth(), 1);
+    const e = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    return { periodStart: fmt(s), periodEnd: fmt(e), periodLabel: "Este mês" };
+  }, [periodKey, customStart, customEnd]);
+
   const loadAll = async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoading(false); return; }
 
-    const [exp, pay, me, ct] = await Promise.all([
+    const [exp, pay, me, ct, vs] = await Promise.all([
       supabase.from("expenses").select("*").eq("user_id", user.id),
       supabase.from("payments").select("amount,date,contract_id").eq("user_id", user.id),
       supabase.from("manual_entries").select("amount,date").eq("user_id", user.id),
-      supabase.from("contracts").select("id,total_value,remaining_value,deposit_value,status,payment_status,event_date").eq("user_id", user.id),
+      supabase.from("contracts").select("id,total_value,remaining_value,deposit_value,status,payment_status,event_date,event_type,created_at").eq("user_id", user.id),
+      supabase.from("visits").select("id,created_at,status").eq("user_id", user.id),
     ]);
 
     setExpenses((exp.data as Expense[]) || []);
     setPayments((pay.data as Payment[]) || []);
     setManualEntries((me.data as ManualEntry[]) || []);
     setContracts((ct.data as Contract[]) || []);
+    setVisits((vs.data as Visit[]) || []);
     setLoading(false);
   };
 
   useEffect(() => { loadAll(); }, []);
 
-  // ---- Compute KPIs ----
   const kpis = useMemo(() => {
-    const inMonth = (d: string) => d >= monthStartISO && d <= monthEndISO;
+    const inPeriod = (d: string) => d >= periodStart && d <= periodEnd;
 
     const recebidoMes =
-      payments.filter(p => inMonth(p.date)).reduce((s, p) => s + Number(p.amount), 0) +
-      manualEntries.filter(e => inMonth(e.date)).reduce((s, e) => s + Number(e.amount), 0);
+      payments.filter(p => inPeriod(p.date)).reduce((s, p) => s + Number(p.amount), 0) +
+      manualEntries.filter(e => inPeriod(e.date)).reduce((s, e) => s + Number(e.amount), 0);
 
     const despesasMes = expenses
-      .filter(e => inMonth(e.due_date || e.date))
+      .filter(e => inPeriod(e.due_date || e.date))
       .reduce((s, e) => s + Number(e.amount), 0);
 
-    // A receber: contratos ativos com remaining > 0 e evento ainda não passou ou pagamento pendente
     const aReceberTotal = contracts
       .filter(c => c.status !== "cancelled" && Number(c.remaining_value) > 0)
       .reduce((s, c) => s + Number(c.remaining_value), 0);
 
-    // Despesas previstas até fim do mês ainda não consideradas como pagas (todas no mês)
     const despesasFuturasMes = expenses
       .filter(e => {
         const ref = e.due_date || e.date;
-        return ref >= todayISO() && ref <= monthEndISO;
+        return ref >= todayISO() && ref <= periodEnd;
       })
       .reduce((s, e) => s + Number(e.amount), 0);
 
-    // Receita projetada do mês: recebido + parcela de "a receber" estimada (assumimos que entradas pendentes do mês caem se contrato é deste mês)
     const aReceberMes = contracts
-      .filter(c => c.event_date >= monthStartISO && c.event_date <= monthEndISO && c.status !== "cancelled")
+      .filter(c => c.event_date >= periodStart && c.event_date <= periodEnd && c.status !== "cancelled")
       .reduce((s, c) => s + Number(c.remaining_value), 0);
 
     const receitaProjetada = recebidoMes + aReceberMes;
-    const lucroAtual = recebidoMes - despesasMes;
-    const lucroProjetado = receitaProjetada - despesasMes - despesasFuturasMes + (despesasMes - despesasFuturasMes); 
-    // simplificação: lucro projetado = receita projetada - todas as despesas do mês
     const lucroProjetadoFinal = receitaProjetada - despesasMes;
 
-    // Caixa estimado = recebido - despesas já pagas (assumimos despesas com data <= hoje)
     const despesasPagas = expenses
-      .filter(e => (e.due_date || e.date) <= todayISO())
+      .filter(e => (e.due_date || e.date) <= todayISO() && (e.due_date || e.date) >= periodStart)
       .reduce((s, e) => s + Number(e.amount), 0);
     const caixaAtual = recebidoMes - despesasPagas;
 
-    // Compromissos futuros (próximos 90 dias) — parcelas
     const horizonte = new Date(today.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     const compromissos90d = expenses
       .filter(e => {
@@ -129,28 +145,97 @@ export default function FinancialAI() {
       })
       .reduce((s, e) => s + Number(e.amount), 0);
 
-    // Margem
     const margem = receitaProjetada > 0 ? (lucroProjetadoFinal / receitaProjetada) * 100 : 0;
 
     return {
-      recebidoMes, despesasMes, lucroAtual, receitaProjetada,
+      recebidoMes, despesasMes, lucroAtual: recebidoMes - despesasPagas, receitaProjetada,
       lucroProjetado: lucroProjetadoFinal, despesasFuturasMes, aReceberTotal,
       aReceberMes, caixaAtual, compromissos90d, margem,
     };
-  }, [expenses, payments, manualEntries, contracts]);
+  }, [expenses, payments, manualEntries, contracts, periodStart, periodEnd]);
 
-  // ---- Alertas ----
+  const indicadores = useMemo(() => {
+    const ativos = contracts.filter(c => c.status !== "cancelled");
+    const ticketMedio = ativos.length ? ativos.reduce((s, c) => s + Number(c.total_value), 0) / ativos.length : 0;
+
+    const totalVisits = visits.length;
+    const visitasConvertidas = visits.filter(v => v.status === "Convertida" || v.status === "Concluída").length;
+    const conversao = totalVisits > 0 ? (visitasConvertidas / totalVisits) * 100 : 0;
+
+    const porTipo: Record<string, number> = {};
+    ativos.forEach(c => {
+      const t = c.event_type || "Outro";
+      porTipo[t] = (porTipo[t] || 0) + Number(c.total_value);
+    });
+    const receitaPorTipo = Object.entries(porTipo)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 6);
+
+    const evolucao: { mes: string; receita: number; despesa: number; lucro: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const ref = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const sIso = ref.toISOString().slice(0, 10);
+      const eIso = new Date(ref.getFullYear(), ref.getMonth() + 1, 0).toISOString().slice(0, 10);
+      const r =
+        payments.filter(p => p.date >= sIso && p.date <= eIso).reduce((s, p) => s + Number(p.amount), 0) +
+        manualEntries.filter(m => m.date >= sIso && m.date <= eIso).reduce((s, m) => s + Number(m.amount), 0);
+      const d = expenses.filter(x => {
+        const r2 = x.due_date || x.date;
+        return r2 >= sIso && r2 <= eIso;
+      }).reduce((s, x) => s + Number(x.amount), 0);
+      evolucao.push({
+        mes: ref.toLocaleDateString("pt-BR", { month: "short" }).replace(".", ""),
+        receita: r, despesa: d, lucro: r - d,
+      });
+    }
+
+    return { ticketMedio, conversao, receitaPorTipo, evolucao, totalVisits, visitasConvertidas, contratosAtivos: ativos.length };
+  }, [contracts, visits, payments, manualEntries, expenses]);
+
   const alertas = useMemo(() => {
-    const arr: { tipo: "ok" | "warn" | "danger"; msg: string }[] = [];
-    if (kpis.lucroProjetado < 0) arr.push({ tipo: "danger", msg: "Projeção de prejuízo neste mês. Reduza despesas ou aumente vendas." });
-    if (kpis.margem < 15 && kpis.receitaProjetada > 0) arr.push({ tipo: "warn", msg: `Margem baixa (${kpis.margem.toFixed(1)}%). Ideal acima de 25%.` });
-    if (kpis.caixaAtual < kpis.compromissos90d * 0.3) arr.push({ tipo: "warn", msg: "Caixa abaixo de 30% dos compromissos dos próximos 90 dias." });
-    if (kpis.despesasMes > kpis.recebidoMes && kpis.recebidoMes > 0) arr.push({ tipo: "warn", msg: "Despesas do mês superaram o recebido. Atenção ao caixa." });
-    if (arr.length === 0) arr.push({ tipo: "ok", msg: "Tudo em ordem. Saúde financeira saudável neste mês." });
-    return arr;
-  }, [kpis]);
+    const arr: { tipo: "ok" | "warn" | "danger" | "info"; msg: string }[] = [];
 
-  // ---- Próximas parcelas ----
+    if (kpis.lucroProjetado < 0) {
+      arr.push({ tipo: "danger", msg: `Projeção de prejuízo de ${BRL(Math.abs(kpis.lucroProjetado))}. Reduza despesas ou acelere recebimentos.` });
+    }
+    if (kpis.margem < 15 && kpis.receitaProjetada > 0) {
+      arr.push({ tipo: "warn", msg: `Margem baixa (${kpis.margem.toFixed(1)}%). O ideal é acima de 25%.` });
+    }
+    if (kpis.caixaAtual < kpis.compromissos90d * 0.3 && kpis.compromissos90d > 0) {
+      arr.push({ tipo: "warn", msg: `Caixa cobre menos de 30% dos compromissos dos próximos 90 dias (${BRL(kpis.compromissos90d)}).` });
+    }
+    if (kpis.despesasMes > kpis.recebidoMes && kpis.recebidoMes > 0) {
+      arr.push({ tipo: "warn", msg: "Despesas do período superaram o recebido. Atenção ao caixa." });
+    }
+
+    const sevenDays = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const parcelasProximas = expenses.filter(e => {
+      const ref = e.due_date || e.date;
+      return ref > todayISO() && ref <= sevenDays;
+    });
+    if (parcelasProximas.length > 0) {
+      const total = parcelasProximas.reduce((s, e) => s + Number(e.amount), 0);
+      arr.push({ tipo: "info", msg: `${parcelasProximas.length} despesa(s) vencendo nos próximos 7 dias — total ${BRL(total)}.` });
+    }
+
+    if (kpis.caixaAtual > 0 && kpis.lucroProjetado > 0) {
+      const capacidade = Math.max(0, kpis.caixaAtual - kpis.compromissos90d * 0.3);
+      if (capacidade > 100) {
+        arr.push({ tipo: "ok", msg: `Você pode investir até ${BRL(capacidade)} com segurança neste momento.` });
+      }
+    }
+
+    if (kpis.margem >= 30 && kpis.receitaProjetada > 0) {
+      arr.push({ tipo: "ok", msg: `Excelente margem de ${kpis.margem.toFixed(1)}% — negócio saudável.` });
+    }
+
+    if (arr.length === 0) {
+      arr.push({ tipo: "ok", msg: "Tudo em ordem. Saúde financeira saudável neste período." });
+    }
+    return arr;
+  }, [kpis, expenses]);
+
   const proximasParcelas = useMemo(() => {
     return expenses
       .filter(e => e.installment_number && e.total_installments && (e.due_date || e.date) >= todayISO())
@@ -158,11 +243,7 @@ export default function FinancialAI() {
       .slice(0, 10);
   }, [expenses]);
 
-  const ticketMedio = useMemo(() => {
-    const fechados = contracts.filter(c => c.status !== "cancelled");
-    if (!fechados.length) return 0;
-    return fechados.reduce((s, c) => s + Number(c.total_value), 0) / fechados.length;
-  }, [contracts]);
+  const PIE_COLORS = ["hsl(var(--primary))", "#10b981", "#f59e0b", "#3b82f6", "#a855f7", "#ef4444"];
 
   return (
     <div className="space-y-6">
@@ -174,59 +255,142 @@ export default function FinancialAI() {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">Consultor financeiro completo: projeções, parcelas e decisões em tempo real.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <NewExpenseDialog onSaved={loadAll} />
           <SimulatorDialog kpis={kpis} />
         </div>
       </header>
 
+      <Card>
+        <CardContent className="pt-5 flex items-center gap-3 flex-wrap">
+          <CalendarRange className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium">Período:</span>
+          <div className="flex gap-1 flex-wrap">
+            {([
+              { k: "day", l: "Hoje" },
+              { k: "week", l: "Semana" },
+              { k: "month", l: "Mês" },
+              { k: "custom", l: "Personalizado" },
+            ] as { k: PeriodKey; l: string }[]).map(({ k, l }) => (
+              <Button key={k} size="sm" variant={periodKey === k ? "default" : "outline"} onClick={() => setPeriodKey(k)}>{l}</Button>
+            ))}
+          </div>
+          {periodKey === "custom" && (
+            <div className="flex gap-2 items-center">
+              <Input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} className="w-auto h-9" />
+              <span className="text-xs text-muted-foreground">até</span>
+              <Input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} className="w-auto h-9" />
+            </div>
+          )}
+          <span className="text-xs text-muted-foreground ml-auto">
+            {new Date(periodStart + "T12:00:00").toLocaleDateString("pt-BR")} – {new Date(periodEnd + "T12:00:00").toLocaleDateString("pt-BR")}
+          </span>
+        </CardContent>
+      </Card>
+
       {loading ? (
         <div className="flex items-center justify-center h-64"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
       ) : (
         <>
-          {/* KPIs */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <KpiCard icon={<Wallet className="h-4 w-4" />} label="Caixa Atual" value={BRL(kpis.caixaAtual)} tone={kpis.caixaAtual >= 0 ? "good" : "bad"} />
-            <KpiCard icon={<TrendingUp className="h-4 w-4 text-emerald-500" />} label="Recebido no mês" value={BRL(kpis.recebidoMes)} />
-            <KpiCard icon={<TrendingDown className="h-4 w-4 text-rose-500" />} label="Despesas do mês" value={BRL(kpis.despesasMes)} />
+            <KpiCard icon={<TrendingUp className="h-4 w-4 text-emerald-500" />} label={`Recebido (${periodLabel})`} value={BRL(kpis.recebidoMes)} />
+            <KpiCard icon={<TrendingDown className="h-4 w-4 text-rose-500" />} label={`Despesas (${periodLabel})`} value={BRL(kpis.despesasMes)} />
             <KpiCard icon={<Target className="h-4 w-4 text-primary" />} label="Lucro projetado" value={BRL(kpis.lucroProjetado)} tone={kpis.lucroProjetado >= 0 ? "good" : "bad"} />
           </div>
 
-          {/* Projeção + Alertas */}
           <div className="grid lg:grid-cols-3 gap-4">
             <Card className="lg:col-span-2">
               <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /> Projeção até o fim do mês</CardTitle>
+                <CardTitle className="text-base flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /> Projeção do período</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <Row label="Receita projetada" value={BRL(kpis.receitaProjetada)} />
-                <Row label="A receber este mês" value={BRL(kpis.aReceberMes)} sub />
+                <Row label="A receber no período" value={BRL(kpis.aReceberMes)} sub />
                 <Row label="A receber total (todos contratos)" value={BRL(kpis.aReceberTotal)} sub />
-                <Row label="Despesas previstas até fim do mês" value={BRL(kpis.despesasFuturasMes)} sub />
+                <Row label="Despesas previstas até fim do período" value={BRL(kpis.despesasFuturasMes)} sub />
                 <Row label="Compromissos próximos 90 dias" value={BRL(kpis.compromissos90d)} sub />
                 <div className="border-t pt-3 mt-3">
                   <Row label="Lucro projetado" value={BRL(kpis.lucroProjetado)} bold />
                   <Row label="Margem projetada" value={`${kpis.margem.toFixed(1)}%`} bold />
-                  <Row label="Ticket médio" value={BRL(ticketMedio)} bold />
+                  <Row label="Ticket médio" value={BRL(indicadores.ticketMedio)} bold />
                 </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-amber-500" /> Alertas</CardTitle>
+                <CardTitle className="text-base flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-amber-500" /> Alertas inteligentes</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
+              <CardContent className="space-y-2 max-h-[420px] overflow-y-auto">
                 {alertas.map((a, i) => (
                   <div key={i} className={`text-sm rounded-lg p-3 border flex gap-2 items-start ${
                     a.tipo === "ok" ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300" :
                     a.tipo === "warn" ? "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300" :
+                    a.tipo === "info" ? "bg-blue-500/10 border-blue-500/30 text-blue-700 dark:text-blue-300" :
                     "bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300"
                   }`}>
-                    {a.tipo === "ok" ? <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" /> : <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />}
+                    {a.tipo === "ok" ? <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" /> :
+                     a.tipo === "info" ? <Sparkles className="h-4 w-4 mt-0.5 shrink-0" /> :
+                     <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />}
                     <span>{a.msg}</span>
                   </div>
                 ))}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Indicadores estratégicos */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <KpiCard icon={<Trophy className="h-4 w-4 text-amber-500" />} label="Ticket médio" value={BRL(indicadores.ticketMedio)} />
+            <KpiCard icon={<Percent className="h-4 w-4 text-primary" />} label="Conversão visita→contrato" value={`${indicadores.conversao.toFixed(1)}%`} />
+            <KpiCard icon={<Target className="h-4 w-4" />} label="Margem projetada" value={`${kpis.margem.toFixed(1)}%`} tone={kpis.margem >= 25 ? "good" : kpis.margem < 15 ? "bad" : undefined} />
+            <KpiCard icon={<BarChart3 className="h-4 w-4" />} label="Contratos ativos" value={String(indicadores.contratosAtivos)} />
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2"><BarChart3 className="h-4 w-4 text-primary" /> Evolução últimos 6 meses</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={260}>
+                  <LineChart data={indicadores.evolucao}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="mes" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
+                    <Tooltip
+                      contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
+                      formatter={(v: number) => BRL(v)}
+                    />
+                    <Legend />
+                    <Line type="monotone" dataKey="receita" stroke="#10b981" strokeWidth={2} name="Receita" />
+                    <Line type="monotone" dataKey="despesa" stroke="#ef4444" strokeWidth={2} name="Despesa" />
+                    <Line type="monotone" dataKey="lucro" stroke="hsl(var(--primary))" strokeWidth={2} name="Lucro" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2"><PieIcon className="h-4 w-4 text-primary" /> Receita por tipo de evento</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {indicadores.receitaPorTipo.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-12">Sem dados de contratos.</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height={260}>
+                    <PieChart>
+                      <Pie data={indicadores.receitaPorTipo} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} label={(e: any) => e.name}>
+                        {indicadores.receitaPorTipo.map((_, i) => (
+                          <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(v: number) => BRL(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -267,7 +431,7 @@ export default function FinancialAI() {
             </TabsContent>
 
             <TabsContent value="ia">
-              <AIConsultant kpis={kpis} ticketMedio={ticketMedio} />
+              <AIConsultant kpis={kpis} ticketMedio={indicadores.ticketMedio} />
             </TabsContent>
           </Tabs>
         </>
