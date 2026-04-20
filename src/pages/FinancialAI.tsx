@@ -12,8 +12,9 @@ import { toast } from "sonner";
 import {
   Brain, TrendingUp, TrendingDown, Wallet, Target, AlertTriangle,
   CheckCircle2, Plus, Sparkles, Calculator, CreditCard, Send, Loader2, Trash2,
-  CalendarRange, BarChart3, PieChart as PieIcon, Percent, Trophy
+  CalendarRange, BarChart3, PieChart as PieIcon, Percent, Trophy, Upload
 } from "lucide-react";
+import ImportStatementModal from "@/components/ImportStatementModal";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
   LineChart, Line, PieChart, Pie, Cell
@@ -257,6 +258,7 @@ export default function FinancialAI() {
         </div>
         <div className="flex gap-2 flex-wrap">
           <NewExpenseDialog onSaved={loadAll} />
+          <ImportStatementButton onImported={loadAll} />
           <SimulatorDialog kpis={kpis} />
         </div>
       </header>
@@ -790,5 +792,18 @@ function AIConsultant({ kpis, ticketMedio }: { kpis: any; ticketMedio: number })
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function ImportStatementButton({ onImported }: { onImported: () => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button variant="outline" onClick={() => setOpen(true)}>
+        <Upload className="h-4 w-4" />
+        Importar extrato
+      </Button>
+      <ImportStatementModal open={open} onOpenChange={setOpen} onImported={onImported} />
+    </>
   );
 }
