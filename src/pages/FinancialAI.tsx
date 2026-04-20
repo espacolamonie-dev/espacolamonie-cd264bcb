@@ -383,6 +383,8 @@ export default function FinancialAI() {
             </Card>
           </div>
 
+          <PricingRecommendationCard expenses={expenses} contracts={contracts} />
+
           {/* Indicadores estratégicos */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <KpiCard icon={<Trophy className="h-4 w-4 text-amber-500" />} label="Ticket médio" value={BRL(indicadores.ticketMedio)} />
@@ -1018,6 +1020,254 @@ function CashBalanceCard({
             </div>
           </DialogContent>
         </Dialog>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ---- Pricing recommendation ----
+const CURRENT_PRICES: Record<string, number> = { qui: 750, sex: 850, sab: 950, dom: 950 };
+const WEEKDAY_LABELS: Record<string, string> = { qui: "Quinta", sex: "Sexta", sab: "Sábado", dom: "Domingo" };
+// Distribuição típica de demanda por dia útil de evento (peso relativo)
+const DEMAND_WEIGHT: Record<string, number> = { qui: 1.0, sex: 1.4, sab: 2.0, dom: 1.6 };
+
+function PricingRecommendationCard({ expenses, contracts }: { expenses: Expense[]; contracts: Contract[] }) {
+  const [targetMargin, setTargetMargin] = useState(30); // %
+  const [safetyReserve, setSafetyReserve] = useState(15); // %
+  const [eventsPerMonth, setEventsPerMonth] = useState<number | "">("");
+
+  const analysis = useMemo(() => {
+    // 1) Custo médio mensal (últimos 6 meses, baseado em despesas pagas + previstas)
+    const today = new Date();
+    const monthsBack = 6;
+    let totalExp = 0;
+    let monthsCounted = 0;
+    for (let i = 0; i < monthsBack; i++) {
+      const ref = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const sIso = ref.toISOString().slice(0, 10);
+      const eIso = new Date(ref.getFullYear(), ref.getMonth() + 1, 0).toISOString().slice(0, 10);
+      const sum = expenses
+        .filter(x => {
+          const r = x.due_date || x.date;
+          return r >= sIso && r <= eIso;
+        })
+        .reduce((s, x) => s + Number(x.amount), 0);
+      if (sum > 0) {
+        totalExp += sum;
+        monthsCounted++;
+      }
+    }
+    const avgMonthlyCost = monthsCounted > 0 ? totalExp / monthsCounted : 0;
+
+    // 2) Eventos médios/mês: baseado em contratos não cancelados nos últimos 6 meses (ou input)
+    const sixIso = new Date(today.getFullYear(), today.getMonth() - monthsBack, 1).toISOString().slice(0, 10);
+    const recentContracts = contracts.filter(c => c.status !== "cancelled" && (c.event_date || "") >= sixIso);
+    const detectedEventsPerMonth = monthsCounted > 0 ? recentContracts.length / monthsCounted : 0;
+    const eventsMonth = typeof eventsPerMonth === "number" && eventsPerMonth > 0
+      ? eventsPerMonth
+      : (detectedEventsPerMonth > 0 ? detectedEventsPerMonth : 8);
+
+    // 3) Receita mensal alvo: cobrir custos + reserva + margem
+    // alvoReceita = custo / (1 - reserva% - margem%)
+    const reserveDec = safetyReserve / 100;
+    const marginDec = targetMargin / 100;
+    const denom = Math.max(0.05, 1 - reserveDec - marginDec);
+    const targetRevenue = avgMonthlyCost / denom;
+    const targetReserveAmount = targetRevenue * reserveDec;
+    const targetProfit = targetRevenue * marginDec;
+
+    // 4) Preço médio necessário por evento
+    const avgPriceNeeded = eventsMonth > 0 ? targetRevenue / eventsMonth : 0;
+
+    // 5) Distribui pelo peso de demanda (manter proporção entre dias)
+    const totalWeight = Object.values(DEMAND_WEIGHT).reduce((a, b) => a + b, 0);
+    const dayShare = (k: string) => DEMAND_WEIGHT[k] / totalWeight; // fração da demanda
+    // Cada dia "k" tende a representar dayShare(k) * eventsMonth eventos.
+    // Para que receita_total = sum(price_k * events_k) = targetRevenue
+    // E mantendo proporção atual entre preços: price_k = base * (CURRENT_PRICES[k] / CURRENT_PRICES.qui)
+    const ratioBase = CURRENT_PRICES.qui;
+    const weightedSum = Object.keys(CURRENT_PRICES).reduce((acc, k) => {
+      return acc + (CURRENT_PRICES[k] / ratioBase) * dayShare(k) * eventsMonth;
+    }, 0);
+    const baseRecommended = weightedSum > 0 ? targetRevenue / weightedSum : avgPriceNeeded;
+
+    const recommended: Record<string, number> = {};
+    Object.keys(CURRENT_PRICES).forEach(k => {
+      recommended[k] = Math.round((baseRecommended * (CURRENT_PRICES[k] / ratioBase)) / 10) * 10;
+    });
+
+    // 6) Sinal recomendado: % do valor que cobre 1 mês de custo fixo dividido pelo n° de contratos esperados
+    const minDepositForCosts = eventsMonth > 0 ? avgMonthlyCost / eventsMonth : 0;
+    const avgRecommendedTicket = Object.entries(recommended).reduce((acc, [k, v]) => acc + v * dayShare(k), 0);
+    const depositPctRaw = avgRecommendedTicket > 0 ? (minDepositForCosts / avgRecommendedTicket) * 100 : 30;
+    const recommendedDepositPct = Math.min(50, Math.max(30, Math.round(depositPctRaw / 5) * 5));
+
+    // 7) Status atual: receita estimada com preços atuais
+    const currentRevenue = Object.entries(CURRENT_PRICES).reduce(
+      (acc, [k, v]) => acc + v * dayShare(k) * eventsMonth, 0
+    );
+    const currentMargin = currentRevenue > 0 ? ((currentRevenue - avgMonthlyCost) / currentRevenue) * 100 : 0;
+    const gap = targetRevenue - currentRevenue;
+
+    let status: "good" | "warn" | "bad" = "good";
+    let statusMsg = "";
+    if (currentMargin < 15) {
+      status = "bad";
+      statusMsg = `Margem atual de ${currentMargin.toFixed(1)}% — abaixo do mínimo saudável (15%). Reajuste urgente recomendado.`;
+    } else if (currentMargin < targetMargin) {
+      status = "warn";
+      statusMsg = `Margem atual de ${currentMargin.toFixed(1)}% — abaixo da meta de ${targetMargin}%. Reajuste melhora a saúde financeira.`;
+    } else {
+      statusMsg = `Margem atual de ${currentMargin.toFixed(1)}% — dentro/acima da meta. Preços saudáveis ✅`;
+    }
+
+    return {
+      avgMonthlyCost, eventsMonth, detectedEventsPerMonth,
+      targetRevenue, targetReserveAmount, targetProfit,
+      recommended, recommendedDepositPct,
+      currentRevenue, currentMargin, gap,
+      status, statusMsg, monthsCounted,
+    };
+  }, [expenses, contracts, targetMargin, safetyReserve, eventsPerMonth]);
+
+  const statusBg = analysis.status === "good"
+    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300"
+    : analysis.status === "warn"
+    ? "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300"
+    : "bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300";
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <Calculator className="h-4 w-4 text-primary" />
+          Precificação Inteligente — quanto cobrar para o espaço se manter saudável
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        {/* Status */}
+        <div className={`text-sm rounded-lg p-3 border ${statusBg}`}>
+          {analysis.statusMsg}
+        </div>
+
+        {/* Parâmetros */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="space-y-1">
+            <Label className="text-xs">Margem alvo (%)</Label>
+            <Input type="number" min={0} max={70} value={targetMargin} onChange={e => setTargetMargin(Math.max(0, Math.min(70, parseInt(e.target.value) || 0)))} />
+            <p className="text-[10px] text-muted-foreground">Lucro líquido esperado sobre a receita.</p>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Reserva de segurança (%)</Label>
+            <Input type="number" min={0} max={40} value={safetyReserve} onChange={e => setSafetyReserve(Math.max(0, Math.min(40, parseInt(e.target.value) || 0)))} />
+            <p className="text-[10px] text-muted-foreground">% guardado para imprevistos/sazonalidade.</p>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Eventos/mês esperados</Label>
+            <Input
+              type="number"
+              min={1}
+              max={40}
+              placeholder={analysis.detectedEventsPerMonth > 0 ? `Detectado: ${analysis.detectedEventsPerMonth.toFixed(1)}` : "Ex: 8"}
+              value={eventsPerMonth}
+              onChange={e => {
+                const v = e.target.value;
+                setEventsPerMonth(v === "" ? "" : Math.max(1, parseInt(v) || 1));
+              }}
+            />
+            <p className="text-[10px] text-muted-foreground">Deixe vazio para usar o histórico.</p>
+          </div>
+        </div>
+
+        {/* Resumo financeiro alvo */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+          <div className="rounded-lg border p-3">
+            <p className="text-xs text-muted-foreground">Custo médio mensal</p>
+            <p className="font-semibold text-rose-600">{BRL(analysis.avgMonthlyCost)}</p>
+            <p className="text-[10px] text-muted-foreground">Base: {analysis.monthsCounted} meses</p>
+          </div>
+          <div className="rounded-lg border p-3">
+            <p className="text-xs text-muted-foreground">Receita mensal alvo</p>
+            <p className="font-semibold text-primary">{BRL(analysis.targetRevenue)}</p>
+            <p className="text-[10px] text-muted-foreground">Para cobrir custo + reserva + margem</p>
+          </div>
+          <div className="rounded-lg border p-3">
+            <p className="text-xs text-muted-foreground">Reserva no mês</p>
+            <p className="font-semibold">{BRL(analysis.targetReserveAmount)}</p>
+            <p className="text-[10px] text-muted-foreground">{safetyReserve}% guardado</p>
+          </div>
+          <div className="rounded-lg border p-3">
+            <p className="text-xs text-muted-foreground">Lucro mensal alvo</p>
+            <p className="font-semibold text-emerald-600">{BRL(analysis.targetProfit)}</p>
+            <p className="text-[10px] text-muted-foreground">{targetMargin}% de margem</p>
+          </div>
+        </div>
+
+        {/* Tabela de preços recomendados por dia */}
+        <div>
+          <h3 className="text-sm font-semibold mb-2">Valores recomendados por dia de evento</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-xs text-muted-foreground">
+                <tr className="border-b">
+                  <th className="text-left py-2">Dia</th>
+                  <th className="text-right py-2">Hoje</th>
+                  <th className="text-right py-2">Recomendado</th>
+                  <th className="text-right py-2">Diferença</th>
+                  <th className="text-right py-2">Sinal sugerido ({analysis.recommendedDepositPct}%)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.keys(CURRENT_PRICES).map(k => {
+                  const cur = CURRENT_PRICES[k];
+                  const rec = analysis.recommended[k];
+                  const diff = rec - cur;
+                  const sinal = Math.round((rec * analysis.recommendedDepositPct) / 100);
+                  return (
+                    <tr key={k} className="border-b last:border-0">
+                      <td className="py-2 font-medium">{WEEKDAY_LABELS[k]}</td>
+                      <td className="text-right text-muted-foreground">{BRL(cur)}</td>
+                      <td className="text-right font-semibold text-primary">{BRL(rec)}</td>
+                      <td className={`text-right font-medium ${diff > 0 ? "text-amber-600" : diff < 0 ? "text-emerald-600" : ""}`}>
+                        {diff === 0 ? "—" : `${diff > 0 ? "+" : ""}${BRL(diff)}`}
+                      </td>
+                      <td className="text-right">{BRL(sinal)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Gap atual */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+          <div className="rounded-lg border p-3">
+            <p className="text-xs text-muted-foreground">Receita estimada hoje</p>
+            <p className="font-semibold">{BRL(analysis.currentRevenue)}/mês</p>
+            <p className="text-[10px] text-muted-foreground">Com preços atuais e {analysis.eventsMonth.toFixed(1)} eventos/mês</p>
+          </div>
+          <div className="rounded-lg border p-3">
+            <p className="text-xs text-muted-foreground">Margem atual estimada</p>
+            <p className={`font-semibold ${analysis.currentMargin >= targetMargin ? "text-emerald-600" : analysis.currentMargin < 15 ? "text-rose-600" : "text-amber-600"}`}>
+              {analysis.currentMargin.toFixed(1)}%
+            </p>
+            <p className="text-[10px] text-muted-foreground">Meta: {targetMargin}%</p>
+          </div>
+          <div className="rounded-lg border p-3">
+            <p className="text-xs text-muted-foreground">Receita faltando para a meta</p>
+            <p className={`font-semibold ${analysis.gap > 0 ? "text-amber-600" : "text-emerald-600"}`}>
+              {analysis.gap > 0 ? BRL(analysis.gap) : "Meta atingida ✅"}
+            </p>
+            <p className="text-[10px] text-muted-foreground">Por mês</p>
+          </div>
+        </div>
+
+        <p className="text-[11px] text-muted-foreground">
+          💡 Cálculo baseado em: custo médio dos últimos {analysis.monthsCounted} meses, distribuição típica de demanda
+          (sábado &gt; domingo &gt; sexta &gt; quinta), e proporção atual entre os dias. Ajuste a margem alvo, reserva
+          e número de eventos para simular cenários.
+        </p>
       </CardContent>
     </Card>
   );
