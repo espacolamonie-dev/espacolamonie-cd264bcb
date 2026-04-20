@@ -11,8 +11,13 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import {
   Brain, TrendingUp, TrendingDown, Wallet, Target, AlertTriangle,
-  CheckCircle2, Plus, Sparkles, Calculator, CreditCard, Send, Loader2, Trash2
+  CheckCircle2, Plus, Sparkles, Calculator, CreditCard, Send, Loader2, Trash2,
+  CalendarRange, BarChart3, PieChart as PieIcon, Percent, Trophy
 } from "lucide-react";
+import {
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
+  LineChart, Line, PieChart, Pie, Cell
+} from "recharts";
 
 type Expense = {
   id: string;
@@ -29,8 +34,11 @@ type Expense = {
 };
 
 type Payment = { amount: number; date: string; contract_id: string };
-type Contract = { id: string; total_value: number; remaining_value: number; deposit_value: number; status: string; payment_status: string; event_date: string };
+type Contract = { id: string; total_value: number; remaining_value: number; deposit_value: number; status: string; payment_status: string; event_date: string; event_type?: string; created_at?: string };
 type ManualEntry = { amount: number; date: string };
+type Visit = { id: string; created_at: string; status: string };
+
+type PeriodKey = "day" | "week" | "month" | "custom";
 
 const BRL = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const todayISO = () => new Date().toISOString().slice(0, 10);
