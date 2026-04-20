@@ -794,3 +794,16 @@ function AIConsultant({ kpis, ticketMedio }: { kpis: any; ticketMedio: number })
     </Card>
   );
 }
+
+function ImportStatementButton({ onImported }: { onImported: () => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button variant="outline" onClick={() => setOpen(true)}>
+        <Upload className="h-4 w-4" />
+        Importar extrato
+      </Button>
+      <ImportStatementModal open={open} onOpenChange={setOpen} onImported={onImported} />
+    </>
+  );
+}
