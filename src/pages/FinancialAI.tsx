@@ -38,6 +38,7 @@ type Payment = { amount: number; date: string; contract_id: string };
 type Contract = { id: string; total_value: number; remaining_value: number; deposit_value: number; status: string; payment_status: string; event_date: string; event_type?: string; created_at?: string };
 type ManualEntry = { amount: number; date: string };
 type Visit = { id: string; created_at: string; status: string };
+type CashAdjustment = { id: string; balance: number; adjustment_date: string; notes: string; created_at: string };
 
 type PeriodKey = "day" | "week" | "month" | "custom";
 
