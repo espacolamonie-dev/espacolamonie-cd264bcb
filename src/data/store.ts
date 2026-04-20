@@ -321,6 +321,11 @@ export const deleteExpense = async (id: string) => {
   if (error) throw error;
 };
 
+export const updateExpense = async (id: string, updates: Partial<{ description: string; category: string; amount: number; date: string }>) => {
+  const { error } = await supabase.from("expenses").update(updates).eq("id", id);
+  if (error) throw error;
+};
+
 // MANUAL ENTRIES
 export const getManualEntries = async () => {
   const { data, error } = await supabase.from("manual_entries").select("*").order("created_at", { ascending: false });

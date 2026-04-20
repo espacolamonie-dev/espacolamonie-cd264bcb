@@ -15,11 +15,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
-  CircleArrowDown as ArrowDownCircle, Plus, Trash2, Search, X, Upload, Receipt,
+  CircleArrowDown as ArrowDownCircle, Plus, Trash2, Search, X, Upload, Receipt, Pencil,
 } from "lucide-react";
 import ImportStatementModal from "@/components/ImportStatementModal";
 import ImportReceiptModal from "@/components/ImportReceiptModal";
-import { addExpense, deleteExpense } from "@/data/store";
+import { addExpense, deleteExpense, updateExpense } from "@/data/store";
 import { toast } from "sonner";
 import { getSafeErrorMessage } from "@/lib/errorSanitizer";
 import type { FinancialData, FinancialTransaction } from "./types";
@@ -45,6 +45,10 @@ export default function FinancialExpenses({ data, onReload }: Props) {
   const [expenseSearch, setExpenseSearch] = useState("");
   const [expForm, setExpForm] = useState({
     description: "", category: "Outros" as ExpenseCategory, amount: 0, date: todayLocalStr(),
+  });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({
+    description: "", category: "Outros" as string, amount: 0, date: todayLocalStr(),
   });
 
   const filtered = useMemo(() => {
@@ -83,6 +87,31 @@ export default function FinancialExpenses({ data, onReload }: Props) {
   const handleDeleteSingle = async (id: string) => {
     try { await deleteExpense(id); toast.success("Despesa removida"); onReload(); }
     catch (e: any) { toast.error(getSafeErrorMessage(e)); }
+  };
+
+  const openEdit = (item: FinancialTransaction) => {
+    if (item.source !== "expense") {
+      toast.error("Apenas despesas registradas podem ser editadas aqui");
+      return;
+    }
+    setEditingId(item.id);
+    setEditForm({
+      description: item.description,
+      category: item.category || "Outros",
+      amount: item.amount,
+      date: item.date,
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingId) return;
+    if (!editForm.description.trim() || editForm.amount <= 0) { toast.error("Preencha descrição e valor"); return; }
+    try {
+      await updateExpense(editingId, editForm);
+      toast.success("Despesa atualizada");
+      setEditingId(null);
+      onReload();
+    } catch (e: any) { toast.error(getSafeErrorMessage(e)); }
   };
 
   return (
@@ -155,7 +184,15 @@ export default function FinancialExpenses({ data, onReload }: Props) {
                   <ArrowDownCircle size={16} className="text-danger" />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-medium text-sm truncate">{item.description}</p>
+                  <button
+                    type="button"
+                    onClick={() => openEdit(item)}
+                    className="font-medium text-sm truncate text-left hover:underline disabled:no-underline disabled:cursor-default"
+                    disabled={item.source !== "expense"}
+                    title={item.source === "expense" ? "Editar nome e categoria" : ""}
+                  >
+                    {item.description}
+                  </button>
                   <div className="flex items-center gap-2 mt-0.5">
                     <p className="text-xs text-muted-foreground">{new Date(item.date + "T12:00:00").toLocaleDateString("pt-BR")}</p>
                     <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{item.category}</Badge>
@@ -164,6 +201,11 @@ export default function FinancialExpenses({ data, onReload }: Props) {
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <p className="font-bold text-sm text-danger">- {fmt(item.amount)}</p>
+                {item.source === "expense" && (
+                  <Button size="icon" variant="ghost" className="h-7 w-7 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary" onClick={() => openEdit(item)}>
+                    <Pencil size={14} />
+                  </Button>
+                )}
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button size="icon" variant="ghost" className="h-7 w-7 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"><Trash2 size={14} /></Button>
@@ -214,6 +256,40 @@ export default function FinancialExpenses({ data, onReload }: Props) {
               <Input type="date" value={expForm.date} onChange={(e) => setExpForm(f => ({ ...f, date: e.target.value }))} />
             </div>
             <Button onClick={handleAddExpense} className="mt-2">Registrar Despesa</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Expense Modal */}
+      <Dialog open={!!editingId} onOpenChange={(o) => !o && setEditingId(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle className="font-display text-xl">Editar Despesa</DialogTitle></DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="grid gap-2">
+              <Label>Nome / Descrição *</Label>
+              <Input value={editForm.description} onChange={(e) => setEditForm(f => ({ ...f, description: e.target.value }))} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label>Categoria</Label>
+                <Select value={editForm.category} onValueChange={(v) => setEditForm(f => ({ ...f, category: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{EXPENSE_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label>Valor *</Label>
+                <CurrencyInput value={editForm.amount} onChange={(v) => setEditForm(f => ({ ...f, amount: v }))} />
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label>Data</Label>
+              <Input type="date" value={editForm.date} onChange={(e) => setEditForm(f => ({ ...f, date: e.target.value }))} />
+            </div>
+            <div className="flex gap-2 mt-2">
+              <Button variant="outline" className="flex-1" onClick={() => setEditingId(null)}>Cancelar</Button>
+              <Button className="flex-1" onClick={handleSaveEdit}>Salvar</Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
