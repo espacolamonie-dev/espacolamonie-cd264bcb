@@ -11,6 +11,7 @@ import {
   ClipboardCheck,
   Calculator,
   Megaphone,
+  Brain,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useContractNotifications } from "@/hooks/useContractNotifications";
@@ -37,6 +38,7 @@ const navGroups = [
     label: "Financeiro",
     items: [
       { to: "/financial", label: "Financeiro", icon: CreditCard },
+      { to: "/financial-ai", label: "Financeiro IA", icon: Brain },
     ],
   },
   {
