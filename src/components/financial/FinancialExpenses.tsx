@@ -193,6 +193,11 @@ export default function FinancialExpenses({ data, onReload }: Props) {
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <p className="font-bold text-sm text-danger">- {fmt(item.amount)}</p>
+                {item.source === "expense" && (
+                  <Button size="icon" variant="ghost" className="h-7 w-7 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary" onClick={() => openEdit(item)}>
+                    <Pencil size={14} />
+                  </Button>
+                )}
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button size="icon" variant="ghost" className="h-7 w-7 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"><Trash2 size={14} /></Button>
