@@ -199,14 +199,18 @@ export const updateContract = async (id: string, updates: Record<string, any>) =
           })();
         }
       } else if (updates.paymentStatus === "paid_full") {
-        await supabase.from("payments").insert({
-          user_id: userId, contract_id: id, amount: contract.totalValue,
-          date: todayLocalStr(),
-          description: "Pagamento total registrado automaticamente",
-        });
+        const diff = contract.totalValue - currentPaid;
+        if (diff > 0.009) {
+          await supabase.from("payments").insert({
+            user_id: userId, contract_id: id, amount: diff,
+            date: todayLocalStr(),
+            description: currentPaid > 0 ? "Pagamento do valor restante" : "Pagamento total registrado automaticamente",
+          });
+        }
         mapped.remaining_value = 0;
       } else if (updates.paymentStatus === "pending") {
-        // All payments already deleted above
+        // Reverting to pending clears history
+        await supabase.from("payments").delete().eq("contract_id", id);
         mapped.remaining_value = contract.totalValue;
       }
     }
