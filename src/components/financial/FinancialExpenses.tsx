@@ -15,11 +15,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
-  CircleArrowDown as ArrowDownCircle, Plus, Trash2, Search, X, Upload, Receipt,
+  CircleArrowDown as ArrowDownCircle, Plus, Trash2, Search, X, Upload, Receipt, Pencil,
 } from "lucide-react";
 import ImportStatementModal from "@/components/ImportStatementModal";
 import ImportReceiptModal from "@/components/ImportReceiptModal";
-import { addExpense, deleteExpense } from "@/data/store";
+import { addExpense, deleteExpense, updateExpense } from "@/data/store";
 import { toast } from "sonner";
 import { getSafeErrorMessage } from "@/lib/errorSanitizer";
 import type { FinancialData, FinancialTransaction } from "./types";
