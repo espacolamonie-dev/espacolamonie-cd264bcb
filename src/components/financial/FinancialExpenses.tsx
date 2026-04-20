@@ -260,6 +260,40 @@ export default function FinancialExpenses({ data, onReload }: Props) {
         </DialogContent>
       </Dialog>
 
+      {/* Edit Expense Modal */}
+      <Dialog open={!!editingId} onOpenChange={(o) => !o && setEditingId(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle className="font-display text-xl">Editar Despesa</DialogTitle></DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="grid gap-2">
+              <Label>Nome / Descrição *</Label>
+              <Input value={editForm.description} onChange={(e) => setEditForm(f => ({ ...f, description: e.target.value }))} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label>Categoria</Label>
+                <Select value={editForm.category} onValueChange={(v) => setEditForm(f => ({ ...f, category: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{EXPENSE_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label>Valor *</Label>
+                <CurrencyInput value={editForm.amount} onChange={(v) => setEditForm(f => ({ ...f, amount: v }))} />
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label>Data</Label>
+              <Input type="date" value={editForm.date} onChange={(e) => setEditForm(f => ({ ...f, date: e.target.value }))} />
+            </div>
+            <div className="flex gap-2 mt-2">
+              <Button variant="outline" className="flex-1" onClick={() => setEditingId(null)}>Cancelar</Button>
+              <Button className="flex-1" onClick={handleSaveEdit}>Salvar</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <ImportStatementModal open={importExpOpen} onOpenChange={setImportExpOpen} onImported={onReload} />
       <ImportReceiptModal open={receiptOpen} onOpenChange={setReceiptOpen} mode="expense" onImported={onReload} />
     </div>
