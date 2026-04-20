@@ -172,16 +172,6 @@ export function useContractNotifications() {
             }
           }
 
-          // Event checkout
-          if (oldRow.event_status !== newRow.event_status && newRow.event_status === "finalizado") {
-            showNotif(
-              "Evento Finalizado!",
-              `O evento foi encerrado e o espaço devolvido.`,
-              `event-done-${newRow.id}`,
-              "/contracts",
-              "🏁"
-            );
-          }
         }
       )
       // Key delivery signed
