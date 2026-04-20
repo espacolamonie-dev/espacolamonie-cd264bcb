@@ -89,6 +89,31 @@ export default function FinancialExpenses({ data, onReload }: Props) {
     catch (e: any) { toast.error(getSafeErrorMessage(e)); }
   };
 
+  const openEdit = (item: FinancialTransaction) => {
+    if (item.source !== "expense") {
+      toast.error("Apenas despesas registradas podem ser editadas aqui");
+      return;
+    }
+    setEditingId(item.id);
+    setEditForm({
+      description: item.description,
+      category: item.category || "Outros",
+      amount: item.amount,
+      date: item.date,
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingId) return;
+    if (!editForm.description.trim() || editForm.amount <= 0) { toast.error("Preencha descrição e valor"); return; }
+    try {
+      await updateExpense(editingId, editForm);
+      toast.success("Despesa atualizada");
+      setEditingId(null);
+      onReload();
+    } catch (e: any) { toast.error(getSafeErrorMessage(e)); }
+  };
+
   return (
     <div className="space-y-4">
       <Card className="p-5">
