@@ -289,6 +289,33 @@ export type Database = {
           },
         ]
       }
+      cash_balance_adjustments: {
+        Row: {
+          adjustment_date: string
+          balance: number
+          created_at: string
+          id: string
+          notes: string
+          user_id: string
+        }
+        Insert: {
+          adjustment_date?: string
+          balance?: number
+          created_at?: string
+          id?: string
+          notes?: string
+          user_id: string
+        }
+        Update: {
+          adjustment_date?: string
+          balance?: number
+          created_at?: string
+          id?: string
+          notes?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       clients: {
         Row: {
           address: string
