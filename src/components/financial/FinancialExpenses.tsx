@@ -46,6 +46,10 @@ export default function FinancialExpenses({ data, onReload }: Props) {
   const [expForm, setExpForm] = useState({
     description: "", category: "Outros" as ExpenseCategory, amount: 0, date: todayLocalStr(),
   });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({
+    description: "", category: "Outros" as string, amount: 0, date: todayLocalStr(),
+  });
 
   const filtered = useMemo(() => {
     let list = allSaidas;
