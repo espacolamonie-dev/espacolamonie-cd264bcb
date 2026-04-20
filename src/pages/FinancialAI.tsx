@@ -327,6 +327,14 @@ export default function FinancialAI() {
         <div className="flex items-center justify-center h-64"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
       ) : (
         <>
+          <CashBalanceCard
+            balance={accountBalance.value}
+            hasAdjustment={accountBalance.hasAdjustment}
+            lastDate={accountBalance.lastDate}
+            lastNotes={accountBalance.lastNotes}
+            history={cashAdjustments}
+            onSaved={loadAll}
+          />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <KpiCard icon={<Wallet className="h-4 w-4" />} label="Caixa Atual" value={BRL(kpis.caixaAtual)} tone={kpis.caixaAtual >= 0 ? "good" : "bad"} />
             <KpiCard icon={<TrendingUp className="h-4 w-4 text-emerald-500" />} label={`Recebido (${periodLabel})`} value={BRL(kpis.recebidoMes)} />
