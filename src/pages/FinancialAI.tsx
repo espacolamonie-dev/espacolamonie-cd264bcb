@@ -102,7 +102,7 @@ export default function FinancialAI() {
     setManualEntries((me.data as ManualEntry[]) || []);
     setContracts((ct.data as Contract[]) || []);
     setVisits((vs.data as Visit[]) || []);
-    setCashAdjustments((cb.data as CashAdjustment[]) || []);
+    setCashAdjustments(((cb.data as unknown) as CashAdjustment[]) || []);
     setLoading(false);
   };
 
