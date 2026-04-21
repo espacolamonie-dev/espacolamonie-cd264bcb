@@ -736,6 +736,19 @@ function InstallmentsList({ parcelas, onChanged }: { parcelas: Expense[]; onChan
     onChanged();
   };
 
+  const deleteIds = async (ids: string[]) => {
+    if (ids.length === 0) return;
+    const msg = ids.length > 1
+      ? `Excluir ${ids.length} parcelas selecionadas? Esta ação não pode ser desfeita.`
+      : "Excluir esta parcela? Esta ação não pode ser desfeita.";
+    if (!confirm(msg)) return;
+    const { error } = await supabase.from("expenses").delete().in("id", ids);
+    if (error) { toast.error(error.message); return; }
+    toast.success(ids.length > 1 ? `${ids.length} parcelas excluídas` : "Parcela excluída");
+    setSelected(new Set());
+    onChanged();
+  };
+
   const today = todayISO();
   const selectedTotal = parcelas.filter(p => selected.has(p.id)).reduce((s, p) => s + Number(p.amount), 0);
 
@@ -757,10 +770,16 @@ function InstallmentsList({ parcelas, onChanged }: { parcelas: Expense[]; onChan
                 </span>
               </div>
               {selected.size > 0 && (
-                <Button size="sm" onClick={() => setPaidDialogIds(Array.from(selected))}>
-                  <CheckCircle2 className="h-4 w-4" />
-                  Marcar {selected.size} como paga{selected.size > 1 ? "s" : ""}
-                </Button>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={() => setPaidDialogIds(Array.from(selected))}>
+                    <CheckCircle2 className="h-4 w-4" />
+                    Marcar {selected.size} como paga{selected.size > 1 ? "s" : ""}
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={() => deleteIds(Array.from(selected))}>
+                    <Trash2 className="h-4 w-4" />
+                    Excluir {selected.size}
+                  </Button>
+                </div>
               )}
             </div>
             <div className="space-y-2 max-h-[500px] overflow-y-auto">
@@ -781,6 +800,9 @@ function InstallmentsList({ parcelas, onChanged }: { parcelas: Expense[]; onChan
                     <Button size="sm" variant="outline" className="h-8" onClick={() => setPaidDialogIds([p.id])}>
                       <CheckCircle2 className="h-4 w-4" />
                       Paga
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-8 text-rose-600 hover:text-rose-700 hover:bg-rose-500/10" onClick={() => deleteIds([p.id])}>
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 );
