@@ -801,6 +801,9 @@ function InstallmentsList({ parcelas, onChanged }: { parcelas: Expense[]; onChan
                       <CheckCircle2 className="h-4 w-4" />
                       Paga
                     </Button>
+                    <Button size="sm" variant="ghost" className="h-8 text-rose-600 hover:text-rose-700 hover:bg-rose-500/10" onClick={() => deleteIds([p.id])}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 );
               })}
