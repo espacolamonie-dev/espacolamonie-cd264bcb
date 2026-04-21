@@ -200,16 +200,20 @@ export default function ImportReceiptModal({
 
         toast.success(`Pagamento de ${fmt(amount)} registrado via comprovante`);
       } else if (mode === "expense") {
-        // Expense mode: save as expense
+        // Expense mode: save as PAID expense (comprovante = já foi pago)
         await supabase.from("expenses").insert({
           description: description || "Despesa importada via comprovante",
-          category: "Outro",
+          category: "Outros",
           amount,
           date,
+          due_date: date,
+          paid: true,
+          paid_date: date,
+          payment_method: paymentMethod || "Pix",
           user_id: user.id,
-        });
+        } as any);
 
-        toast.success(`Despesa de ${fmt(amount)} registrada via comprovante`);
+        toast.success(`Despesa de ${fmt(amount)} registrada como paga`);
       } else {
         // Financial mode: save as manual entry
         await supabase.from("manual_entries").insert({
