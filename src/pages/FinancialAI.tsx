@@ -74,7 +74,7 @@ export default function FinancialAI() {
   const today = new Date();
 
   const { periodStart, periodEnd, periodLabel } = useMemo(() => {
-    const fmt = (d: Date) => d.toISOString().slice(0, 10);
+    const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     if (periodKey === "day") {
       const iso = fmt(today);
       return { periodStart: iso, periodEnd: iso, periodLabel: "Hoje" };
