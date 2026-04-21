@@ -967,6 +967,15 @@ function EditExpenseDialog({
     due_date: todayISO(), employee_id: "" as string, parent_expense_id: "" as string,
   });
   const [saving, setSaving] = useState(false);
+  const [propagateAll, setPropagateAll] = useState(false);
+  const [propagateAmount, setPropagateAmount] = useState(false);
+
+  // Determina se faz parte de um parcelamento (é o pai ou tem pai)
+  const isInstallment = !!(expense?.installment_number && expense?.total_installments && expense.total_installments > 1);
+  // ID do "parent" do grupo: se é a parcela 1 → o próprio id; senão → parent_expense_id
+  const groupParentId = expense
+    ? (expense.installment_number === 1 ? expense.id : expense.parent_expense_id)
+    : null;
 
   useEffect(() => {
     if (expense) {
@@ -979,14 +988,21 @@ function EditExpenseDialog({
         employee_id: expense.employee_id || "",
         parent_expense_id: expense.parent_expense_id || "",
       });
+      setPropagateAll(false);
+      setPropagateAmount(false);
     }
   }, [expense]);
 
   if (!expense) return null;
 
+  // Limpa "(n/N) ✓" do nome para exibir/propagar a base
+  const baseDescription = (form.description || "").replace(/\s*\(\d+\/\d+\)\s*✓?\s*$/, "");
+
   const save = async () => {
     if (!form.description.trim() || !(form.amount > 0)) { toast.error("Preencha descrição e valor"); return; }
     setSaving(true);
+
+    // Atualização desta despesa
     const { error } = await supabase.from("expenses").update({
       description: form.description,
       category: form.category,
@@ -997,16 +1013,65 @@ function EditExpenseDialog({
       employee_id: form.category === "Funcionários" ? (form.employee_id || null) : null,
       parent_expense_id: form.parent_expense_id || null,
     } as any).eq("id", expense.id);
+    if (error) { setSaving(false); toast.error(error.message); return; }
+
+    // Propaga para todas as parcelas (datas mensais a partir do novo vencimento da parcela atual)
+    if (isInstallment && propagateAll && groupParentId) {
+      const { data: siblings } = await supabase
+        .from("expenses")
+        .select("id, installment_number, total_installments")
+        .or(`id.eq.${groupParentId},parent_expense_id.eq.${groupParentId}`)
+        .eq("user_id", (await supabase.auth.getUser()).data.user?.id || "");
+
+      const myNum = expense.installment_number || 1;
+      const baseDate = new Date(form.due_date + "T12:00:00");
+
+      const updates: Promise<any>[] = [];
+      for (const s of (siblings as any[]) || []) {
+        if (s.id === expense.id) continue; // já atualizamos
+        const offset = (s.installment_number || 1) - myNum;
+        const d = new Date(baseDate);
+        d.setMonth(d.getMonth() + offset);
+        const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+        const patch: any = {
+          due_date: iso,
+          date: iso,
+          category: form.category,
+          subcategory: form.subcategory,
+        };
+        // Atualiza nome mantendo o sufixo (n/N) e marcação ✓ existente
+        const totalP = s.total_installments || expense.total_installments;
+        const numP = s.installment_number || 1;
+        // Mantém marcação de paga (✓) consultando rapidamente
+        patch.description = `${baseDescription} (${numP}/${totalP})`;
+        if (propagateAmount) patch.amount = form.amount;
+
+        updates.push(supabase.from("expenses").update(patch).eq("id", s.id));
+      }
+      await Promise.all(updates);
+      // Re-aplica ✓ nas parcelas pagas
+      const { data: paidOnes } = await supabase
+        .from("expenses")
+        .select("id, description, paid")
+        .or(`id.eq.${groupParentId},parent_expense_id.eq.${groupParentId}`)
+        .eq("paid", true);
+      await Promise.all(((paidOnes as any[]) || []).map(p =>
+        supabase.from("expenses").update({ description: `${p.description} ✓` }).eq("id", p.id)
+      ));
+    }
+
     setSaving(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Despesa atualizada");
+    toast.success(propagateAll ? "Parcelamento atualizado" : "Despesa atualizada");
     onSaved();
   };
 
   return (
     <Dialog open={!!expense} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>Editar despesa</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>Editar despesa{isInstallment ? ` · parcela ${expense.installment_number}/${expense.total_installments}` : ""}</DialogTitle>
+        </DialogHeader>
         <div className="space-y-3">
           <div>
             <Label>Nome / Descrição</Label>
@@ -1022,6 +1087,41 @@ function EditExpenseDialog({
               <Input type="date" value={form.due_date} onChange={e => setForm({ ...form, due_date: e.target.value })} />
             </div>
           </div>
+
+          {isInstallment && (
+            <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+              <div className="flex items-start gap-2">
+                <Checkbox
+                  id="propagate-all"
+                  checked={propagateAll}
+                  onCheckedChange={(v) => setPropagateAll(!!v)}
+                  className="mt-0.5"
+                />
+                <div className="flex-1">
+                  <Label htmlFor="propagate-all" className="text-sm font-medium cursor-pointer">
+                    Atualizar todas as parcelas deste parcelamento
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    A nova data de vencimento será aplicada a esta parcela e as demais terão suas datas reajustadas mês a mês a partir dela.
+                  </p>
+                </div>
+              </div>
+              {propagateAll && (
+                <div className="flex items-start gap-2 pl-6">
+                  <Checkbox
+                    id="propagate-amount"
+                    checked={propagateAmount}
+                    onCheckedChange={(v) => setPropagateAmount(!!v)}
+                    className="mt-0.5"
+                  />
+                  <Label htmlFor="propagate-amount" className="text-xs cursor-pointer">
+                    Aplicar também o mesmo valor (R$ {form.amount.toFixed(2).replace(".", ",")}) em todas as parcelas
+                  </Label>
+                </div>
+              )}
+            </div>
+          )}
+
           <div>
             <Label>Categoria</Label>
             <Select value={form.category} onValueChange={v => setForm({ ...form, category: v })}>
@@ -1055,7 +1155,7 @@ function EditExpenseDialog({
             />
           </div>
 
-          {installmentParents.length > 0 && (
+          {!isInstallment && installmentParents.length > 0 && (
             <div>
               <Label>Vincular a parcelamento existente</Label>
               <Select value={form.parent_expense_id || "__none__"} onValueChange={v => setForm({ ...form, parent_expense_id: v === "__none__" ? "" : v })}>
