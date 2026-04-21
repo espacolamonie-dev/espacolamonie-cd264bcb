@@ -12,9 +12,12 @@ import { toast } from "sonner";
 import {
   Brain, TrendingUp, TrendingDown, Wallet, Target, AlertTriangle,
   CheckCircle2, Plus, Sparkles, Calculator, CreditCard, Send, Loader2, Trash2,
-  CalendarRange, BarChart3, PieChart as PieIcon, Percent, Trophy, Upload
+  CalendarRange, BarChart3, PieChart as PieIcon, Percent, Trophy, Upload, Pencil, X, Search
 } from "lucide-react";
 import ImportStatementModal from "@/components/ImportStatementModal";
+import MarkPaidDialog from "@/components/financial/MarkPaidDialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
   LineChart, Line, PieChart, Pie, Cell
