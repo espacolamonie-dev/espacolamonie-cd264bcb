@@ -62,6 +62,7 @@ interface EmployeePayment {
   date: string;
   description: string;
   createdAt: string;
+  source?: "employee_payment" | "expense";
 }
 
 interface Props {
@@ -125,16 +126,29 @@ export default function EmployeesTab({ selectedMonth, contracts, clients }: Prop
     const { data: payData } = await (supabase.from("employee_payments" as any) as any)
       .select("*").eq("user_id", user.id);
 
+    // Also load expenses linked to employees (paid) — these count as employee payments too
+    const { data: expData } = await supabase.from("expenses")
+      .select("*").eq("user_id", user.id).not("employee_id", "is", null).eq("paid", true);
+
     setEmployees((empData || []).map((e: any) => ({
       id: e.id, name: e.name, phone: e.phone, roles: e.roles || [],
       paymentValue: Number(e.payment_value), paymentType: e.payment_type,
       isActive: e.is_active, createdAt: e.created_at,
     })));
 
-    setPayments((payData || []).map((p: any) => ({
+    const fromEmpTable: EmployeePayment[] = (payData || []).map((p: any) => ({
       id: p.id, employeeId: p.employee_id, amount: Number(p.amount),
       date: p.date, description: p.description, createdAt: p.created_at,
-    })));
+      source: "employee_payment" as const,
+    }));
+
+    const fromExpenses: EmployeePayment[] = (expData || []).map((e: any) => ({
+      id: e.id, employeeId: e.employee_id, amount: Number(e.amount),
+      date: e.paid_date || e.date, description: e.description || "Despesa vinculada",
+      createdAt: e.created_at, source: "expense" as const,
+    }));
+
+    setPayments([...fromEmpTable, ...fromExpenses]);
   };
 
   useEffect(() => { loadEmployees(); }, []);
@@ -187,8 +201,12 @@ export default function EmployeesTab({ selectedMonth, contracts, clients }: Prop
     await loadEmployees();
   };
 
-  const handleDeletePayment = async (id: string) => {
-    await (supabase.from("employee_payments" as any) as any).delete().eq("id", id);
+  const handleDeletePayment = async (id: string, source?: string) => {
+    if (source === "expense") {
+      await supabase.from("expenses").delete().eq("id", id);
+    } else {
+      await (supabase.from("employee_payments" as any) as any).delete().eq("id", id);
+    }
     toast.success("Pagamento removido");
     await loadEmployees();
   };
@@ -405,7 +423,7 @@ export default function EmployeesTab({ selectedMonth, contracts, clients }: Prop
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDeletePayment(p.id)} className="bg-destructive text-destructive-foreground">Excluir</AlertDialogAction>
+                                  <AlertDialogAction onClick={() => handleDeletePayment(p.id, p.source)} className="bg-destructive text-destructive-foreground">Excluir</AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
