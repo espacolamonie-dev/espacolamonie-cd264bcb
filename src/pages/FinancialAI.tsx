@@ -456,31 +456,11 @@ export default function FinancialAI() {
             </TabsList>
 
             <TabsContent value="parcelas">
-              <Card>
-                <CardContent className="pt-6">
-                  {proximasParcelas.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-8">Nenhuma parcela futura cadastrada.</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {proximasParcelas.map(p => (
-                        <div key={p.id} className="flex items-center justify-between border rounded-lg p-3">
-                          <div>
-                            <p className="font-medium text-sm">{p.description}</p>
-                            <p className="text-xs text-muted-foreground">
-                              Parcela {p.installment_number}/{p.total_installments} · {new Date((p.due_date || p.date) + "T12:00:00").toLocaleDateString("pt-BR")} · {p.category}
-                            </p>
-                          </div>
-                          <span className="font-semibold text-rose-600">{BRL(Number(p.amount))}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              <InstallmentsList parcelas={proximasParcelas} onChanged={loadAll} />
             </TabsContent>
 
             <TabsContent value="despesas">
-              <ExpensesList expenses={expenses} onChanged={loadAll} />
+              <ExpensesList expenses={expenses} employees={employees} onChanged={loadAll} />
             </TabsContent>
 
             <TabsContent value="ia">
