@@ -3,8 +3,20 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
-  ({ className, type, onFocus, onWheel, ...props }, ref) => {
+  ({ className, type, onFocus, onBlur, onWheel, onChange, value, defaultValue, ...props }, ref) => {
     const isNumber = type === "number";
+    const isZeroValue = value === 0 || value === "0";
+    const [isFocused, setIsFocused] = React.useState(false);
+    const [draftValue, setDraftValue] = React.useState<string | null>(null);
+
+    const displayValue = !isNumber || value === undefined
+      ? value
+      : isFocused
+        ? draftValue ?? (isZeroValue ? "" : String(value))
+        : isZeroValue
+          ? ""
+          : value;
+
     return (
       <input
         type={type}
@@ -15,14 +27,36 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
           className,
         )}
         ref={ref}
+        {...(value !== undefined ? { value: displayValue } : defaultValue !== undefined ? { defaultValue } : {})}
         onFocus={(e) => {
+          setIsFocused(true);
           // Em campos numéricos, seleciona tudo ao focar — assim digitar substitui o "0" em vez de concatenar
           if (isNumber) {
             const el = e.currentTarget;
+            setDraftValue(el.value === "0" ? "" : el.value);
             // setTimeout garante que funciona em mobile/iOS
-            setTimeout(() => { try { el.select(); } catch { /* noop */ } }, 0);
+            setTimeout(() => {
+              try {
+                if (el.value === "0") {
+                  el.setSelectionRange(0, 0);
+                } else {
+                  el.select();
+                }
+              } catch { /* noop */ }
+            }, 0);
           }
           onFocus?.(e);
+        }}
+        onChange={(e) => {
+          if (isNumber && value !== undefined) {
+            setDraftValue(e.target.value);
+          }
+          onChange?.(e);
+        }}
+        onBlur={(e) => {
+          setIsFocused(false);
+          setDraftValue(null);
+          onBlur?.(e);
         }}
         onWheel={(e) => {
           // Evita que o scroll do mouse altere acidentalmente o valor numérico
