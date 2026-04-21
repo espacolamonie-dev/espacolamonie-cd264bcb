@@ -97,9 +97,17 @@ export default function Financial() {
         .filter((p: any) => p.employee_id === emp.id && new Date(p.date) >= mStart && new Date(p.date) <= mEnd)
         .reduce((s: number, p: any) => s + Number(p.amount), 0);
     }
+
+    // Also count expenses linked to employees (paid in this month)
+    const linkedExpenses = expenses.filter(e =>
+      (e as any).employeeId && (e as any).paid &&
+      (() => { const d = new Date((e as any).paidDate || e.date); return d >= mStart && d <= mEnd; })()
+    );
+    totalPaid += linkedExpenses.reduce((s, e) => s + e.amount, 0);
+
     setEmpTotalDue(totalDue);
     setEmpTotalPaid(totalPaid);
-  }, [selectedMonth, contracts]);
+  }, [selectedMonth, contracts, expenses]);
 
   useEffect(() => { loadEmployeeData(); }, [loadEmployeeData]);
 
