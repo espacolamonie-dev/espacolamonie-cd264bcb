@@ -116,17 +116,21 @@ export default function FinancialExpenses({ data, onReload }: Props) {
     catch (e: any) { toast.error(getSafeErrorMessage(e)); }
   };
 
-  const openEdit = (item: FinancialTransaction) => {
+  const openEdit = async (item: FinancialTransaction) => {
     if (item.source !== "expense") {
       toast.error("Apenas despesas registradas podem ser editadas aqui");
       return;
     }
     setEditingId(item.id);
+    const { data: row } = await supabase.from("expenses").select("subcategory,employee_id,parent_expense_id").eq("id", item.id).single();
     setEditForm({
       description: item.description,
       category: item.category || "Outros",
       amount: item.amount,
       date: item.date,
+      subcategory: (row as any)?.subcategory || "",
+      employee_id: (row as any)?.employee_id || "",
+      parent_expense_id: (row as any)?.parent_expense_id || "",
     });
   };
 
@@ -134,7 +138,15 @@ export default function FinancialExpenses({ data, onReload }: Props) {
     if (!editingId) return;
     if (!editForm.description.trim() || editForm.amount <= 0) { toast.error("Preencha descrição e valor"); return; }
     try {
-      await updateExpense(editingId, editForm);
+      await updateExpense(editingId, {
+        description: editForm.description,
+        category: editForm.category,
+        amount: editForm.amount,
+        date: editForm.date,
+        subcategory: editForm.subcategory,
+        employee_id: editForm.category === "Funcionários" ? (editForm.employee_id || null) : null,
+        parent_expense_id: editForm.parent_expense_id || null,
+      });
       toast.success("Despesa atualizada");
       setEditingId(null);
       onReload();
