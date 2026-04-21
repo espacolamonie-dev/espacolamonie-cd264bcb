@@ -500,6 +500,13 @@ function mapExpense(row: any) {
     amount: Number(row.amount),
     date: row.date,
     createdAt: row.created_at,
+    paid: !!row.paid,
+    paidDate: row.paid_date || null,
+    employeeId: row.employee_id || null,
+    subcategory: row.subcategory || "",
+    parentExpenseId: row.parent_expense_id || null,
+    installmentNumber: row.installment_number || null,
+    totalInstallments: row.total_installments || null,
   };
 }
 
