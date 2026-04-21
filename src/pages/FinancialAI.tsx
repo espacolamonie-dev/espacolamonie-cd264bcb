@@ -281,9 +281,8 @@ export default function FinancialAI() {
 
   const proximasParcelas = useMemo(() => {
     return expenses
-      .filter(e => e.installment_number && e.total_installments && (e.due_date || e.date) >= todayISO())
-      .sort((a, b) => (a.due_date || a.date).localeCompare(b.due_date || b.date))
-      .slice(0, 10);
+      .filter(e => e.installment_number && e.total_installments && !e.paid)
+      .sort((a, b) => (a.due_date || a.date).localeCompare(b.due_date || b.date));
   }, [expenses]);
 
   const PIE_COLORS = ["hsl(var(--primary))", "#10b981", "#f59e0b", "#3b82f6", "#a855f7", "#ef4444"];
