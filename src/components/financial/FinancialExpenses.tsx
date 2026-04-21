@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { todayLocalStr } from "@/lib/dateUtils";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +20,7 @@ import {
 import ImportStatementModal from "@/components/ImportStatementModal";
 import ImportReceiptModal from "@/components/ImportReceiptModal";
 import { addExpense, deleteExpense, updateExpense } from "@/data/store";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { getSafeErrorMessage } from "@/lib/errorSanitizer";
 import type { FinancialData, FinancialTransaction } from "./types";
@@ -35,6 +36,9 @@ interface Props {
   onReload: () => void;
 }
 
+type EmployeeOpt = { id: string; name: string };
+type InstallmentParent = { id: string; label: string };
+
 export default function FinancialExpenses({ data, onReload }: Props) {
   const { allSaidas, monthLabel } = data;
   const [expOpen, setExpOpen] = useState(false);
@@ -43,13 +47,36 @@ export default function FinancialExpenses({ data, onReload }: Props) {
   const [selectedExpenses, setSelectedExpenses] = useState<Set<string>>(new Set());
   const [expenseFilter, setExpenseFilter] = useState("all");
   const [expenseSearch, setExpenseSearch] = useState("");
+  const [employees, setEmployees] = useState<EmployeeOpt[]>([]);
+  const [installmentParents, setInstallmentParents] = useState<InstallmentParent[]>([]);
   const [expForm, setExpForm] = useState({
     description: "", category: "Outros" as ExpenseCategory, amount: 0, date: todayLocalStr(),
   });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({
     description: "", category: "Outros" as string, amount: 0, date: todayLocalStr(),
+    subcategory: "", employee_id: "", parent_expense_id: "",
   });
+
+  // Carrega funcionários ativos e parcelamentos existentes para os selects
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const [emp, exp] = await Promise.all([
+        supabase.from("employees").select("id,name").eq("user_id", user.id).eq("is_active", true).order("name"),
+        supabase.from("expenses").select("id,description,total_installments,installment_number").eq("user_id", user.id),
+      ]);
+      setEmployees((emp.data as EmployeeOpt[]) || []);
+      const parents = ((exp.data as any[]) || [])
+        .filter(e => e.installment_number === 1 && e.total_installments && e.total_installments > 1)
+        .map(p => ({
+          id: p.id,
+          label: `${(p.description as string).replace(/\s*\(\d+\/\d+\)\s*✓?$/, "")} (${p.total_installments}x)`,
+        }));
+      setInstallmentParents(parents);
+    })();
+  }, [allSaidas]);
 
   const filtered = useMemo(() => {
     let list = allSaidas;
