@@ -95,13 +95,14 @@ export default function FinancialAI() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoading(false); return; }
 
-    const [exp, pay, me, ct, vs, cb] = await Promise.all([
+    const [exp, pay, me, ct, vs, cb, em] = await Promise.all([
       supabase.from("expenses").select("*").eq("user_id", user.id),
       supabase.from("payments").select("amount,date,contract_id").eq("user_id", user.id),
       supabase.from("manual_entries").select("amount,date").eq("user_id", user.id),
       supabase.from("contracts").select("id,total_value,remaining_value,deposit_value,status,payment_status,event_date,event_type,created_at").eq("user_id", user.id),
       supabase.from("visits").select("id,created_at,status").eq("user_id", user.id),
       supabase.from("cash_balance_adjustments" as any).select("*").eq("user_id", user.id).order("adjustment_date", { ascending: false }).order("created_at", { ascending: false }),
+      supabase.from("employees").select("id,name").eq("user_id", user.id).eq("is_active", true).order("name"),
     ]);
 
     setExpenses((exp.data as Expense[]) || []);
@@ -110,6 +111,7 @@ export default function FinancialAI() {
     setContracts((ct.data as Contract[]) || []);
     setVisits((vs.data as Visit[]) || []);
     setCashAdjustments(((cb.data as unknown) as CashAdjustment[]) || []);
+    setEmployees((em.data as Employee[]) || []);
     setLoading(false);
   };
 
