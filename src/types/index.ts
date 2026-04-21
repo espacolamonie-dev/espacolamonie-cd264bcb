@@ -124,6 +124,13 @@ export interface Expense {
   amount: number;
   date: string;
   createdAt: string;
+  paid?: boolean;
+  paidDate?: string | null;
+  employeeId?: string | null;
+  subcategory?: string;
+  parentExpenseId?: string | null;
+  installmentNumber?: number | null;
+  totalInstallments?: number | null;
 }
 
 export type ManualEntryCategory =
