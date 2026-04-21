@@ -304,6 +304,7 @@ export default function FinancialAI() {
         </div>
         <div className="flex gap-2 flex-wrap">
           <NewExpenseDialog onSaved={loadAll} />
+          <ImportReceiptButton onImported={loadAll} />
           <ImportStatementButton onImported={loadAll} />
           <SimulatorDialog kpis={kpis} />
         </div>
