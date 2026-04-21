@@ -916,11 +916,15 @@ export type Database = {
           date: string
           description: string
           due_date: string | null
+          employee_id: string | null
           id: string
           installment_number: number | null
           is_fixed: boolean
+          paid: boolean
+          paid_date: string | null
           parent_expense_id: string | null
           payment_method: string
+          subcategory: string
           total_installments: number | null
           user_id: string
         }
@@ -931,11 +935,15 @@ export type Database = {
           date: string
           description: string
           due_date?: string | null
+          employee_id?: string | null
           id?: string
           installment_number?: number | null
           is_fixed?: boolean
+          paid?: boolean
+          paid_date?: string | null
           parent_expense_id?: string | null
           payment_method?: string
+          subcategory?: string
           total_installments?: number | null
           user_id: string
         }
@@ -946,15 +954,26 @@ export type Database = {
           date?: string
           description?: string
           due_date?: string | null
+          employee_id?: string | null
           id?: string
           installment_number?: number | null
           is_fixed?: boolean
+          paid?: boolean
+          paid_date?: string | null
           parent_expense_id?: string | null
           payment_method?: string
+          subcategory?: string
           total_installments?: number | null
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "expenses_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "expenses_parent_expense_id_fkey"
             columns: ["parent_expense_id"]

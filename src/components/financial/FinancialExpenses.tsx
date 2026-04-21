@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { todayLocalStr } from "@/lib/dateUtils";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +20,7 @@ import {
 import ImportStatementModal from "@/components/ImportStatementModal";
 import ImportReceiptModal from "@/components/ImportReceiptModal";
 import { addExpense, deleteExpense, updateExpense } from "@/data/store";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { getSafeErrorMessage } from "@/lib/errorSanitizer";
 import type { FinancialData, FinancialTransaction } from "./types";
@@ -35,6 +36,9 @@ interface Props {
   onReload: () => void;
 }
 
+type EmployeeOpt = { id: string; name: string };
+type InstallmentParent = { id: string; label: string };
+
 export default function FinancialExpenses({ data, onReload }: Props) {
   const { allSaidas, monthLabel } = data;
   const [expOpen, setExpOpen] = useState(false);
@@ -43,13 +47,36 @@ export default function FinancialExpenses({ data, onReload }: Props) {
   const [selectedExpenses, setSelectedExpenses] = useState<Set<string>>(new Set());
   const [expenseFilter, setExpenseFilter] = useState("all");
   const [expenseSearch, setExpenseSearch] = useState("");
+  const [employees, setEmployees] = useState<EmployeeOpt[]>([]);
+  const [installmentParents, setInstallmentParents] = useState<InstallmentParent[]>([]);
   const [expForm, setExpForm] = useState({
     description: "", category: "Outros" as ExpenseCategory, amount: 0, date: todayLocalStr(),
   });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({
     description: "", category: "Outros" as string, amount: 0, date: todayLocalStr(),
+    subcategory: "", employee_id: "", parent_expense_id: "",
   });
+
+  // Carrega funcionários ativos e parcelamentos existentes para os selects
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const [emp, exp] = await Promise.all([
+        supabase.from("employees").select("id,name").eq("user_id", user.id).eq("is_active", true).order("name"),
+        supabase.from("expenses").select("id,description,total_installments,installment_number").eq("user_id", user.id),
+      ]);
+      setEmployees((emp.data as EmployeeOpt[]) || []);
+      const parents = ((exp.data as any[]) || [])
+        .filter(e => e.installment_number === 1 && e.total_installments && e.total_installments > 1)
+        .map(p => ({
+          id: p.id,
+          label: `${(p.description as string).replace(/\s*\(\d+\/\d+\)\s*✓?$/, "")} (${p.total_installments}x)`,
+        }));
+      setInstallmentParents(parents);
+    })();
+  }, [allSaidas]);
 
   const filtered = useMemo(() => {
     let list = allSaidas;
@@ -89,17 +116,21 @@ export default function FinancialExpenses({ data, onReload }: Props) {
     catch (e: any) { toast.error(getSafeErrorMessage(e)); }
   };
 
-  const openEdit = (item: FinancialTransaction) => {
+  const openEdit = async (item: FinancialTransaction) => {
     if (item.source !== "expense") {
       toast.error("Apenas despesas registradas podem ser editadas aqui");
       return;
     }
     setEditingId(item.id);
+    const { data: row } = await supabase.from("expenses").select("subcategory,employee_id,parent_expense_id").eq("id", item.id).single();
     setEditForm({
       description: item.description,
       category: item.category || "Outros",
       amount: item.amount,
       date: item.date,
+      subcategory: (row as any)?.subcategory || "",
+      employee_id: (row as any)?.employee_id || "",
+      parent_expense_id: (row as any)?.parent_expense_id || "",
     });
   };
 
@@ -107,7 +138,15 @@ export default function FinancialExpenses({ data, onReload }: Props) {
     if (!editingId) return;
     if (!editForm.description.trim() || editForm.amount <= 0) { toast.error("Preencha descrição e valor"); return; }
     try {
-      await updateExpense(editingId, editForm);
+      await updateExpense(editingId, {
+        description: editForm.description,
+        category: editForm.category,
+        amount: editForm.amount,
+        date: editForm.date,
+        subcategory: editForm.subcategory,
+        employee_id: editForm.category === "Funcionários" ? (editForm.employee_id || null) : null,
+        parent_expense_id: editForm.parent_expense_id || null,
+      });
       toast.success("Despesa atualizada");
       setEditingId(null);
       onReload();
@@ -286,6 +325,43 @@ export default function FinancialExpenses({ data, onReload }: Props) {
               <Label>Data</Label>
               <Input type="date" value={editForm.date} onChange={(e) => setEditForm(f => ({ ...f, date: e.target.value }))} />
             </div>
+
+            {editForm.category === "Funcionários" && (
+              <div className="grid gap-2">
+                <Label>Funcionário</Label>
+                <Select value={editForm.employee_id || "__none__"} onValueChange={(v) => setEditForm(f => ({ ...f, employee_id: v === "__none__" ? "" : v }))}>
+                  <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Nenhum</SelectItem>
+                    {employees.map(em => <SelectItem key={em.id} value={em.id}>{em.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div className="grid gap-2">
+              <Label>Detalhe / Subcategoria</Label>
+              <Input
+                placeholder='Ex: "Conta de luz - março"'
+                value={editForm.subcategory}
+                onChange={(e) => setEditForm(f => ({ ...f, subcategory: e.target.value }))}
+              />
+            </div>
+
+            {installmentParents.length > 0 && (
+              <div className="grid gap-2">
+                <Label>Vincular a parcelamento</Label>
+                <Select value={editForm.parent_expense_id || "__none__"} onValueChange={(v) => setEditForm(f => ({ ...f, parent_expense_id: v === "__none__" ? "" : v }))}>
+                  <SelectTrigger><SelectValue placeholder="Nenhum" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Nenhum (avulsa)</SelectItem>
+                    {installmentParents.map(p => <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">Útil para reclassificar Pix importados como uma parcela específica.</p>
+              </div>
+            )}
+
             <div className="flex gap-2 mt-2">
               <Button variant="outline" className="flex-1" onClick={() => setEditingId(null)}>Cancelar</Button>
               <Button className="flex-1" onClick={handleSaveEdit}>Salvar</Button>

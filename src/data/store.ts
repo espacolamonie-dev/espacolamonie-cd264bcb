@@ -321,8 +321,38 @@ export const deleteExpense = async (id: string) => {
   if (error) throw error;
 };
 
-export const updateExpense = async (id: string, updates: Partial<{ description: string; category: string; amount: number; date: string }>) => {
-  const { error } = await supabase.from("expenses").update(updates).eq("id", id);
+export const updateExpense = async (
+  id: string,
+  updates: Partial<{
+    description: string;
+    category: string;
+    amount: number;
+    date: string;
+    due_date: string | null;
+    paid: boolean;
+    paid_date: string | null;
+    employee_id: string | null;
+    subcategory: string;
+    parent_expense_id: string | null;
+  }>
+) => {
+  const { error } = await supabase.from("expenses").update(updates as any).eq("id", id);
+  if (error) throw error;
+};
+
+export const markExpensePaid = async (id: string, paidDate: string) => {
+  const { error } = await supabase.from("expenses").update({ paid: true, paid_date: paidDate } as any).eq("id", id);
+  if (error) throw error;
+};
+
+export const markExpensesPaidBulk = async (ids: string[], paidDate: string) => {
+  if (!ids.length) return;
+  const { error } = await supabase.from("expenses").update({ paid: true, paid_date: paidDate } as any).in("id", ids);
+  if (error) throw error;
+};
+
+export const markExpenseUnpaid = async (id: string) => {
+  const { error } = await supabase.from("expenses").update({ paid: false, paid_date: null } as any).eq("id", id);
   if (error) throw error;
 };
 

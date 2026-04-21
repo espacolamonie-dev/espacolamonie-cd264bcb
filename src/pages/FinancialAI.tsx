@@ -12,9 +12,12 @@ import { toast } from "sonner";
 import {
   Brain, TrendingUp, TrendingDown, Wallet, Target, AlertTriangle,
   CheckCircle2, Plus, Sparkles, Calculator, CreditCard, Send, Loader2, Trash2,
-  CalendarRange, BarChart3, PieChart as PieIcon, Percent, Trophy, Upload
+  CalendarRange, BarChart3, PieChart as PieIcon, Percent, Trophy, Upload, Pencil, X, Search
 } from "lucide-react";
 import ImportStatementModal from "@/components/ImportStatementModal";
+import MarkPaidDialog from "@/components/financial/MarkPaidDialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
   LineChart, Line, PieChart, Pie, Cell
@@ -32,7 +35,13 @@ type Expense = {
   parent_expense_id: string | null;
   installment_number: number | null;
   total_installments: number | null;
+  paid: boolean;
+  paid_date: string | null;
+  employee_id: string | null;
+  subcategory: string;
 };
+
+type Employee = { id: string; name: string };
 
 type Payment = { amount: number; date: string; contract_id: string };
 type Contract = { id: string; total_value: number; remaining_value: number; deposit_value: number; status: string; payment_status: string; event_date: string; event_type?: string; created_at?: string };
@@ -53,6 +62,7 @@ export default function FinancialAI() {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [visits, setVisits] = useState<Visit[]>([]);
   const [cashAdjustments, setCashAdjustments] = useState<CashAdjustment[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
 
   // Filtro de período
   const [periodKey, setPeriodKey] = useState<PeriodKey>("month");
@@ -88,13 +98,14 @@ export default function FinancialAI() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoading(false); return; }
 
-    const [exp, pay, me, ct, vs, cb] = await Promise.all([
+    const [exp, pay, me, ct, vs, cb, em] = await Promise.all([
       supabase.from("expenses").select("*").eq("user_id", user.id),
       supabase.from("payments").select("amount,date,contract_id").eq("user_id", user.id),
       supabase.from("manual_entries").select("amount,date").eq("user_id", user.id),
       supabase.from("contracts").select("id,total_value,remaining_value,deposit_value,status,payment_status,event_date,event_type,created_at").eq("user_id", user.id),
       supabase.from("visits").select("id,created_at,status").eq("user_id", user.id),
       supabase.from("cash_balance_adjustments" as any).select("*").eq("user_id", user.id).order("adjustment_date", { ascending: false }).order("created_at", { ascending: false }),
+      supabase.from("employees").select("id,name").eq("user_id", user.id).eq("is_active", true).order("name"),
     ]);
 
     setExpenses((exp.data as Expense[]) || []);
@@ -103,6 +114,7 @@ export default function FinancialAI() {
     setContracts((ct.data as Contract[]) || []);
     setVisits((vs.data as Visit[]) || []);
     setCashAdjustments(((cb.data as unknown) as CashAdjustment[]) || []);
+    setEmployees((em.data as Employee[]) || []);
     setLoading(false);
   };
 
@@ -272,9 +284,8 @@ export default function FinancialAI() {
 
   const proximasParcelas = useMemo(() => {
     return expenses
-      .filter(e => e.installment_number && e.total_installments && (e.due_date || e.date) >= todayISO())
-      .sort((a, b) => (a.due_date || a.date).localeCompare(b.due_date || b.date))
-      .slice(0, 10);
+      .filter(e => e.installment_number && e.total_installments && !e.paid)
+      .sort((a, b) => (a.due_date || a.date).localeCompare(b.due_date || b.date));
   }, [expenses]);
 
   const PIE_COLORS = ["hsl(var(--primary))", "#10b981", "#f59e0b", "#3b82f6", "#a855f7", "#ef4444"];
@@ -448,31 +459,11 @@ export default function FinancialAI() {
             </TabsList>
 
             <TabsContent value="parcelas">
-              <Card>
-                <CardContent className="pt-6">
-                  {proximasParcelas.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-8">Nenhuma parcela futura cadastrada.</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {proximasParcelas.map(p => (
-                        <div key={p.id} className="flex items-center justify-between border rounded-lg p-3">
-                          <div>
-                            <p className="font-medium text-sm">{p.description}</p>
-                            <p className="text-xs text-muted-foreground">
-                              Parcela {p.installment_number}/{p.total_installments} · {new Date((p.due_date || p.date) + "T12:00:00").toLocaleDateString("pt-BR")} · {p.category}
-                            </p>
-                          </div>
-                          <span className="font-semibold text-rose-600">{BRL(Number(p.amount))}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              <InstallmentsList parcelas={proximasParcelas} onChanged={loadAll} />
             </TabsContent>
 
             <TabsContent value="despesas">
-              <ExpensesList expenses={expenses} onChanged={loadAll} />
+              <ExpensesList expenses={expenses} employees={employees} onChanged={loadAll} />
             </TabsContent>
 
             <TabsContent value="ia">
@@ -714,10 +705,109 @@ function NewExpenseDialog({ onSaved }: { onSaved: () => void }) {
 }
 
 
-function ExpensesList({ expenses, onChanged }: { expenses: Expense[]; onChanged: () => void }) {
+function InstallmentsList({ parcelas, onChanged }: { parcelas: Expense[]; onChanged: () => void }) {
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [paidDialogIds, setPaidDialogIds] = useState<string[] | null>(null);
+
+  const toggle = (id: string) => {
+    const next = new Set(selected);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    setSelected(next);
+  };
+
+  const toggleAll = () => {
+    if (selected.size === parcelas.length) setSelected(new Set());
+    else setSelected(new Set(parcelas.map(p => p.id)));
+  };
+
+  const confirmPaid = async (paidDate: string) => {
+    if (!paidDialogIds || paidDialogIds.length === 0) return;
+    const { error } = await supabase
+      .from("expenses")
+      .update({ paid: true, paid_date: paidDate } as any)
+      .in("id", paidDialogIds);
+    if (error) { toast.error(error.message); return; }
+    toast.success(paidDialogIds.length > 1 ? `${paidDialogIds.length} parcelas marcadas como pagas` : "Parcela marcada como paga");
+    setSelected(new Set());
+    setPaidDialogIds(null);
+    onChanged();
+  };
+
+  const today = todayISO();
+  const selectedTotal = parcelas.filter(p => selected.has(p.id)).reduce((s, p) => s + Number(p.amount), 0);
+
+  return (
+    <Card>
+      <CardContent className="pt-6 space-y-3">
+        {parcelas.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-8">Nenhuma parcela em aberto. 🎉</p>
+        ) : (
+          <>
+            <div className="flex items-center justify-between gap-2 flex-wrap pb-2 border-b">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  checked={selected.size === parcelas.length && parcelas.length > 0}
+                  onCheckedChange={toggleAll}
+                />
+                <span className="text-xs text-muted-foreground">
+                  {selected.size > 0 ? `${selected.size} selecionada(s) · ${BRL(selectedTotal)}` : `${parcelas.length} parcela(s) em aberto`}
+                </span>
+              </div>
+              {selected.size > 0 && (
+                <Button size="sm" onClick={() => setPaidDialogIds(Array.from(selected))}>
+                  <CheckCircle2 className="h-4 w-4" />
+                  Marcar {selected.size} como paga{selected.size > 1 ? "s" : ""}
+                </Button>
+              )}
+            </div>
+            <div className="space-y-2 max-h-[500px] overflow-y-auto">
+              {parcelas.map(p => {
+                const due = p.due_date || p.date;
+                const overdue = due < today;
+                return (
+                  <div key={p.id} className={`flex items-center gap-3 border rounded-lg p-3 ${overdue ? "border-rose-500/40 bg-rose-500/5" : ""}`}>
+                    <Checkbox checked={selected.has(p.id)} onCheckedChange={() => toggle(p.id)} />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-sm truncate">{p.description}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Parcela {p.installment_number}/{p.total_installments} · {new Date(due + "T12:00:00").toLocaleDateString("pt-BR")} · {p.category}
+                        {overdue && <span className="ml-1 text-rose-600 font-medium">· vencida</span>}
+                      </p>
+                    </div>
+                    <span className="font-semibold text-rose-600 mr-1">{BRL(Number(p.amount))}</span>
+                    <Button size="sm" variant="outline" className="h-8" onClick={() => setPaidDialogIds([p.id])}>
+                      <CheckCircle2 className="h-4 w-4" />
+                      Paga
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </CardContent>
+      <MarkPaidDialog
+        open={!!paidDialogIds}
+        onOpenChange={(o) => !o && setPaidDialogIds(null)}
+        count={paidDialogIds?.length || 0}
+        totalAmount={paidDialogIds ? parcelas.filter(p => paidDialogIds.includes(p.id)).reduce((s, p) => s + Number(p.amount), 0) : 0}
+        onConfirm={confirmPaid}
+      />
+    </Card>
+  );
+}
+
+const EXPENSE_CATEGORIES = ["Funcionários", "Marketing", "Manutenção", "Reformas", "Aluguel", "Compras", "Energia (CEMIG)", "Água (COPASA)", "Internet", "Outros"];
+
+function ExpensesList({ expenses, employees, onChanged }: { expenses: Expense[]; employees: Employee[]; onChanged: () => void }) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [paidDialogId, setPaidDialogId] = useState<string | null>(null);
+  const [filterCat, setFilterCat] = useState<string>("all");
+  const [filterPaid, setFilterPaid] = useState<"all" | "paid" | "unpaid">("all");
+  const [searchTxt, setSearchTxt] = useState("");
+
   const remove = async (e: Expense) => {
     if (!confirm(`Excluir "${e.description}"?${e.installment_number === 1 && e.total_installments && e.total_installments > 1 ? " Todas as parcelas serão removidas." : ""}`)) return;
-    // Se for "pai" (installment 1 com filhas), remove pai e cascata
     if (e.installment_number === 1 && e.total_installments && e.total_installments > 1) {
       await supabase.from("expenses").delete().or(`id.eq.${e.id},parent_expense_id.eq.${e.id}`);
     } else {
@@ -727,32 +817,261 @@ function ExpensesList({ expenses, onChanged }: { expenses: Expense[]; onChanged:
     onChanged();
   };
 
-  const sorted = [...expenses].sort((a, b) => (b.due_date || b.date).localeCompare(a.due_date || a.date));
+  const togglePaid = async (e: Expense) => {
+    if (e.paid) {
+      await supabase.from("expenses").update({ paid: false, paid_date: null } as any).eq("id", e.id);
+      toast.success("Pagamento desfeito");
+      onChanged();
+    } else {
+      setPaidDialogId(e.id);
+    }
+  };
+
+  const confirmPaid = async (paidDate: string) => {
+    if (!paidDialogId) return;
+    const { error } = await supabase.from("expenses").update({ paid: true, paid_date: paidDate } as any).eq("id", paidDialogId);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Despesa marcada como paga");
+    setPaidDialogId(null);
+    onChanged();
+  };
+
+  // Build parent-installment options for "vincular a parcelamento"
+  const installmentParents = useMemo(() => {
+    const parents = expenses.filter(e => e.installment_number === 1 && e.total_installments && e.total_installments > 1);
+    return parents.map(p => ({
+      id: p.id,
+      label: `${p.description.replace(/\s*\(\d+\/\d+\)\s*✓?$/, "")} (parcelado em ${p.total_installments}x)`,
+    }));
+  }, [expenses]);
+
+  const filtered = useMemo(() => {
+    let list = expenses;
+    if (filterCat !== "all") list = list.filter(e => e.category === filterCat);
+    if (filterPaid === "paid") list = list.filter(e => e.paid);
+    else if (filterPaid === "unpaid") list = list.filter(e => !e.paid);
+    if (searchTxt.trim()) {
+      const q = searchTxt.toLowerCase();
+      list = list.filter(e => e.description.toLowerCase().includes(q) || (e.subcategory || "").toLowerCase().includes(q));
+    }
+    return [...list].sort((a, b) => (b.due_date || b.date).localeCompare(a.due_date || a.date));
+  }, [expenses, filterCat, filterPaid, searchTxt]);
+
+  const editingExpense = expenses.find(e => e.id === editingId) || null;
+  const paidDialogExpense = expenses.find(e => e.id === paidDialogId) || null;
 
   return (
     <Card>
-      <CardContent className="pt-6">
-        {sorted.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">Nenhuma despesa cadastrada ainda.</p>
+      <CardContent className="pt-6 space-y-3">
+        {/* Filtros */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative flex-1 min-w-[180px]">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input className="pl-8 h-9" placeholder="Buscar descrição ou detalhe…" value={searchTxt} onChange={e => setSearchTxt(e.target.value)} />
+          </div>
+          <Select value={filterCat} onValueChange={setFilterCat}>
+            <SelectTrigger className="h-9 w-44"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas categorias</SelectItem>
+              {EXPENSE_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={filterPaid} onValueChange={(v) => setFilterPaid(v as any)}>
+            <SelectTrigger className="h-9 w-36"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Pagas e a pagar</SelectItem>
+              <SelectItem value="paid">Só pagas</SelectItem>
+              <SelectItem value="unpaid">Só a pagar</SelectItem>
+            </SelectContent>
+          </Select>
+          {(filterCat !== "all" || filterPaid !== "all" || searchTxt) && (
+            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => { setFilterCat("all"); setFilterPaid("all"); setSearchTxt(""); }}>
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+
+        {filtered.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-8">Nenhuma despesa encontrada.</p>
         ) : (
           <div className="space-y-2 max-h-[500px] overflow-y-auto">
-            {sorted.map(e => (
-              <div key={e.id} className="flex items-center justify-between border rounded-lg p-3">
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-sm truncate">{e.description}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {new Date((e.due_date || e.date) + "T12:00:00").toLocaleDateString("pt-BR")} · {e.category} · {e.payment_method}
-                    {e.is_fixed && " · fixa"}
-                  </p>
+            {filtered.map(e => {
+              const empName = e.employee_id ? employees.find(em => em.id === e.employee_id)?.name : null;
+              const due = e.due_date || e.date;
+              return (
+                <div key={e.id} className={`flex items-center gap-2 border rounded-lg p-3 group ${e.paid ? "bg-emerald-500/5 border-emerald-500/20" : ""}`}>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-medium text-sm truncate">{e.description}</p>
+                      {e.paid && <Badge variant="outline" className="text-[10px] border-emerald-500/40 text-emerald-700 dark:text-emerald-400">PAGA{e.paid_date ? ` ${new Date(e.paid_date + "T12:00:00").toLocaleDateString("pt-BR")}` : ""}</Badge>}
+                      {empName && <Badge variant="secondary" className="text-[10px]">👤 {empName}</Badge>}
+                      {e.subcategory && <Badge variant="secondary" className="text-[10px]">{e.subcategory}</Badge>}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Venc. {new Date(due + "T12:00:00").toLocaleDateString("pt-BR")} · {e.category} · {e.payment_method}
+                      {e.is_fixed && " · fixa"}
+                      {e.installment_number && e.total_installments && ` · ${e.installment_number}/${e.total_installments}`}
+                    </p>
+                  </div>
+                  <span className="font-semibold text-rose-600 mr-1">{BRL(Number(e.amount))}</span>
+                  <Button size="sm" variant={e.paid ? "ghost" : "outline"} className="h-8 opacity-70 group-hover:opacity-100" onClick={() => togglePaid(e)} title={e.paid ? "Desmarcar como paga" : "Marcar como paga"}>
+                    <CheckCircle2 className={`h-4 w-4 ${e.paid ? "text-emerald-600" : ""}`} />
+                  </Button>
+                  <Button size="icon" variant="ghost" className="h-8 w-8 opacity-0 group-hover:opacity-100" onClick={() => setEditingId(e.id)}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button size="icon" variant="ghost" className="h-8 w-8 opacity-0 group-hover:opacity-100" onClick={() => remove(e)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
-                <span className="font-semibold text-rose-600 mr-2">{BRL(Number(e.amount))}</span>
-                <Button variant="ghost" size="icon" onClick={() => remove(e)}><Trash2 className="h-4 w-4" /></Button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </CardContent>
+
+      <EditExpenseDialog
+        expense={editingExpense}
+        employees={employees}
+        installmentParents={installmentParents}
+        onClose={() => setEditingId(null)}
+        onSaved={() => { setEditingId(null); onChanged(); }}
+      />
+
+      <MarkPaidDialog
+        open={!!paidDialogId}
+        onOpenChange={(o) => !o && setPaidDialogId(null)}
+        count={1}
+        totalAmount={paidDialogExpense ? Number(paidDialogExpense.amount) : 0}
+        defaultDate={paidDialogExpense?.due_date || paidDialogExpense?.date || todayISO()}
+        onConfirm={confirmPaid}
+      />
     </Card>
+  );
+}
+
+function EditExpenseDialog({
+  expense, employees, installmentParents, onClose, onSaved,
+}: {
+  expense: Expense | null;
+  employees: Employee[];
+  installmentParents: { id: string; label: string }[];
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [form, setForm] = useState({
+    description: "", category: "Outros", subcategory: "", amount: 0,
+    due_date: todayISO(), employee_id: "" as string, parent_expense_id: "" as string,
+  });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (expense) {
+      setForm({
+        description: expense.description,
+        category: expense.category || "Outros",
+        subcategory: expense.subcategory || "",
+        amount: Number(expense.amount),
+        due_date: expense.due_date || expense.date,
+        employee_id: expense.employee_id || "",
+        parent_expense_id: expense.parent_expense_id || "",
+      });
+    }
+  }, [expense]);
+
+  if (!expense) return null;
+
+  const save = async () => {
+    if (!form.description.trim() || !(form.amount > 0)) { toast.error("Preencha descrição e valor"); return; }
+    setSaving(true);
+    const { error } = await supabase.from("expenses").update({
+      description: form.description,
+      category: form.category,
+      subcategory: form.subcategory,
+      amount: form.amount,
+      due_date: form.due_date,
+      date: form.due_date,
+      employee_id: form.category === "Funcionários" ? (form.employee_id || null) : null,
+      parent_expense_id: form.parent_expense_id || null,
+    } as any).eq("id", expense.id);
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Despesa atualizada");
+    onSaved();
+  };
+
+  return (
+    <Dialog open={!!expense} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogHeader><DialogTitle>Editar despesa</DialogTitle></DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label>Nome / Descrição</Label>
+            <Input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Valor (R$)</Label>
+              <Input type="number" step="0.01" value={form.amount} onChange={e => setForm({ ...form, amount: parseFloat(e.target.value) || 0 })} />
+            </div>
+            <div>
+              <Label>Vencimento</Label>
+              <Input type="date" value={form.due_date} onChange={e => setForm({ ...form, due_date: e.target.value })} />
+            </div>
+          </div>
+          <div>
+            <Label>Categoria</Label>
+            <Select value={form.category} onValueChange={v => setForm({ ...form, category: v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {EXPENSE_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {form.category === "Funcionários" && (
+            <div>
+              <Label>Funcionário</Label>
+              <Select value={form.employee_id || "__none__"} onValueChange={v => setForm({ ...form, employee_id: v === "__none__" ? "" : v })}>
+                <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Nenhum</SelectItem>
+                  {employees.map(em => <SelectItem key={em.id} value={em.id}>{em.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">Vincula esta despesa ao funcionário para histórico de pagamentos.</p>
+            </div>
+          )}
+
+          <div>
+            <Label>Detalhe / Subcategoria</Label>
+            <Input
+              placeholder='Ex: "Conta de luz - março", "Reforma banheiro"'
+              value={form.subcategory}
+              onChange={e => setForm({ ...form, subcategory: e.target.value })}
+            />
+          </div>
+
+          {installmentParents.length > 0 && (
+            <div>
+              <Label>Vincular a parcelamento existente</Label>
+              <Select value={form.parent_expense_id || "__none__"} onValueChange={v => setForm({ ...form, parent_expense_id: v === "__none__" ? "" : v })}>
+                <SelectTrigger><SelectValue placeholder="Nenhum" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Nenhum (despesa avulsa)</SelectItem>
+                  {installmentParents.map(p => <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">Útil para reclassificar Pix importados como uma parcela específica.</p>
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={saving}>Cancelar</Button>
+          <Button onClick={save} disabled={saving}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
