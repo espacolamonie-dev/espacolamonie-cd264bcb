@@ -32,7 +32,13 @@ type Expense = {
   parent_expense_id: string | null;
   installment_number: number | null;
   total_installments: number | null;
+  paid: boolean;
+  paid_date: string | null;
+  employee_id: string | null;
+  subcategory: string;
 };
+
+type Employee = { id: string; name: string };
 
 type Payment = { amount: number; date: string; contract_id: string };
 type Contract = { id: string; total_value: number; remaining_value: number; deposit_value: number; status: string; payment_status: string; event_date: string; event_type?: string; created_at?: string };
