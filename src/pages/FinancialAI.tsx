@@ -1219,6 +1219,24 @@ function ImportStatementButton({ onImported }: { onImported: () => void }) {
   );
 }
 
+function ImportReceiptButton({ onImported }: { onImported: () => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button variant="outline" onClick={() => setOpen(true)}>
+        <Receipt className="h-4 w-4" />
+        Importar comprovante
+      </Button>
+      <ImportReceiptModal
+        open={open}
+        onOpenChange={setOpen}
+        mode="expense"
+        onImported={() => { setOpen(false); onImported(); }}
+      />
+    </>
+  );
+}
+
 function CashBalanceCard({
   balance, hasAdjustment, lastDate, lastNotes, history, onSaved,
 }: {
