@@ -3,15 +3,34 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
-  ({ className, type, ...props }, ref) => {
+  ({ className, type, onFocus, onWheel, ...props }, ref) => {
+    const isNumber = type === "number";
     return (
       <input
         type={type}
         className={cn(
           "flex h-12 w-full rounded-xl border border-input bg-muted/40 px-4 py-3.5 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary/50 focus-visible:bg-card disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200",
+          // Esconde as setinhas (spin buttons) dos inputs numéricos para evitar valor "sobreposto"
+          isNumber && "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-outer-spin-button]:m-0",
           className,
         )}
         ref={ref}
+        onFocus={(e) => {
+          // Em campos numéricos, seleciona tudo ao focar — assim digitar substitui o "0" em vez de concatenar
+          if (isNumber) {
+            const el = e.currentTarget;
+            // setTimeout garante que funciona em mobile/iOS
+            setTimeout(() => { try { el.select(); } catch { /* noop */ } }, 0);
+          }
+          onFocus?.(e);
+        }}
+        onWheel={(e) => {
+          // Evita que o scroll do mouse altere acidentalmente o valor numérico
+          if (isNumber && document.activeElement === e.currentTarget) {
+            e.currentTarget.blur();
+          }
+          onWheel?.(e);
+        }}
         {...props}
       />
     );
