@@ -736,6 +736,19 @@ function InstallmentsList({ parcelas, onChanged }: { parcelas: Expense[]; onChan
     onChanged();
   };
 
+  const deleteIds = async (ids: string[]) => {
+    if (ids.length === 0) return;
+    const msg = ids.length > 1
+      ? `Excluir ${ids.length} parcelas selecionadas? Esta ação não pode ser desfeita.`
+      : "Excluir esta parcela? Esta ação não pode ser desfeita.";
+    if (!confirm(msg)) return;
+    const { error } = await supabase.from("expenses").delete().in("id", ids);
+    if (error) { toast.error(error.message); return; }
+    toast.success(ids.length > 1 ? `${ids.length} parcelas excluídas` : "Parcela excluída");
+    setSelected(new Set());
+    onChanged();
+  };
+
   const today = todayISO();
   const selectedTotal = parcelas.filter(p => selected.has(p.id)).reduce((s, p) => s + Number(p.amount), 0);
 
