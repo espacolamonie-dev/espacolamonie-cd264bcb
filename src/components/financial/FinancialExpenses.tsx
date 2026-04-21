@@ -325,6 +325,43 @@ export default function FinancialExpenses({ data, onReload }: Props) {
               <Label>Data</Label>
               <Input type="date" value={editForm.date} onChange={(e) => setEditForm(f => ({ ...f, date: e.target.value }))} />
             </div>
+
+            {editForm.category === "Funcionários" && (
+              <div className="grid gap-2">
+                <Label>Funcionário</Label>
+                <Select value={editForm.employee_id || "__none__"} onValueChange={(v) => setEditForm(f => ({ ...f, employee_id: v === "__none__" ? "" : v }))}>
+                  <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Nenhum</SelectItem>
+                    {employees.map(em => <SelectItem key={em.id} value={em.id}>{em.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div className="grid gap-2">
+              <Label>Detalhe / Subcategoria</Label>
+              <Input
+                placeholder='Ex: "Conta de luz - março"'
+                value={editForm.subcategory}
+                onChange={(e) => setEditForm(f => ({ ...f, subcategory: e.target.value }))}
+              />
+            </div>
+
+            {installmentParents.length > 0 && (
+              <div className="grid gap-2">
+                <Label>Vincular a parcelamento</Label>
+                <Select value={editForm.parent_expense_id || "__none__"} onValueChange={(v) => setEditForm(f => ({ ...f, parent_expense_id: v === "__none__" ? "" : v }))}>
+                  <SelectTrigger><SelectValue placeholder="Nenhum" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Nenhum (avulsa)</SelectItem>
+                    {installmentParents.map(p => <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">Útil para reclassificar Pix importados como uma parcela específica.</p>
+              </div>
+            )}
+
             <div className="flex gap-2 mt-2">
               <Button variant="outline" className="flex-1" onClick={() => setEditingId(null)}>Cancelar</Button>
               <Button className="flex-1" onClick={handleSaveEdit}>Salvar</Button>
