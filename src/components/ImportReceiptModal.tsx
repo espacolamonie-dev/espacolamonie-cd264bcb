@@ -349,7 +349,7 @@ export default function ImportReceiptModal({
                 </div>
               )}
 
-              {mode === "financial" && (
+              {(mode === "financial" || mode === "expense") && (
                 <div>
                   <Label className="text-xs">Método de pagamento</Label>
                   <Select value={paymentMethod} onValueChange={setPaymentMethod}>
