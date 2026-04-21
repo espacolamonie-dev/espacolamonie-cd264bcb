@@ -1047,7 +1047,7 @@ function EditExpenseDialog({
         patch.description = `${baseDescription} (${numP}/${totalP})`;
         if (propagateAmount) patch.amount = form.amount;
 
-        updates.push(supabase.from("expenses").update(patch).eq("id", s.id));
+        updates.push(Promise.resolve(supabase.from("expenses").update(patch).eq("id", s.id)));
       }
       await Promise.all(updates);
       // Re-aplica ✓ nas parcelas pagas
