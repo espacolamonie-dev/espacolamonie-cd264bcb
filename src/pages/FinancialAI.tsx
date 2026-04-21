@@ -54,7 +54,7 @@ type CashAdjustment = { id: string; balance: number; adjustment_date: string; no
 type PeriodKey = "day" | "week" | "month" | "custom";
 
 const BRL = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-const todayISO = () => new Date().toISOString().slice(0, 10);
+const todayISO = () => todayLocalStr();
 
 export default function FinancialAI() {
   const [loading, setLoading] = useState(true);
