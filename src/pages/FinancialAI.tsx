@@ -770,10 +770,16 @@ function InstallmentsList({ parcelas, onChanged }: { parcelas: Expense[]; onChan
                 </span>
               </div>
               {selected.size > 0 && (
-                <Button size="sm" onClick={() => setPaidDialogIds(Array.from(selected))}>
-                  <CheckCircle2 className="h-4 w-4" />
-                  Marcar {selected.size} como paga{selected.size > 1 ? "s" : ""}
-                </Button>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={() => setPaidDialogIds(Array.from(selected))}>
+                    <CheckCircle2 className="h-4 w-4" />
+                    Marcar {selected.size} como paga{selected.size > 1 ? "s" : ""}
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={() => deleteIds(Array.from(selected))}>
+                    <Trash2 className="h-4 w-4" />
+                    Excluir {selected.size}
+                  </Button>
+                </div>
               )}
             </div>
             <div className="space-y-2 max-h-[500px] overflow-y-auto">
