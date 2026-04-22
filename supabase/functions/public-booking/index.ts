@@ -411,6 +411,23 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ error: 'Erro ao agendar visita' }), { status: 500, headers: corsHeaders });
       }
 
+      // Generate unique confirmation slug from client name
+      let confirmationSlug = makeSlug(clientName) || `visita-${visit.id.slice(0, 6)}`;
+      try {
+        const { data: collide } = await supabase
+          .from('visits')
+          .select('id')
+          .eq('confirmation_slug', confirmationSlug)
+          .neq('id', visit.id)
+          .limit(1);
+        if (collide && collide.length > 0) {
+          confirmationSlug = `${confirmationSlug}-${visit.id.slice(0, 6)}`;
+        }
+        await supabase.from('visits').update({ confirmation_slug: confirmationSlug }).eq('id', visit.id);
+      } catch (e) {
+        console.error('slug generation error:', e);
+      }
+
       // Create Google Calendar event
       let googleEventId: string | null = null;
       if (settings?.is_connected) {
