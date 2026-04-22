@@ -158,6 +158,16 @@ export default function BookVisit() {
       });
       setConfirmData(data.visit);
       setStep("success");
+
+      // Clear pre-fill data
+      try { sessionStorage.removeItem(EVENT_PREFILL_KEY); } catch {}
+
+      // Auto-redirect to confirmation page if slug available
+      if (data?.visit?.confirmationSlug) {
+        setTimeout(() => {
+          navigate(`/visita/${data.visit.confirmationSlug}`);
+        }, 1500);
+      }
     } catch (e: any) {
       setError(e.message);
       if (e.message?.includes("indisponível")) {
