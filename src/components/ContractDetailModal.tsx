@@ -68,6 +68,7 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
   const [signingLink, setSigningLink] = useState<string | null>(null);
+  const [isContractSigned, setIsContractSigned] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const isMobile = useIsMobile();
 
