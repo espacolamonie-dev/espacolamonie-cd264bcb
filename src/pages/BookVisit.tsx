@@ -52,6 +52,7 @@ const STEPS = ["date", "time", "form"] as const;
 const STEP_LABELS = ["Data", "Horário", "Dados"];
 
 export default function BookVisit() {
+  const navigate = useNavigate();
   const [step, setStep] = useState<"date" | "time" | "form" | "success">("date");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [slots, setSlots] = useState<Slot[]>([]);
@@ -68,10 +69,22 @@ export default function BookVisit() {
   const [error, setError] = useState<string | null>(null);
   const [allowedDays, setAllowedDays] = useState<number[]>([2, 4]);
 
-  const [confirmData, setConfirmData] = useState<{ clientName: string; visitDate: string; visitTime: string } | null>(null);
+  const [confirmData, setConfirmData] = useState<{ clientName: string; visitDate: string; visitTime: string; confirmationSlug?: string } | null>(null);
 
   // Capture UTM params on mount
   useEffect(() => { captureUtmParams(); }, []);
+
+  // Pre-fill from sessionStorage (when arriving from /datas-eventos)
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(EVENT_PREFILL_KEY);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (data.eventType) setEventType(data.eventType);
+      if (data.guestCount) setGuestCount(String(data.guestCount));
+      if (data.interestDate) setInterestDate(data.interestDate);
+    } catch {}
+  }, []);
 
   // Fetch schedule settings on mount
   useEffect(() => {
