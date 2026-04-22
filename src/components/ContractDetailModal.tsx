@@ -434,7 +434,9 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
                 <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 mt-3 space-y-2">
                   <div className="flex items-center gap-2">
                     <Link size={14} className="text-primary shrink-0" />
-                    <p className="text-xs font-semibold text-foreground">Link de assinatura do contrato</p>
+                    <p className="text-xs font-semibold text-foreground">
+                      {isContractSigned ? "Link de visualização do contrato" : "Link de assinatura do contrato"}
+                    </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <code className="text-[11px] font-mono text-muted-foreground bg-secondary rounded-lg px-3 py-2 flex-1 break-all select-all border">
