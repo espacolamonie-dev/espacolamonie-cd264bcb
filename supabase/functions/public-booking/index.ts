@@ -270,6 +270,16 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'book-visit') {
+      // Slug helper (no accents, lowercase, hyphenated)
+      const makeSlug = (name: string) => name
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+
       const { clientName, clientPhone, interestEventDate, guestCount, visitDate, visitTime, notes, eventTypeDesired,
         utm_source, utm_medium, utm_campaign, utm_content, utm_term, fbclid, meta_campaign_id, meta_adset_id, meta_ad_id } = body;
 
