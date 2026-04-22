@@ -518,6 +518,7 @@ Deno.serve(async (req) => {
           clientName: visit.client_name,
           visitDate: visit.visit_date,
           visitTime: visitTime,
+          confirmationSlug,
         },
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
