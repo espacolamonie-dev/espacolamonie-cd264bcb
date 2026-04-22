@@ -242,7 +242,7 @@ export default function EventDates() {
                 Eventos às sextas, sábados e domingos.
               </p>
               <p className="text-white text-sm font-semibold mt-2">
-                A partir de <span className="text-emerald-300">R$650</span> para até <span className="text-emerald-300">150 pessoas</span>
+                A partir de <span className="text-emerald-300">R$750</span> para até <span className="text-emerald-300">150 pessoas</span>
               </p>
             </div>
           </div>
