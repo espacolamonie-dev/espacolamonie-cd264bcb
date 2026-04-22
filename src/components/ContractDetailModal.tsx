@@ -68,6 +68,7 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
   const [signingLink, setSigningLink] = useState<string | null>(null);
+  const [isContractSigned, setIsContractSigned] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const isMobile = useIsMobile();
 
@@ -97,18 +98,22 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
         .order("created_at", { ascending: false });
       setAuditLogs((logs as AuditLog[]) || []);
 
-      // Load signing link
+      // Load signing link (or contract view link if already signed)
       const { data: sigData } = await (supabase
         .from("contract_signatures")
-        .select("slug, token") as any)
+        .select("slug, token, status, signed_at") as any)
         .eq("contract_id", contractId)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
       if (sigData?.slug) {
-        setSigningLink(`${window.location.origin}/assinar/${sigData.slug}`);
+        const isSigned = sigData.status === "signed" || !!sigData.signed_at;
+        const path = isSigned ? "contrato" : "assinar";
+        setSigningLink(`${window.location.origin}/${path}/${sigData.slug}`);
+        setIsContractSigned(isSigned);
       } else {
         setSigningLink(null);
+        setIsContractSigned(false);
       }
 
       // Load existing checkout
@@ -429,7 +434,9 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
                 <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 mt-3 space-y-2">
                   <div className="flex items-center gap-2">
                     <Link size={14} className="text-primary shrink-0" />
-                    <p className="text-xs font-semibold text-foreground">Link de assinatura do contrato</p>
+                    <p className="text-xs font-semibold text-foreground">
+                      {isContractSigned ? "Link de visualização do contrato" : "Link de assinatura do contrato"}
+                    </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <code className="text-[11px] font-mono text-muted-foreground bg-secondary rounded-lg px-3 py-2 flex-1 break-all select-all border">
