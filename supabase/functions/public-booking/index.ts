@@ -270,6 +270,16 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'book-visit') {
+      // Slug helper (no accents, lowercase, hyphenated)
+      const makeSlug = (name: string) => name
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+
       const { clientName, clientPhone, interestEventDate, guestCount, visitDate, visitTime, notes, eventTypeDesired,
         utm_source, utm_medium, utm_campaign, utm_content, utm_term, fbclid, meta_campaign_id, meta_adset_id, meta_ad_id } = body;
 
@@ -401,6 +411,23 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ error: 'Erro ao agendar visita' }), { status: 500, headers: corsHeaders });
       }
 
+      // Generate unique confirmation slug from client name
+      let confirmationSlug = makeSlug(clientName) || `visita-${visit.id.slice(0, 6)}`;
+      try {
+        const { data: collide } = await supabase
+          .from('visits')
+          .select('id')
+          .eq('confirmation_slug', confirmationSlug)
+          .neq('id', visit.id)
+          .limit(1);
+        if (collide && collide.length > 0) {
+          confirmationSlug = `${confirmationSlug}-${visit.id.slice(0, 6)}`;
+        }
+        await supabase.from('visits').update({ confirmation_slug: confirmationSlug }).eq('id', visit.id);
+      } catch (e) {
+        console.error('slug generation error:', e);
+      }
+
       // Create Google Calendar event
       let googleEventId: string | null = null;
       if (settings?.is_connected) {
@@ -491,6 +518,7 @@ Deno.serve(async (req) => {
           clientName: visit.client_name,
           visitDate: visit.visit_date,
           visitTime: visitTime,
+          confirmationSlug,
         },
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

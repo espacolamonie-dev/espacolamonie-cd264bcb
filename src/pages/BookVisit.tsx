@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { captureUtmParams, getUtmForDb } from "@/lib/utmTracker";
 import { format, startOfDay, isBefore } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -13,11 +14,13 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 
-const EVENT_TYPES_OPTIONS = [
+export const EVENT_TYPES_OPTIONS = [
   "Aniversário 15 anos", "Aniversário Adulto", "Aniversário Infantil", "Casamento",
   "Chá de bebê", "Chá de fraldas", "Chá de panela", "Chá de revelação",
   "Confraternização", "Recepção de casamento",
 ];
+
+const EVENT_PREFILL_KEY = "lamonie:event-prefill";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -49,6 +52,7 @@ const STEPS = ["date", "time", "form"] as const;
 const STEP_LABELS = ["Data", "Horário", "Dados"];
 
 export default function BookVisit() {
+  const navigate = useNavigate();
   const [step, setStep] = useState<"date" | "time" | "form" | "success">("date");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [slots, setSlots] = useState<Slot[]>([]);
@@ -65,10 +69,22 @@ export default function BookVisit() {
   const [error, setError] = useState<string | null>(null);
   const [allowedDays, setAllowedDays] = useState<number[]>([2, 4]);
 
-  const [confirmData, setConfirmData] = useState<{ clientName: string; visitDate: string; visitTime: string } | null>(null);
+  const [confirmData, setConfirmData] = useState<{ clientName: string; visitDate: string; visitTime: string; confirmationSlug?: string } | null>(null);
 
   // Capture UTM params on mount
   useEffect(() => { captureUtmParams(); }, []);
+
+  // Pre-fill from sessionStorage (when arriving from /datas-eventos)
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(EVENT_PREFILL_KEY);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (data.eventType) setEventType(data.eventType);
+      if (data.guestCount) setGuestCount(String(data.guestCount));
+      if (data.interestDate) setInterestDate(data.interestDate);
+    } catch {}
+  }, []);
 
   // Fetch schedule settings on mount
   useEffect(() => {
@@ -142,6 +158,16 @@ export default function BookVisit() {
       });
       setConfirmData(data.visit);
       setStep("success");
+
+      // Clear pre-fill data
+      try { sessionStorage.removeItem(EVENT_PREFILL_KEY); } catch {}
+
+      // Auto-redirect to confirmation page if slug available
+      if (data?.visit?.confirmationSlug) {
+        setTimeout(() => {
+          navigate(`/visita/${data.visit.confirmationSlug}`);
+        }, 1500);
+      }
     } catch (e: any) {
       setError(e.message);
       if (e.message?.includes("indisponível")) {
