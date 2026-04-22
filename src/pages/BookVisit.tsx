@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { captureUtmParams, getUtmForDb } from "@/lib/utmTracker";
 import { format, startOfDay, isBefore } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -13,11 +14,13 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 
-const EVENT_TYPES_OPTIONS = [
+export const EVENT_TYPES_OPTIONS = [
   "Aniversário 15 anos", "Aniversário Adulto", "Aniversário Infantil", "Casamento",
   "Chá de bebê", "Chá de fraldas", "Chá de panela", "Chá de revelação",
   "Confraternização", "Recepção de casamento",
 ];
+
+const EVENT_PREFILL_KEY = "lamonie:event-prefill";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
