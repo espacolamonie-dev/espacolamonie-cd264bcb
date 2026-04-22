@@ -97,18 +97,22 @@ export default function ContractDetailModal({ contractId, onClose, onEdit }: Pro
         .order("created_at", { ascending: false });
       setAuditLogs((logs as AuditLog[]) || []);
 
-      // Load signing link
+      // Load signing link (or contract view link if already signed)
       const { data: sigData } = await (supabase
         .from("contract_signatures")
-        .select("slug, token") as any)
+        .select("slug, token, status, signed_at") as any)
         .eq("contract_id", contractId)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
       if (sigData?.slug) {
-        setSigningLink(`${window.location.origin}/assinar/${sigData.slug}`);
+        const isSigned = sigData.status === "signed" || !!sigData.signed_at;
+        const path = isSigned ? "contrato" : "assinar";
+        setSigningLink(`${window.location.origin}/${path}/${sigData.slug}`);
+        setIsContractSigned(isSigned);
       } else {
         setSigningLink(null);
+        setIsContractSigned(false);
       }
 
       // Load existing checkout
