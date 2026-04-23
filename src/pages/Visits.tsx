@@ -390,6 +390,34 @@ export default function Visits() {
     return msg;
   };
 
+  // Mensagem em texto puro (sem emojis e sem markdown) para colar no grupo do WhatsApp
+  const buildGroupMessage = (v: Visit) => {
+    const visitDateFmt = format(new Date(v.visitDate + "T12:00:00"), "dd/MM/yyyy");
+    const timeFmt = v.visitTime.slice(0, 5);
+    const lines: string[] = [];
+    lines.push("Nova visita agendada");
+    lines.push("");
+    lines.push(`Cliente: ${v.clientName}`);
+    if (v.clientPhone) lines.push(`Telefone: ${v.clientPhone}`);
+    lines.push(`Data da visita: ${visitDateFmt}`);
+    lines.push(`Horario: ${timeFmt}`);
+    if (v.eventTypeDesired) lines.push(`Evento de interesse: ${v.eventTypeDesired}`);
+    if (v.interestEventDate) lines.push(`Data de interesse: ${format(new Date(v.interestEventDate + "T12:00:00"), "dd/MM/yyyy")}`);
+    if (v.guestCount > 0) lines.push(`Quantidade de pessoas: ${v.guestCount}`);
+    if (v.eventValue > 0) lines.push(`Valor informado: ${formatCurrency(v.eventValue)}`);
+    if (v.depositPercent > 0) {
+      const depositInfo = v.eventValue > 0
+        ? `${v.depositPercent}% (${formatCurrency(v.eventValue * v.depositPercent / 100)})`
+        : `${v.depositPercent}%`;
+      lines.push(`Sinal para reserva: ${depositInfo}`);
+    }
+    if (v.notes) {
+      lines.push("");
+      lines.push(`Observacoes: ${v.notes}`);
+    }
+    return lines.join("\n");
+  };
+
   const handleStatusChange = async (visit: Visit, newStatus: VisitStatus) => {
     try {
       if (newStatus === "Cancelada") {
@@ -784,6 +812,34 @@ export default function Visits() {
                 onClick={() => window.open(`/visita/${visit.confirmationSlug}`, "_blank")}
               >
                 <ExternalLink size={14} /> Abrir
+              </Button>
+            </div>
+
+            {/* Mensagem pronta para o grupo do WhatsApp */}
+            <div className="pt-3 border-t border-border space-y-2">
+              <div>
+                <p className="text-sm font-semibold">Mensagem para o grupo</p>
+                <p className="text-[11px] text-muted-foreground">Cole no grupo do WhatsApp da sua escolha</p>
+              </div>
+              <div
+                className="bg-background rounded-xl p-3 border border-border cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => {
+                  navigator.clipboard.writeText(buildGroupMessage(visit));
+                  toast.success("Mensagem copiada!");
+                }}
+              >
+                <pre className="text-xs text-foreground whitespace-pre-wrap break-words font-sans leading-relaxed select-all">{buildGroupMessage(visit)}</pre>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full gap-1.5 h-11 rounded-xl"
+                onClick={() => {
+                  navigator.clipboard.writeText(buildGroupMessage(visit));
+                  toast.success("Mensagem copiada!");
+                }}
+              >
+                <Copy size={14} /> Copiar mensagem
               </Button>
             </div>
           </div>
@@ -1394,6 +1450,33 @@ export default function Visits() {
                   onClick={() => window.open(createdVisitLink.url, "_blank")}
                 >
                   <ExternalLink size={14} /> Abrir
+                </Button>
+              </div>
+
+              {/* Mensagem pronta para colar no grupo do WhatsApp */}
+              <div className="pt-3 border-t border-border space-y-2">
+                <div>
+                  <p className="text-sm font-semibold">Mensagem para o grupo</p>
+                  <p className="text-[11px] text-muted-foreground">Cole no grupo do WhatsApp da sua escolha</p>
+                </div>
+                <div
+                  className="bg-muted/50 rounded-xl p-3 border border-border cursor-pointer hover:bg-muted transition-colors max-h-56 overflow-y-auto"
+                  onClick={() => {
+                    navigator.clipboard.writeText(buildGroupMessage(createdVisitLink.visit));
+                    toast.success("Mensagem copiada!");
+                  }}
+                >
+                  <pre className="text-xs text-foreground whitespace-pre-wrap break-words font-sans leading-relaxed select-all">{buildGroupMessage(createdVisitLink.visit)}</pre>
+                </div>
+                <Button
+                  variant="outline"
+                  className="w-full gap-1.5 h-11 rounded-xl"
+                  onClick={() => {
+                    navigator.clipboard.writeText(buildGroupMessage(createdVisitLink.visit));
+                    toast.success("Mensagem copiada!");
+                  }}
+                >
+                  <Copy size={14} /> Copiar mensagem
                 </Button>
               </div>
               <Button variant="ghost" className="w-full text-xs" onClick={() => setCreatedVisitLink(null)}>
