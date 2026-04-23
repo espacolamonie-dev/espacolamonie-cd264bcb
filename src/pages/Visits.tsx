@@ -390,6 +390,34 @@ export default function Visits() {
     return msg;
   };
 
+  // Mensagem em texto puro (sem emojis e sem markdown) para colar no grupo do WhatsApp
+  const buildGroupMessage = (v: Visit) => {
+    const visitDateFmt = format(new Date(v.visitDate + "T12:00:00"), "dd/MM/yyyy");
+    const timeFmt = v.visitTime.slice(0, 5);
+    const lines: string[] = [];
+    lines.push("Nova visita agendada");
+    lines.push("");
+    lines.push(`Cliente: ${v.clientName}`);
+    if (v.clientPhone) lines.push(`Telefone: ${v.clientPhone}`);
+    lines.push(`Data da visita: ${visitDateFmt}`);
+    lines.push(`Horario: ${timeFmt}`);
+    if (v.eventTypeDesired) lines.push(`Evento de interesse: ${v.eventTypeDesired}`);
+    if (v.interestEventDate) lines.push(`Data de interesse: ${format(new Date(v.interestEventDate + "T12:00:00"), "dd/MM/yyyy")}`);
+    if (v.guestCount > 0) lines.push(`Quantidade de pessoas: ${v.guestCount}`);
+    if (v.eventValue > 0) lines.push(`Valor informado: ${formatCurrency(v.eventValue)}`);
+    if (v.depositPercent > 0) {
+      const depositInfo = v.eventValue > 0
+        ? `${v.depositPercent}% (${formatCurrency(v.eventValue * v.depositPercent / 100)})`
+        : `${v.depositPercent}%`;
+      lines.push(`Sinal para reserva: ${depositInfo}`);
+    }
+    if (v.notes) {
+      lines.push("");
+      lines.push(`Observacoes: ${v.notes}`);
+    }
+    return lines.join("\n");
+  };
+
   const handleStatusChange = async (visit: Visit, newStatus: VisitStatus) => {
     try {
       if (newStatus === "Cancelada") {
