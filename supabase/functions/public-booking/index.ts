@@ -428,87 +428,92 @@ Deno.serve(async (req) => {
         console.error('slug generation error:', e);
       }
 
-      // Create Google Calendar event
-      let googleEventId: string | null = null;
-      if (settings?.is_connected) {
-        try {
-          const token = await getValidToken(supabase, settings.user_id, settings);
-          const calendarId = settings.calendar_id || 'primary';
+      // Run Google Calendar sync + push notification in background (non-blocking)
+      const backgroundTasks = async () => {
+        // Google Calendar
+        if (settings?.is_connected) {
+          try {
+            const token = await getValidToken(supabase, settings.user_id, settings);
+            const calendarId = settings.calendar_id || 'primary';
 
-          const startDateTime = `${visitDate}T${visitTime}:00`;
-          const endDate = new Date(`${visitDate}T${visitTime}:00`);
-          endDate.setHours(endDate.getHours() + 1);
-          const endTime = `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}:00`;
-          const endDateTime = `${visitDate}T${endTime}`;
+            const startDateTime = `${visitDate}T${visitTime}:00`;
+            const endDate = new Date(`${visitDate}T${visitTime}:00`);
+            endDate.setHours(endDate.getHours() + 1);
+            const endTime = `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}:00`;
+            const endDateTime = `${visitDate}T${endTime}`;
 
-          const visitDesc = [
-            `👤 Cliente: ${clientName}`,
-            `📞 Telefone: ${clientPhone}`,
-            eventTypeDesired ? `🎉 Tipo de evento: ${eventTypeDesired}` : '',
-            `📅 Data de interesse: ${interestEventDate ? interestEventDate.split('-').reverse().join('/') : '—'}`,
-            `👥 Quantidade de pessoas: ${guestCount || '—'}`,
-            notes ? `📝 Observações: ${notes}` : '',
-            `🌐 Origem: Orgânico (agendamento online)`,
-            '',
-            '— Criado automaticamente pelo CRM Lamoniê',
-          ].filter(Boolean).join('\n');
+            const visitDesc = [
+              `👤 Cliente: ${clientName}`,
+              `📞 Telefone: ${clientPhone}`,
+              eventTypeDesired ? `🎉 Tipo de evento: ${eventTypeDesired}` : '',
+              `📅 Data de interesse: ${interestEventDate ? interestEventDate.split('-').reverse().join('/') : '—'}`,
+              `👥 Quantidade de pessoas: ${guestCount || '—'}`,
+              notes ? `📝 Observações: ${notes}` : '',
+              `🌐 Origem: Orgânico (agendamento online)`,
+              '',
+              '— Criado automaticamente pelo CRM Lamoniê',
+            ].filter(Boolean).join('\n');
 
-          const eventBody = {
-            summary: `Visita - ${clientName}`,
-            description: visitDesc,
-            location: 'Espaço Lamoniê',
-            start: { dateTime: startDateTime, timeZone: 'America/Sao_Paulo' },
-            end: { dateTime: endDateTime, timeZone: 'America/Sao_Paulo' },
-            colorId: '7', // peacock/teal for visits
-            extendedProperties: { private: { visit_id: visit.id, crm: 'lamonie' } },
-          };
+            const eventBody = {
+              summary: `Visita - ${clientName}`,
+              description: visitDesc,
+              location: 'Espaço Lamoniê',
+              start: { dateTime: startDateTime, timeZone: 'America/Sao_Paulo' },
+              end: { dateTime: endDateTime, timeZone: 'America/Sao_Paulo' },
+              colorId: '7',
+              extendedProperties: { private: { visit_id: visit.id, crm: 'lamonie' } },
+            };
 
-          const googleRes = await fetch(
-            `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`,
-            { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(eventBody) }
-          );
-          const resBody = await googleRes.json();
-          if (googleRes.ok && resBody.id) {
-            googleEventId = resBody.id;
-            await supabase.from('visits').update({ google_event_id: googleEventId }).eq('id', visit.id);
+            const googleRes = await fetch(
+              `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`,
+              { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(eventBody) }
+            );
+            const resBody = await googleRes.json();
+            let googleEventId: string | null = null;
+            if (googleRes.ok && resBody.id) {
+              googleEventId = resBody.id;
+              await supabase.from('visits').update({ google_event_id: googleEventId }).eq('id', visit.id);
+            }
+
+            await supabase.from('google_sync_logs').insert({
+              user_id: userId,
+              action: 'public-booking-sync',
+              status: googleRes.ok ? 'success' : 'error',
+              message: googleRes.ok ? `Public booking event: ${googleEventId}` : JSON.stringify(resBody),
+              google_event_id: googleEventId,
+            });
+          } catch (e) {
+            console.error('Google Calendar sync error:', e);
           }
+        }
 
-          await supabase.from('google_sync_logs').insert({
-            user_id: userId,
-            action: 'public-booking-sync',
-            status: googleRes.ok ? 'success' : 'error',
-            message: googleRes.ok ? `Public booking event: ${googleEventId}` : JSON.stringify(resBody),
-            google_event_id: googleEventId,
+        // Push notification
+        try {
+          await fetch(`${SUPABASE_URL}/functions/v1/manage-push`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
+            },
+            body: JSON.stringify({
+              action: 'send-notification',
+              title: '📅 Nova Visita Agendada!',
+              body: `${clientName} agendou visita para ${visitDate.split('-').reverse().join('/')} às ${visitTime}h.`,
+              url: '/visits',
+              tag: `visit-booked-${visit.id}`
+            })
           });
-        } catch (e) {
-          console.error('Google Calendar sync error:', e);
+        } catch (pushErr) {
+          console.error("Error sending push notification:", pushErr);
         }
-      }
+      };
 
-      // 🔔 Send push notification for new visit
-      try {
-        const notificationPayload = {
-          action: 'send-notification',
-          title: '📅 Nova Visita Agendada!',
-          body: `${clientName} agendou visita para ${visitDate.split('-').reverse().join('/')} às ${visitTime}h.`,
-          url: '/visits',
-          tag: `visit-booked-${visit.id}`
-        };
-
-        const pushResponse = await fetch(`${SUPABASE_URL}/functions/v1/manage-push`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
-          },
-          body: JSON.stringify(notificationPayload)
-        });
-
-        if (!pushResponse.ok) {
-          console.error("Failed to send push notification:", await pushResponse.text());
-        }
-      } catch (pushErr) {
-        console.error("Error sending push notification:", pushErr);
+      // @ts-ignore - EdgeRuntime is available in Supabase Edge Functions
+      if (typeof EdgeRuntime !== 'undefined' && EdgeRuntime.waitUntil) {
+        // @ts-ignore
+        EdgeRuntime.waitUntil(backgroundTasks());
+      } else {
+        backgroundTasks().catch((e) => console.error('background error:', e));
       }
 
       return new Response(JSON.stringify({
