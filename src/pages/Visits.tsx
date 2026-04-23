@@ -814,6 +814,34 @@ export default function Visits() {
                 <ExternalLink size={14} /> Abrir
               </Button>
             </div>
+
+            {/* Mensagem pronta para o grupo do WhatsApp */}
+            <div className="pt-3 border-t border-border space-y-2">
+              <div>
+                <p className="text-sm font-semibold">Mensagem para o grupo</p>
+                <p className="text-[11px] text-muted-foreground">Cole no grupo do WhatsApp da sua escolha</p>
+              </div>
+              <div
+                className="bg-background rounded-xl p-3 border border-border cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => {
+                  navigator.clipboard.writeText(buildGroupMessage(visit));
+                  toast.success("Mensagem copiada!");
+                }}
+              >
+                <pre className="text-xs text-foreground whitespace-pre-wrap break-words font-sans leading-relaxed select-all">{buildGroupMessage(visit)}</pre>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full gap-1.5 h-11 rounded-xl"
+                onClick={() => {
+                  navigator.clipboard.writeText(buildGroupMessage(visit));
+                  toast.success("Mensagem copiada!");
+                }}
+              >
+                <Copy size={14} /> Copiar mensagem
+              </Button>
+            </div>
           </div>
         ) : (
           <Button
