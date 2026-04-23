@@ -591,48 +591,57 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ error: 'Erro ao reagendar' }), { status: 500, headers: corsHeaders });
       }
 
-      // Update Google Calendar event if exists
-      if (visit.google_event_id) {
-        const settings = await getOwnerSettings(supabase);
-        if (settings?.is_connected) {
-          try {
-            const token = await getValidToken(supabase, settings.user_id, settings);
-            const calendarId = settings.calendar_id || 'primary';
-            const startDateTime = `${newDate}T${newTime}:00`;
-            const endH = hour + 1;
-            const endDateTime = `${newDate}T${endH.toString().padStart(2, '0')}:${newTime.slice(3, 5)}:00`;
+      // Background: Google Calendar update + push (non-blocking)
+      const rescheduleBackground = async () => {
+        if (visit.google_event_id) {
+          const settings = await getOwnerSettings(supabase);
+          if (settings?.is_connected) {
+            try {
+              const token = await getValidToken(supabase, settings.user_id, settings);
+              const calendarId = settings.calendar_id || 'primary';
+              const startDateTime = `${newDate}T${newTime}:00`;
+              const endH = hour + 1;
+              const endDateTime = `${newDate}T${endH.toString().padStart(2, '0')}:${newTime.slice(3, 5)}:00`;
 
-            await fetch(
-              `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${visit.google_event_id}`,
-              {
-                method: 'PATCH',
-                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  start: { dateTime: startDateTime, timeZone: 'America/Sao_Paulo' },
-                  end: { dateTime: endDateTime, timeZone: 'America/Sao_Paulo' },
-                }),
-              }
-            );
-          } catch (e) {
-            console.error('Google Calendar reschedule error:', e);
+              await fetch(
+                `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${visit.google_event_id}`,
+                {
+                  method: 'PATCH',
+                  headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    start: { dateTime: startDateTime, timeZone: 'America/Sao_Paulo' },
+                    end: { dateTime: endDateTime, timeZone: 'America/Sao_Paulo' },
+                  }),
+                }
+              );
+            } catch (e) {
+              console.error('Google Calendar reschedule error:', e);
+            }
           }
         }
-      }
 
-      // Push notification
-      try {
-        await fetch(`${SUPABASE_URL}/functions/v1/manage-push`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` },
-          body: JSON.stringify({
-            action: 'send-notification',
-            title: '🔄 Visita Reagendada!',
-            body: `${visit.client_name} reagendou para ${newDate.split('-').reverse().join('/')} às ${newTime}h.`,
-            url: '/visits',
-            tag: `visit-rescheduled-${visitId}`
-          })
-        });
-      } catch {}
+        try {
+          await fetch(`${SUPABASE_URL}/functions/v1/manage-push`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` },
+            body: JSON.stringify({
+              action: 'send-notification',
+              title: '🔄 Visita Reagendada!',
+              body: `${visit.client_name} reagendou para ${newDate.split('-').reverse().join('/')} às ${newTime}h.`,
+              url: '/visits',
+              tag: `visit-rescheduled-${visitId}`
+            })
+          });
+        } catch {}
+      };
+
+      // @ts-ignore - EdgeRuntime is available in Supabase Edge Functions
+      if (typeof EdgeRuntime !== 'undefined' && (EdgeRuntime as any).waitUntil) {
+        // @ts-ignore
+        (EdgeRuntime as any).waitUntil(rescheduleBackground());
+      } else {
+        rescheduleBackground().catch((e) => console.error('reschedule bg error:', e));
+      }
 
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
