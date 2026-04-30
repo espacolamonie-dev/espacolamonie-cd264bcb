@@ -117,6 +117,10 @@ input[type="datetime-local"] {
     box-sizing: border-box;
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-body);
@@ -137,6 +141,23 @@ input[type="datetime-local"] {
   .font-display-tight {
     font-family: var(--font-display);
     letter-spacing: -0.03em;
+  }
+
+  /* Smooth micro-transitions on common interactive elements */
+  a, button, [role="button"], summary {
+    transition-property: color, background-color, border-color, box-shadow, transform, opacity;
+    transition-duration: 200ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Respect users who prefer reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
