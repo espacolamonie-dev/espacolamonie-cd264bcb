@@ -23,6 +23,7 @@ import MobileBottomNav from "@/components/MobileBottomNav";
 import MobileTopBar from "@/components/MobileTopBar";
 import IOSInstallBanner from "@/components/IOSInstallBanner";
 import { supabase } from "@/integrations/supabase/client";
+import GlobalSearch from "@/components/GlobalSearch";
 
 const navGroups = [
   {
