@@ -489,15 +489,15 @@ export default function Dashboard() {
           </div>
         ))}
         {/* Employee card with date range selector */}
-        <div className="rounded-2xl border border-border bg-card p-5 transition-all duration-200 hover:shadow-md col-span-2 lg:col-span-1">
-          <div className="flex items-center justify-between mb-3">
-            <div className="rounded-xl bg-violet-500/10 p-2">
-              <UserRound size={16} className="text-violet-500" />
+        <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-card hover:shadow-elevated transition-all duration-300 col-span-2 lg:col-span-1">
+          <div className="flex items-center justify-between mb-4">
+            <div className="rounded-full bg-violet-500/10 p-2.5 ring-1 ring-inset ring-violet-500/10">
+              <UserRound size={18} className="text-violet-500" strokeWidth={2} />
             </div>
           </div>
-          <p className="text-lg md:text-xl font-display font-bold tracking-tight text-violet-600 dark:text-violet-400">{fmt(empTotalDue)}</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5" style={{ fontFamily: "var(--font-body)" }}>Funcionários ({contratosFechadosDash.length} contratos)</p>
-          <p className="text-[10px] text-muted-foreground/70 mt-0.5">Pago: {fmt(empTotalPaid)} · Falta: {fmt(funcFaltaDash)}</p>
+          <p className="text-lg md:text-[22px] font-display font-semibold tracking-tight text-violet-600 dark:text-violet-400 leading-none">{fmt(empTotalDue)}</p>
+          <p className="text-[11px] font-medium text-slate-500 mt-2 tracking-wide" style={{ fontFamily: "var(--font-body)" }}>Funcionários ({contratosFechadosDash.length} contratos)</p>
+          <p className="text-[10px] text-muted-foreground/70 mt-1">Pago: {fmt(empTotalPaid)} · Falta: {fmt(funcFaltaDash)}</p>
           <div className="flex items-center gap-1.5 mt-3">
             <input
               type="date"
