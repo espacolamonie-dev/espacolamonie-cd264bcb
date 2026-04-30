@@ -159,29 +159,29 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
         {/* Footer */}
         <div className="shrink-0 px-4 pb-6 pt-4 mt-auto">
-          <div className="border-t border-white/8 mb-3" />
+          <div className="h-px mb-3 bg-gradient-to-r from-transparent via-white/15 to-transparent" />
           <Link
             to="/settings"
             onClick={() => setMobileOpen(false)}
             className={`flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-[13px] font-medium tracking-wide transition-all duration-200 ${
               location.pathname === "/settings"
-                ? "bg-white/15 text-white"
-                : "text-white/30 hover:text-white/60 hover:bg-white/5"
+                ? "bg-white/[0.08] text-white"
+                : "text-white/40 hover:text-white hover:bg-white/[0.04]"
             }`}
             style={{ fontFamily: "var(--font-body)" }}
           >
-            <Settings size={18} strokeWidth={1.5} />
+            <Settings size={18} strokeWidth={1.6} />
             Configurações
           </Link>
           <button
             onClick={signOut}
-            className="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-[13px] font-medium tracking-wide text-white/30 hover:text-white/60 hover:bg-white/5 transition-all duration-200 mt-0.5"
+            className="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-[13px] font-medium tracking-wide text-white/40 hover:text-white hover:bg-white/[0.04] transition-all duration-200 mt-0.5"
             style={{ fontFamily: "var(--font-body)" }}
           >
-            <LogOut size={18} strokeWidth={1.5} />
+            <LogOut size={18} strokeWidth={1.6} />
             Sair
           </button>
-          <p className="text-[9px] text-white/12 tracking-[0.15em] uppercase mt-4 px-4" style={{ fontFamily: "var(--font-body)" }}>
+          <p className="text-[9px] text-white/20 tracking-[0.18em] uppercase mt-5 px-4" style={{ fontFamily: "var(--font-body)" }}>
             {companyName} © {new Date().getFullYear()}
           </p>
         </div>
@@ -189,11 +189,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Main */}
       <main className="flex-1 min-w-0">
-        {/* Desktop top bar */}
-        <header className="hidden md:flex items-center gap-4 border-b border-border bg-card/60 backdrop-blur-md px-8 py-3 sticky top-0 z-30">
-          <h2 className="text-sm font-medium text-muted-foreground shrink-0" style={{ fontFamily: "var(--font-body)" }}>
+        {/* Desktop top bar — glassmorphism */}
+        <header className="hidden md:flex items-center gap-4 border-b border-border/60 bg-white/75 backdrop-blur-xl px-8 py-3.5 sticky top-0 z-30 shadow-soft">
+          <h2 className="text-[13px] font-semibold text-slate-700 shrink-0 tracking-tight" style={{ fontFamily: "var(--font-body)" }}>
             {navGroups.flatMap(g => g.items).find(i => i.to === location.pathname)?.label || ""}
           </h2>
+          <div className="h-5 w-px bg-border shrink-0" />
           <div className="flex-1 flex justify-center px-4">
             <GlobalSearch />
           </div>
