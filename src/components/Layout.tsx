@@ -98,29 +98,31 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       >
         {/* Logo + Company Name */}
         <div className="flex items-center gap-3 px-6 pt-7 pb-6 shrink-0">
-          <img
-            src={logo}
-            alt={companyName}
-            className="h-10 w-10 rounded-full object-cover ring-2 ring-white/10 shrink-0"
-          />
+          <div className="relative shrink-0">
+            <img
+              src={logo}
+              alt={companyName}
+              className="h-11 w-11 rounded-full object-cover ring-2 ring-gold/40 shadow-lg shadow-black/20"
+            />
+          </div>
           <div className="min-w-0">
-            <p className="text-white text-sm font-semibold truncate" style={{ fontFamily: "var(--font-display)" }}>
+            <p className="text-white text-[15px] font-semibold truncate tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
               {companyName}
             </p>
-            <p className="text-white/30 text-[10px] tracking-wide" style={{ fontFamily: "var(--font-body)" }}>
-              CRM
+            <p className="text-gold/80 text-[10px] uppercase tracking-[0.22em] mt-0.5" style={{ fontFamily: "var(--font-body)" }}>
+              Premium CRM
             </p>
           </div>
         </div>
 
         {/* Nav groups */}
-        <nav className="flex-1 min-h-0 px-4 overflow-y-auto space-y-5">
+        <nav className="flex-1 min-h-0 px-4 overflow-y-auto space-y-6">
           {navGroups.map((group) => (
             <div key={group.label}>
-              <p className="px-4 mb-2 text-[9px] font-semibold uppercase tracking-[0.18em] text-white/25" style={{ fontFamily: "var(--font-body)" }}>
+              <p className="px-4 mb-2 text-[9px] font-semibold uppercase tracking-[0.22em] text-white/30" style={{ fontFamily: "var(--font-body)" }}>
                 {group.label}
               </p>
-              <div className="space-y-0.5">
+              <div className="space-y-1">
                 {group.items.map((item) => {
                   const active = location.pathname === item.to;
                   return (
@@ -128,18 +130,25 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       key={item.to}
                       to={item.to}
                       onClick={() => setMobileOpen(false)}
-                      className={`group relative flex items-center gap-3 rounded-xl px-4 py-2.5 text-[13px] font-medium tracking-wide transition-all duration-200 ${
+                      className={`group relative flex items-center gap-3 rounded-xl pl-4 pr-3 py-2.5 text-[13px] font-medium transition-all duration-200 ${
                         active
-                          ? "bg-white/20 text-white shadow-sm backdrop-blur-sm border-l-4 border-emerald-400 pl-3"
-                          : "text-white/45 hover:text-white/80 hover:bg-white/5 border-l-4 border-transparent pl-3"
+                          ? "bg-white/[0.08] text-white shadow-inner"
+                          : "text-white/55 hover:text-white hover:bg-white/[0.04]"
                       }`}
                       style={{ fontFamily: "var(--font-body)" }}
                     >
-                      <item.icon size={18} strokeWidth={active ? 2.2 : 1.5} className="shrink-0" />
-                      <span>{item.label}</span>
-                      {active && (
-                        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                      )}
+                      {/* Gold left indicator (only when active) */}
+                      <span
+                        className={`absolute left-0 top-1/2 -translate-y-1/2 h-6 w-[3px] rounded-r-full transition-all duration-300 ${
+                          active ? "bg-gold opacity-100" : "bg-gold opacity-0 group-hover:opacity-30"
+                        }`}
+                      />
+                      <item.icon
+                        size={18}
+                        strokeWidth={active ? 2.2 : 1.6}
+                        className={`shrink-0 transition-colors ${active ? "text-gold-light" : "text-current"}`}
+                      />
+                      <span className="tracking-wide">{item.label}</span>
                     </Link>
                   );
                 })}
