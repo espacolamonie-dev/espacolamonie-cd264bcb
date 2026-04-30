@@ -450,36 +450,42 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Stat cards */}
+      {/* Stat cards — Premium */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 stagger-fade-in">
         {statCards.map((card) => (
           <button
             key={card.label}
             onClick={card.onClick}
-            className="group rounded-2xl border border-border bg-card p-5 text-left transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
+            className="group relative overflow-hidden rounded-2xl border border-border/70 bg-card p-5 text-left shadow-card hover:shadow-elevated transition-all duration-300 hover:-translate-y-0.5 hover:border-gold/30"
           >
-            <div className="flex items-center justify-between mb-3">
-              <div className={`rounded-xl ${card.iconBg} p-2`}>
-                <card.icon size={16} className={card.iconColor} />
+            {/* Subtle gold accent on hover */}
+            <span className="pointer-events-none absolute -top-12 -right-12 h-24 w-24 rounded-full bg-gold/0 group-hover:bg-gold/10 blur-2xl transition-colors duration-500" />
+            <div className="flex items-center justify-between mb-4">
+              <div className={`rounded-full ${card.iconBg} p-2.5 ring-1 ring-inset ring-current/5`}>
+                <card.icon size={18} className={card.iconColor} strokeWidth={2} />
               </div>
             </div>
-            <p className="text-2xl md:text-3xl font-display font-bold tracking-tight">{card.value}</p>
-            <p className="text-[11px] text-muted-foreground mt-0.5" style={{ fontFamily: "var(--font-body)" }}>{card.sub}</p>
+            <p className="text-2xl md:text-[28px] font-display font-semibold tracking-tight text-slate-900 dark:text-foreground leading-none">
+              {card.value}
+            </p>
+            <p className="text-[11px] font-medium text-slate-500 mt-2 tracking-wide" style={{ fontFamily: "var(--font-body)" }}>
+              {card.sub}
+            </p>
           </button>
         ))}
       </div>
 
-      {/* Financial cards */}
+      {/* Financial cards — Premium */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-5 stagger-fade-in">
         {finCards.map((card) => (
-          <div key={card.label} className="rounded-2xl border border-border bg-card p-5 transition-all duration-200 hover:shadow-md">
-            <div className="flex items-center justify-between mb-3">
-              <div className={`rounded-xl ${card.iconBg} p-2`}>
-                <card.icon size={16} className={card.iconColor} />
+          <div key={card.label} className="group relative overflow-hidden rounded-2xl border border-border/70 bg-card p-5 shadow-card hover:shadow-elevated transition-all duration-300 hover:-translate-y-0.5">
+            <div className="flex items-center justify-between mb-4">
+              <div className={`rounded-full ${card.iconBg} p-2.5 ring-1 ring-inset ring-current/5`}>
+                <card.icon size={18} className={card.iconColor} strokeWidth={2} />
               </div>
             </div>
-            <p className={`text-lg md:text-xl font-display font-bold tracking-tight ${card.valueColor}`}>{card.value}</p>
-            <p className="text-[11px] text-muted-foreground mt-0.5" style={{ fontFamily: "var(--font-body)" }}>{card.label}</p>
+            <p className={`text-lg md:text-[22px] font-display font-semibold tracking-tight ${card.valueColor} leading-none`}>{card.value}</p>
+            <p className="text-[11px] font-medium text-slate-500 mt-2 tracking-wide" style={{ fontFamily: "var(--font-body)" }}>{card.label}</p>
           </div>
         ))}
         {/* Employee card with date range selector */}
