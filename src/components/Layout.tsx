@@ -182,10 +182,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <main className="flex-1 min-w-0">
         {/* Desktop top bar */}
         <header className="hidden md:flex items-center gap-4 border-b border-border bg-card/60 backdrop-blur-md px-8 py-3 sticky top-0 z-30">
-          <h2 className="text-sm font-medium text-muted-foreground" style={{ fontFamily: "var(--font-body)" }}>
+          <h2 className="text-sm font-medium text-muted-foreground shrink-0" style={{ fontFamily: "var(--font-body)" }}>
             {navGroups.flatMap(g => g.items).find(i => i.to === location.pathname)?.label || ""}
           </h2>
-          <div className="flex-1" />
+          <div className="flex-1 flex justify-center px-4">
+            <GlobalSearch />
+          </div>
           <NotificationCenter />
         </header>
 
