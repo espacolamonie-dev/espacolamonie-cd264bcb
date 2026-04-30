@@ -97,7 +97,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         }`}
       >
         {/* Logo + Company Name */}
-        <div className="flex items-center gap-3 px-6 pt-7 pb-6 shrink-0">
+        <div className="flex items-center gap-3.5 px-6 py-8 shrink-0 border-b border-white/10">
           <div className="relative shrink-0">
             <img
               src={logo}
@@ -105,14 +105,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               className="h-11 w-11 rounded-full object-cover ring-2 ring-gold/40 shadow-lg shadow-black/20"
             />
           </div>
-          <div className="min-w-0">
-            <p className="text-white text-[15px] font-semibold truncate tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
-              {companyName}
-            </p>
-            <p className="text-gold/80 text-[10px] uppercase tracking-[0.22em] mt-0.5" style={{ fontFamily: "var(--font-body)" }}>
-              Premium CRM
-            </p>
-          </div>
+          <p
+            className="text-white text-xl font-semibold tracking-tight truncate"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            {companyName}
+          </p>
         </div>
 
         {/* Nav groups */}
