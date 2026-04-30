@@ -16,6 +16,8 @@ import {
 } from "@/data/budgetStore";
 import { CurrencyInput } from "@/components/CurrencyInput";
 import { NumericInput } from "@/components/NumericInput";
+import { DateInput } from "@/components/DateInput";
+import { FieldLabel, FieldError } from "@/components/FieldLabel";
 
 const EVENT_TYPES = [
   "Aniversário 15 anos", "Aniversário Adulto", "Aniversário Infantil", "Casamento",
