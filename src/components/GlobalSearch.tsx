@@ -103,15 +103,15 @@ export default function GlobalSearch() {
 
         (budgets || [])
           .filter((b: any) =>
-            (b.client_name || b.clientName || "").toLowerCase().includes(q) ||
-            (b.event_type || b.eventType || "").toLowerCase().includes(q)
+            (b.clientName || "").toLowerCase().includes(q) ||
+            (b.eventType || "").toLowerCase().includes(q)
           )
           .slice(0, 5)
           .forEach((b: any) => out.push({
             id: b.id,
             type: "budget",
-            title: b.client_name || b.clientName || "Orçamento",
-            subtitle: b.event_type || b.eventType || "",
+            title: b.clientName || "Orçamento",
+            subtitle: b.eventType || "",
             to: `/budgets?highlight=${b.id}`,
           }));
 
