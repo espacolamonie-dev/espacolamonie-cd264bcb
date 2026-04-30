@@ -25,6 +25,8 @@ import { ContractStatusSelect, PaymentStatusSelect } from "@/components/Contract
 import { CurrencyInput, PercentInput } from "@/components/CurrencyInput";
 import { triggerGoogleSync } from "@/lib/googleSync";
 import { NumericInput } from "@/components/NumericInput";
+import { DateInput } from "@/components/DateInput";
+import { FieldLabel, FieldError } from "@/components/FieldLabel";
 import ImportContractModal from "@/components/ImportContractModal";
 import { supabase } from "@/integrations/supabase/client";
 import { AttributionBadge } from "@/components/AttributionBadge";
