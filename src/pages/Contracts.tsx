@@ -179,6 +179,7 @@ export default function Contracts() {
     const mostRecent = clients[0];
     setEditing(null); setForm({ ...emptyForm, clientId: mostRecent.id, rentalType: "Locação (1 dia)", eventDateEnd: "" }); setOpen(true);
     setSelectedClientOrigin(mostRecent.utmSource || "");
+    setErrors({});
     autoFillFromClient(mostRecent.id);
   };
 
