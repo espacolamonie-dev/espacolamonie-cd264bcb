@@ -1,37 +1,51 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
-import { Bell, BellOff } from "lucide-react";
+import { Bell } from "lucide-react";
 import { useNotificationPermission } from "@/hooks/useContractNotifications";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+
+const STORAGE_KEY = "notificationsPromptDismissed";
 
 export function PushNotificationPrompt() {
   const { permission, isSubscribed, subscribeToPush } = useNotificationPermission();
-  const { toast } = useToast();
+  const [dismissed, setDismissed] = useState<boolean>(() => {
+    try { return localStorage.getItem(STORAGE_KEY) === "true"; } catch { return false; }
+  });
+
+  // If user becomes subscribed, persist dismissal so prompt never reappears
+  useEffect(() => {
+    if (isSubscribed) {
+      try { localStorage.setItem(STORAGE_KEY, "true"); } catch {}
+    }
+  }, [isSubscribed]);
 
   const handleSubscribe = async () => {
-    toast({
-      title: "Configurando notificações...",
+    toast("Configurando notificações...", {
       description: "Por favor, permita o acesso quando solicitado.",
     });
 
     const success = await subscribeToPush();
 
     if (success) {
-      toast({
-        title: "Notificações ativadas! 🎉",
+      toast.success("Notificações ativadas!", {
         description: "Você receberá alertas mesmo com o app fechado.",
       });
+      try { localStorage.setItem(STORAGE_KEY, "true"); } catch {}
+      setDismissed(true);
     } else {
-      toast({
-        variant: "destructive",
-        title: "Erro ao ativar notificações",
+      toast.error("Erro ao ativar notificações", {
         description: "Verifique as permissões do seu navegador.",
       });
     }
   };
 
-  // Se já está inscrito ou negou, não mostra
-  if (isSubscribed || permission === "denied") {
+  const handleDismiss = () => {
+    try { localStorage.setItem(STORAGE_KEY, "true"); } catch {}
+    setDismissed(true);
+  };
+
+  // Hide if already subscribed, denied, dismissed by user, or not supported
+  if (isSubscribed || permission === "denied" || dismissed) {
     return null;
   }
 
@@ -49,7 +63,7 @@ export function PushNotificationPrompt() {
         </div>
       </div>
       <div className="flex gap-2 justify-end">
-        <Button variant="outline" size="sm" onClick={() => document.getElementById('push-prompt')?.remove()}>
+        <Button variant="outline" size="sm" onClick={handleDismiss}>
           Agora não
         </Button>
         <Button size="sm" onClick={handleSubscribe}>
