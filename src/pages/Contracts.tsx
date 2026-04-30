@@ -220,9 +220,19 @@ export default function Contracts() {
   };
 
   const handleSave = async () => {
-    if (!form.clientId || !form.eventDate) { toast.error("Cliente e data são obrigatórios"); return; }
-    if (!form.eventTime) { toast.error("Selecione o horário do evento"); return; }
-    if (form.rentalType === "Locação (2 dias)" && !form.eventDateEnd) { toast.error("Informe a data fim para locação de 2 dias"); return; }
+    // Run all required-field validations and aggregate errors
+    const newErrors: Record<string, string> = {};
+    const fieldsToValidate = ["clientId", "eventDate", "eventTime", "eventDateEnd"] as const;
+    fieldsToValidate.forEach(f => {
+      const msg = validateField(f, (form as any)[f]);
+      if (msg) newErrors[f] = msg;
+    });
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      toast.error("Verifique os campos obrigatórios destacados");
+      return;
+    }
+    setErrors({});
     if (!editing || form.eventDate !== editing.eventDate) {
       const conflict = contracts.find(
         (c) => c.eventDate === form.eventDate && c.status !== "cancelled" && c.id !== editing?.id
