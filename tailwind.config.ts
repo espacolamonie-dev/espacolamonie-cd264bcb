@@ -14,8 +14,15 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ['Playfair Display', 'serif'],
-        body: ['Inter', 'sans-serif'],
+        display: ['Playfair Display', 'Georgia', 'serif'],
+        body: ['Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
+        sans: ['Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
+      },
+      boxShadow: {
+        'soft': '0 1px 2px 0 hsl(215 25% 27% / 0.04), 0 1px 3px 0 hsl(215 25% 27% / 0.05)',
+        'card': '0 4px 16px -4px hsl(215 25% 27% / 0.06), 0 2px 6px -2px hsl(215 25% 27% / 0.04)',
+        'elevated': '0 12px 32px -8px hsl(215 25% 27% / 0.10), 0 6px 12px -6px hsl(215 25% 27% / 0.06)',
+        'gold': '0 8px 24px -8px hsl(36 42% 44% / 0.25)',
       },
       colors: {
         border: "hsl(var(--border))",
