@@ -646,10 +646,10 @@ export default function Contracts() {
             <div className="space-y-4">
               <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Cliente e evento</p>
               <div className="grid gap-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">Cliente *</Label>
+                <FieldLabel required>Cliente</FieldLabel>
                 <Popover open={clientSearchOpen} onOpenChange={setClientSearchOpen}>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" role="combobox" aria-expanded={clientSearchOpen} className="w-full justify-between rounded-lg font-normal">
+                    <Button variant="outline" role="combobox" aria-expanded={clientSearchOpen} className={cn("w-full justify-between rounded-lg font-normal", errors.clientId && "border-red-500")}>
                       {form.clientId ? clients.find(c => c.id === form.clientId)?.name || "Selecione" : "Selecione um cliente"}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
@@ -667,6 +667,7 @@ export default function Contracts() {
                             onSelect={() => {
                                 set("clientId", c.id);
                                 setSelectedClientOrigin(c.utmSource || "");
+                                setFieldError("clientId", "");
                                 if (!editing) autoFillFromClient(c.id);
                                 setClientSearchOpen(false);
                               }}
@@ -680,47 +681,62 @@ export default function Contracts() {
                     </Command>
                   </PopoverContent>
                 </Popover>
+                <FieldError message={errors.clientId} />
               </div>
               {/* Read-only origin */}
               <div className="grid gap-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">Origem do Lead</Label>
+                <FieldLabel>Origem do Lead</FieldLabel>
                 <div className="h-10 flex items-center px-3 rounded-lg border border-border bg-muted/50 text-sm">
                   {(editing ? (contracts.find(c => c.id === editing.id)?.source || "") : selectedClientOrigin) || "Não definido"}
                 </div>
               </div>
               <div className="grid gap-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">Tipo de evento</Label>
+                <FieldLabel>Tipo de evento</FieldLabel>
                 <Select value={form.eventType} onValueChange={(v) => set("eventType", v)}>
                   <SelectTrigger className="rounded-lg"><SelectValue /></SelectTrigger>
                   <SelectContent>{EVENT_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="grid gap-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">Tipo de locação</Label>
+                <FieldLabel>Tipo de locação</FieldLabel>
                 <Select value={form.rentalType} onValueChange={(v) => {
                   set("rentalType", v);
-                  if (v === "Locação (1 dia)") set("eventDateEnd", "");
+                  if (v === "Locação (1 dia)") { set("eventDateEnd", ""); setFieldError("eventDateEnd", ""); }
                 }}>
                   <SelectTrigger className="rounded-lg"><SelectValue /></SelectTrigger>
                   <SelectContent>{RENTAL_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="grid gap-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">{form.rentalType === "Locação (2 dias)" ? "Data início *" : "Data do evento *"}</Label>
-                <Input type="date" value={form.eventDate} onChange={(e) => set("eventDate", e.target.value)} className="rounded-lg" />
+                <FieldLabel required>{form.rentalType === "Locação (2 dias)" ? "Data início" : "Data do evento"}</FieldLabel>
+                <DateInput
+                  value={form.eventDate}
+                  onChange={(v) => { set("eventDate", v); setFieldError("eventDate", validateField("eventDate", v)); }}
+                  onBlur={() => setFieldError("eventDate", validateField("eventDate", form.eventDate))}
+                  hasError={!!errors.eventDate}
+                />
+                <FieldError message={errors.eventDate} />
               </div>
               {form.rentalType === "Locação (2 dias)" && (
                 <div className="grid gap-1.5">
-                  <Label className="text-xs font-medium text-muted-foreground">Data fim *</Label>
-                  <Input type="date" value={form.eventDateEnd} onChange={(e) => set("eventDateEnd", e.target.value)} className="rounded-lg" min={form.eventDate || undefined} />
+                  <FieldLabel required>Data fim</FieldLabel>
+                  <DateInput
+                    value={form.eventDateEnd}
+                    onChange={(v) => { set("eventDateEnd", v); setFieldError("eventDateEnd", validateField("eventDateEnd", v)); }}
+                    onBlur={() => setFieldError("eventDateEnd", validateField("eventDateEnd", form.eventDateEnd))}
+                    min={form.eventDate || undefined}
+                    hasError={!!errors.eventDateEnd}
+                  />
+                  <FieldError message={errors.eventDateEnd} />
                 </div>
               )}
               <div className="grid gap-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">Horário do evento *</Label>
-                <Select value={form.eventTime} onValueChange={(v) => set("eventTime", v)}>
-                  <SelectTrigger className="rounded-lg"><SelectValue placeholder="Selecione o horário" /></SelectTrigger>
+                <FieldLabel required>Horário do evento</FieldLabel>
+                <Select value={form.eventTime} onValueChange={(v) => { set("eventTime", v); setFieldError("eventTime", validateField("eventTime", v)); }}>
+                  <SelectTrigger className={cn("rounded-lg", errors.eventTime && "border-red-500")}><SelectValue placeholder="Selecione o horário" /></SelectTrigger>
                   <SelectContent>{EVENT_TIME_SLOTS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                 </Select>
+                <FieldError message={errors.eventTime} />
               </div>
               <div className="grid gap-1.5">
                 <Label className="text-xs font-medium text-muted-foreground">Convidados</Label>
