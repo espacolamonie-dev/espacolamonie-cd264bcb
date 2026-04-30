@@ -70,6 +70,31 @@ export default function Contracts() {
   const [deleteTarget, setDeleteTarget] = useState<Contract | null>(null);
   const [clientSearchOpen, setClientSearchOpen] = useState(false);
   const [selectedClientOrigin, setSelectedClientOrigin] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validateField = (field: string, value: any, currentForm = form): string => {
+    switch (field) {
+      case "clientId":
+        return !value ? "Selecione um cliente" : "";
+      case "eventDate":
+        return !value ? "A data do evento é obrigatória" : "";
+      case "eventDateEnd":
+        return currentForm.rentalType === "Locação (2 dias)" && !value ? "Informe a data fim" : "";
+      case "eventTime":
+        return !value ? "Selecione o horário" : "";
+      default:
+        return "";
+    }
+  };
+
+  const setFieldError = (field: string, message: string) => {
+    setErrors(prev => {
+      const next = { ...prev };
+      if (message) next[field] = message;
+      else delete next[field];
+      return next;
+    });
+  };
 
   const load = async () => {
     try {
