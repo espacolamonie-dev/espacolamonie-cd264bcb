@@ -16,6 +16,8 @@ import {
 } from "@/data/budgetStore";
 import { CurrencyInput } from "@/components/CurrencyInput";
 import { NumericInput } from "@/components/NumericInput";
+import { DateInput } from "@/components/DateInput";
+import { FieldLabel, FieldError } from "@/components/FieldLabel";
 
 const EVENT_TYPES = [
   "Aniversário 15 anos", "Aniversário Adulto", "Aniversário Infantil", "Casamento",
@@ -308,11 +310,12 @@ export default function BudgetFormModal({ budgetId, open, onClose, onSaved }: Pr
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <Label className="text-xs">Nome do cliente *</Label>
-                <Input value={clientName} onChange={e => setClientName(e.target.value)} />
+                <FieldLabel required>Nome do cliente</FieldLabel>
+                <Input value={clientName} onChange={e => setClientName(e.target.value)} className={!clientName.trim() && clientName !== undefined ? "" : ""} />
+                {clientName === "" && <FieldError message={null} />}
               </div>
               <div>
-                <Label className="text-xs">Telefone</Label>
+                <FieldLabel>Telefone</FieldLabel>
                 <Input value={clientPhone} onChange={e => {
                   let v = e.target.value.replace(/\D/g, "").slice(0, 11);
                   if (v.length > 6) v = `(${v.slice(0,2)}) ${v.slice(2,7)}-${v.slice(7)}`;
@@ -322,7 +325,7 @@ export default function BudgetFormModal({ budgetId, open, onClose, onSaved }: Pr
                 }} placeholder="(31) 99999-9999" />
               </div>
               <div>
-                <Label className="text-xs">Tipo do evento</Label>
+                <FieldLabel>Tipo do evento</FieldLabel>
                 <Select value={eventType} onValueChange={setEventType}>
                   <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
                   <SelectContent>
@@ -331,8 +334,8 @@ export default function BudgetFormModal({ budgetId, open, onClose, onSaved }: Pr
                 </Select>
               </div>
               <div>
-                <Label className="text-xs">Data do evento</Label>
-                <Input type="date" value={eventDate} onChange={e => setEventDate(e.target.value)} />
+                <FieldLabel>Data do evento</FieldLabel>
+                <DateInput value={eventDate} onChange={setEventDate} />
               </div>
               <div>
                 <Label className="text-xs">Quantidade de pessoas</Label>

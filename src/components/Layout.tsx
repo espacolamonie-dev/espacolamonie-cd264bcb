@@ -23,6 +23,7 @@ import MobileBottomNav from "@/components/MobileBottomNav";
 import MobileTopBar from "@/components/MobileTopBar";
 import IOSInstallBanner from "@/components/IOSInstallBanner";
 import { supabase } from "@/integrations/supabase/client";
+import GlobalSearch from "@/components/GlobalSearch";
 
 const navGroups = [
   {
@@ -127,17 +128,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       key={item.to}
                       to={item.to}
                       onClick={() => setMobileOpen(false)}
-                      className={`group flex items-center gap-3 rounded-xl px-4 py-2.5 text-[13px] font-medium tracking-wide transition-all duration-200 ${
+                      className={`group relative flex items-center gap-3 rounded-xl px-4 py-2.5 text-[13px] font-medium tracking-wide transition-all duration-200 ${
                         active
-                          ? "bg-white/15 text-white shadow-sm backdrop-blur-sm"
-                          : "text-white/45 hover:text-white/80 hover:bg-white/5"
+                          ? "bg-white/20 text-white shadow-sm backdrop-blur-sm border-l-4 border-emerald-400 pl-3"
+                          : "text-white/45 hover:text-white/80 hover:bg-white/5 border-l-4 border-transparent pl-3"
                       }`}
                       style={{ fontFamily: "var(--font-body)" }}
                     >
-                      <item.icon size={18} strokeWidth={active ? 2 : 1.5} className="shrink-0" />
+                      <item.icon size={18} strokeWidth={active ? 2.2 : 1.5} className="shrink-0" />
                       <span>{item.label}</span>
                       {active && (
-                        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-white/60" />
+                        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-emerald-400" />
                       )}
                     </Link>
                   );
@@ -181,10 +182,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <main className="flex-1 min-w-0">
         {/* Desktop top bar */}
         <header className="hidden md:flex items-center gap-4 border-b border-border bg-card/60 backdrop-blur-md px-8 py-3 sticky top-0 z-30">
-          <h2 className="text-sm font-medium text-muted-foreground" style={{ fontFamily: "var(--font-body)" }}>
+          <h2 className="text-sm font-medium text-muted-foreground shrink-0" style={{ fontFamily: "var(--font-body)" }}>
             {navGroups.flatMap(g => g.items).find(i => i.to === location.pathname)?.label || ""}
           </h2>
-          <div className="flex-1" />
+          <div className="flex-1 flex justify-center px-4">
+            <GlobalSearch />
+          </div>
           <NotificationCenter />
         </header>
 

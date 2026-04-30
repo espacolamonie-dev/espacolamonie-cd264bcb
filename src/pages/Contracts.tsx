@@ -25,6 +25,8 @@ import { ContractStatusSelect, PaymentStatusSelect } from "@/components/Contract
 import { CurrencyInput, PercentInput } from "@/components/CurrencyInput";
 import { triggerGoogleSync } from "@/lib/googleSync";
 import { NumericInput } from "@/components/NumericInput";
+import { DateInput } from "@/components/DateInput";
+import { FieldLabel, FieldError } from "@/components/FieldLabel";
 import ImportContractModal from "@/components/ImportContractModal";
 import { supabase } from "@/integrations/supabase/client";
 import { AttributionBadge } from "@/components/AttributionBadge";
@@ -68,6 +70,31 @@ export default function Contracts() {
   const [deleteTarget, setDeleteTarget] = useState<Contract | null>(null);
   const [clientSearchOpen, setClientSearchOpen] = useState(false);
   const [selectedClientOrigin, setSelectedClientOrigin] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validateField = (field: string, value: any, currentForm = form): string => {
+    switch (field) {
+      case "clientId":
+        return !value ? "Selecione um cliente" : "";
+      case "eventDate":
+        return !value ? "A data do evento é obrigatória" : "";
+      case "eventDateEnd":
+        return currentForm.rentalType === "Locação (2 dias)" && !value ? "Informe a data fim" : "";
+      case "eventTime":
+        return !value ? "Selecione o horário" : "";
+      default:
+        return "";
+    }
+  };
+
+  const setFieldError = (field: string, message: string) => {
+    setErrors(prev => {
+      const next = { ...prev };
+      if (message) next[field] = message;
+      else delete next[field];
+      return next;
+    });
+  };
 
   const load = async () => {
     try {
@@ -152,6 +179,7 @@ export default function Contracts() {
     const mostRecent = clients[0];
     setEditing(null); setForm({ ...emptyForm, clientId: mostRecent.id, rentalType: "Locação (1 dia)", eventDateEnd: "" }); setOpen(true);
     setSelectedClientOrigin(mostRecent.utmSource || "");
+    setErrors({});
     autoFillFromClient(mostRecent.id);
   };
 
@@ -187,13 +215,24 @@ export default function Contracts() {
     setEditing(c);
     setForm({ clientId: c.clientId, eventType: c.eventType, eventDate: c.eventDate, eventDateEnd: c.eventDateEnd || "", rentalType: c.rentalType || "Locação (1 dia)", eventTime: c.eventTime, guestCount: c.guestCount, totalValue: c.totalValue, depositPercent: c.depositPercent, status: c.status, paymentStatus: c.paymentStatus });
     setSelectedClientOrigin(clientMap[c.clientId]?.utmSource || "");
+    setErrors({});
     setOpen(true);
   };
 
   const handleSave = async () => {
-    if (!form.clientId || !form.eventDate) { toast.error("Cliente e data são obrigatórios"); return; }
-    if (!form.eventTime) { toast.error("Selecione o horário do evento"); return; }
-    if (form.rentalType === "Locação (2 dias)" && !form.eventDateEnd) { toast.error("Informe a data fim para locação de 2 dias"); return; }
+    // Run all required-field validations and aggregate errors
+    const newErrors: Record<string, string> = {};
+    const fieldsToValidate = ["clientId", "eventDate", "eventTime", "eventDateEnd"] as const;
+    fieldsToValidate.forEach(f => {
+      const msg = validateField(f, (form as any)[f]);
+      if (msg) newErrors[f] = msg;
+    });
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      toast.error("Verifique os campos obrigatórios destacados");
+      return;
+    }
+    setErrors({});
     if (!editing || form.eventDate !== editing.eventDate) {
       const conflict = contracts.find(
         (c) => c.eventDate === form.eventDate && c.status !== "cancelled" && c.id !== editing?.id
@@ -607,10 +646,10 @@ export default function Contracts() {
             <div className="space-y-4">
               <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Cliente e evento</p>
               <div className="grid gap-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">Cliente *</Label>
+                <FieldLabel required>Cliente</FieldLabel>
                 <Popover open={clientSearchOpen} onOpenChange={setClientSearchOpen}>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" role="combobox" aria-expanded={clientSearchOpen} className="w-full justify-between rounded-lg font-normal">
+                    <Button variant="outline" role="combobox" aria-expanded={clientSearchOpen} className={cn("w-full justify-between rounded-lg font-normal", errors.clientId && "border-red-500")}>
                       {form.clientId ? clients.find(c => c.id === form.clientId)?.name || "Selecione" : "Selecione um cliente"}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
@@ -628,6 +667,7 @@ export default function Contracts() {
                             onSelect={() => {
                                 set("clientId", c.id);
                                 setSelectedClientOrigin(c.utmSource || "");
+                                setFieldError("clientId", "");
                                 if (!editing) autoFillFromClient(c.id);
                                 setClientSearchOpen(false);
                               }}
@@ -641,47 +681,62 @@ export default function Contracts() {
                     </Command>
                   </PopoverContent>
                 </Popover>
+                <FieldError message={errors.clientId} />
               </div>
               {/* Read-only origin */}
               <div className="grid gap-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">Origem do Lead</Label>
+                <FieldLabel>Origem do Lead</FieldLabel>
                 <div className="h-10 flex items-center px-3 rounded-lg border border-border bg-muted/50 text-sm">
                   {(editing ? (contracts.find(c => c.id === editing.id)?.source || "") : selectedClientOrigin) || "Não definido"}
                 </div>
               </div>
               <div className="grid gap-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">Tipo de evento</Label>
+                <FieldLabel>Tipo de evento</FieldLabel>
                 <Select value={form.eventType} onValueChange={(v) => set("eventType", v)}>
                   <SelectTrigger className="rounded-lg"><SelectValue /></SelectTrigger>
                   <SelectContent>{EVENT_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="grid gap-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">Tipo de locação</Label>
+                <FieldLabel>Tipo de locação</FieldLabel>
                 <Select value={form.rentalType} onValueChange={(v) => {
                   set("rentalType", v);
-                  if (v === "Locação (1 dia)") set("eventDateEnd", "");
+                  if (v === "Locação (1 dia)") { set("eventDateEnd", ""); setFieldError("eventDateEnd", ""); }
                 }}>
                   <SelectTrigger className="rounded-lg"><SelectValue /></SelectTrigger>
                   <SelectContent>{RENTAL_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="grid gap-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">{form.rentalType === "Locação (2 dias)" ? "Data início *" : "Data do evento *"}</Label>
-                <Input type="date" value={form.eventDate} onChange={(e) => set("eventDate", e.target.value)} className="rounded-lg" />
+                <FieldLabel required>{form.rentalType === "Locação (2 dias)" ? "Data início" : "Data do evento"}</FieldLabel>
+                <DateInput
+                  value={form.eventDate}
+                  onChange={(v) => { set("eventDate", v); setFieldError("eventDate", validateField("eventDate", v)); }}
+                  onBlur={() => setFieldError("eventDate", validateField("eventDate", form.eventDate))}
+                  hasError={!!errors.eventDate}
+                />
+                <FieldError message={errors.eventDate} />
               </div>
               {form.rentalType === "Locação (2 dias)" && (
                 <div className="grid gap-1.5">
-                  <Label className="text-xs font-medium text-muted-foreground">Data fim *</Label>
-                  <Input type="date" value={form.eventDateEnd} onChange={(e) => set("eventDateEnd", e.target.value)} className="rounded-lg" min={form.eventDate || undefined} />
+                  <FieldLabel required>Data fim</FieldLabel>
+                  <DateInput
+                    value={form.eventDateEnd}
+                    onChange={(v) => { set("eventDateEnd", v); setFieldError("eventDateEnd", validateField("eventDateEnd", v)); }}
+                    onBlur={() => setFieldError("eventDateEnd", validateField("eventDateEnd", form.eventDateEnd))}
+                    min={form.eventDate || undefined}
+                    hasError={!!errors.eventDateEnd}
+                  />
+                  <FieldError message={errors.eventDateEnd} />
                 </div>
               )}
               <div className="grid gap-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">Horário do evento *</Label>
-                <Select value={form.eventTime} onValueChange={(v) => set("eventTime", v)}>
-                  <SelectTrigger className="rounded-lg"><SelectValue placeholder="Selecione o horário" /></SelectTrigger>
+                <FieldLabel required>Horário do evento</FieldLabel>
+                <Select value={form.eventTime} onValueChange={(v) => { set("eventTime", v); setFieldError("eventTime", validateField("eventTime", v)); }}>
+                  <SelectTrigger className={cn("rounded-lg", errors.eventTime && "border-red-500")}><SelectValue placeholder="Selecione o horário" /></SelectTrigger>
                   <SelectContent>{EVENT_TIME_SLOTS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                 </Select>
+                <FieldError message={errors.eventTime} />
               </div>
               <div className="grid gap-1.5">
                 <Label className="text-xs font-medium text-muted-foreground">Convidados</Label>
