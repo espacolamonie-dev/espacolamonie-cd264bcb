@@ -128,17 +128,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       key={item.to}
                       to={item.to}
                       onClick={() => setMobileOpen(false)}
-                      className={`group flex items-center gap-3 rounded-xl px-4 py-2.5 text-[13px] font-medium tracking-wide transition-all duration-200 ${
+                      className={`group relative flex items-center gap-3 rounded-xl px-4 py-2.5 text-[13px] font-medium tracking-wide transition-all duration-200 ${
                         active
-                          ? "bg-white/15 text-white shadow-sm backdrop-blur-sm"
-                          : "text-white/45 hover:text-white/80 hover:bg-white/5"
+                          ? "bg-white/20 text-white shadow-sm backdrop-blur-sm border-l-4 border-emerald-400 pl-3"
+                          : "text-white/45 hover:text-white/80 hover:bg-white/5 border-l-4 border-transparent pl-3"
                       }`}
                       style={{ fontFamily: "var(--font-body)" }}
                     >
-                      <item.icon size={18} strokeWidth={active ? 2 : 1.5} className="shrink-0" />
+                      <item.icon size={18} strokeWidth={active ? 2.2 : 1.5} className="shrink-0" />
                       <span>{item.label}</span>
                       {active && (
-                        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-white/60" />
+                        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-emerald-400" />
                       )}
                     </Link>
                   );
