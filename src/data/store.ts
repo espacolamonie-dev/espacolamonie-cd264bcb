@@ -142,8 +142,15 @@ export const updateContract = async (id: string, updates: Record<string, any>) =
     visitId: "visit_id", source: "source",
     reservedUntil: "reserved_until",
   };
+  const dateFields = new Set(["event_date", "event_date_end", "cancelled_at", "reserved_until"]);
   for (const [k, v] of Object.entries(updates)) {
-    mapped[keyMap[k] || k] = v;
+    const dbKey = keyMap[k] || k;
+    // Convert empty strings to null for date/timestamp columns to avoid Postgres errors
+    if (dateFields.has(dbKey) && (v === "" || v === undefined)) {
+      mapped[dbKey] = null;
+    } else {
+      mapped[dbKey] = v;
+    }
   }
 
   // Handle cancellation — remove associated payments
