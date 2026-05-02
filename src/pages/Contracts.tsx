@@ -104,10 +104,11 @@ export default function Contracts() {
   };
   useEffect(() => { load(); }, []);
 
-  // Handle query params from dashboard alerts
+  // Handle query params from dashboard alerts and QuickActions
   useEffect(() => {
     const paymentParam = searchParams.get("payment");
     const highlightParam = searchParams.get("highlight");
+    const newParam = searchParams.get("new");
     if (paymentParam === "pending_urgent") {
       setPaymentFilter("pending_urgent");
       setSearchParams({}, { replace: true });
@@ -115,6 +116,14 @@ export default function Contracts() {
     if (highlightParam) {
       setDetailId(highlightParam);
       setSearchParams({}, { replace: true });
+    }
+    if (newParam === "1") {
+      setEditing(null);
+      setForm(emptyForm);
+      setOpen(true);
+      const next = new URLSearchParams(searchParams);
+      next.delete("new");
+      setSearchParams(next, { replace: true });
     }
   }, [searchParams, setSearchParams]);
 

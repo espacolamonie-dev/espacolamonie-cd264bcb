@@ -24,6 +24,7 @@ import MobileTopBar from "@/components/MobileTopBar";
 import IOSInstallBanner from "@/components/IOSInstallBanner";
 import { supabase } from "@/integrations/supabase/client";
 import GlobalSearch from "@/components/GlobalSearch";
+import QuickActions from "@/components/QuickActions";
 
 const navGroups = [
   {
@@ -213,6 +214,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Mobile bottom nav */}
       {isMobile && <MobileBottomNav />}
       {isMobile && <IOSInstallBanner />}
+
+      {/* Quick Actions (FAB + Cmd+J palette) */}
+      <QuickActions />
     </div>
   );
 }
