@@ -1,18 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Users, FileText, Calculator, CalendarCheck, X, ArrowLeft } from "lucide-react";
+import { Search, X, ArrowLeft } from "lucide-react";
 import { getClients, getContracts } from "@/data/store";
 import { getBudgets } from "@/data/budgetStore";
 import { getVisits } from "@/data/visitStore";
 import { useIsMobile } from "@/hooks/use-mobile";
-
-interface SearchResult {
-  id: string;
-  type: "client" | "contract" | "budget" | "visit";
-  title: string;
-  subtitle?: string;
-  to: string;
-}
+import SearchResults, { type SearchResult } from "@/components/SearchResults";
 
 interface GlobalSearchProps {
   variant?: "inline" | "icon";
@@ -22,11 +15,18 @@ export default function GlobalSearch({ variant = "inline" }: GlobalSearchProps) 
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [clients, setClients] = useState<any[]>([]);
+  const [contracts, setContracts] = useState<any[]>([]);
+  const [budgets, setBudgets] = useState<any[]>([]);
+  const [visits, setVisits] = useState<any[]>([]);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const normalize = (s: any) =>
+    String(s ?? "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
   // Close on outside click (only for inline desktop dropdown)
   useEffect(() => {
