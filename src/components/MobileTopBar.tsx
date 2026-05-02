@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import NotificationCenter from "@/components/NotificationCenter";
+import GlobalSearch from "@/components/GlobalSearch";
 
 const PAGE_TITLES: Record<string, string> = {
   "/": "Lamoniê CRM",
@@ -50,6 +51,9 @@ export default function MobileTopBar() {
         >
           {title}
         </h1>
+
+        {/* Global search (icon trigger) */}
+        <GlobalSearch variant="icon" />
 
         {/* Notification center */}
         <NotificationCenter />
