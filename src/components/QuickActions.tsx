@@ -156,13 +156,38 @@ export default function QuickActions() {
     return () => document.removeEventListener("keydown", handler);
   }, []);
 
-  // Lock scroll + autofocus
+  // Lock scroll + autofocus — preserves scroll position to avoid background jump
   useEffect(() => {
     if (!open) return;
-    document.body.style.overflow = "hidden";
+    const scrollY = window.scrollY;
+    const body = document.body;
+    const prev = {
+      position: body.style.position,
+      top: body.style.top,
+      left: body.style.left,
+      right: body.style.right,
+      width: body.style.width,
+      overflow: body.style.overflow,
+    };
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.left = "0";
+    body.style.right = "0";
+    body.style.width = "100%";
+    body.style.overflow = "hidden";
+
     setTimeout(() => inputRef.current?.focus(), 60);
     setRecents(loadRecents());
-    return () => { document.body.style.overflow = ""; };
+
+    return () => {
+      body.style.position = prev.position;
+      body.style.top = prev.top;
+      body.style.left = prev.left;
+      body.style.right = prev.right;
+      body.style.width = prev.width;
+      body.style.overflow = prev.overflow;
+      window.scrollTo(0, scrollY);
+    };
   }, [open]);
 
   const run = (a: Action) => {
@@ -274,7 +299,10 @@ export default function QuickActions() {
             </div>
 
             {/* Body */}
-            <div className="flex-1 overflow-y-auto px-3 py-3 space-y-5">
+            <div
+              className="flex-1 overflow-y-auto px-3 py-3 space-y-5"
+              style={{ overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}
+            >
               {/* Recents */}
               {!query && recentActions.length > 0 && (
                 <Section title="Recentes">
