@@ -299,7 +299,10 @@ export default function QuickActions() {
             </div>
 
             {/* Body */}
-            <div className="flex-1 overflow-y-auto px-3 py-3 space-y-5">
+            <div
+              className="flex-1 overflow-y-auto px-3 py-3 space-y-5"
+              style={{ overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}
+            >
               {/* Recents */}
               {!query && recentActions.length > 0 && (
                 <Section title="Recentes">
