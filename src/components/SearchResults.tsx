@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { CalendarCheck, Calculator, FileText, Users } from "lucide-react";
 
 export interface SearchResult {
@@ -14,7 +15,7 @@ interface SearchResultsProps {
   loading?: boolean;
   onSelect: (result: SearchResult) => void;
   className?: string;
-  style?: React.CSSProperties;
+  style?: CSSProperties;
 }
 
 const iconFor = (type: SearchResult["type"]) => {
