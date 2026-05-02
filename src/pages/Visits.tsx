@@ -127,8 +127,17 @@ export default function Visits() {
   useEffect(() => { loadVisits(); }, [loadVisits]);
 
   // Auto-open visit details when arriving via notification link (e.g. /visits?visit=ID)
+  // Also support ?new=1 from QuickActions to open the create modal directly.
   useEffect(() => {
     const visitId = searchParams.get("visit");
+    const wantNew = searchParams.get("new");
+    if (wantNew === "1") {
+      setModalOpen(true);
+      const next = new URLSearchParams(searchParams);
+      next.delete("new");
+      setSearchParams(next, { replace: true });
+      return;
+    }
     if (!visitId || visits.length === 0) return;
     const target = visits.find((v) => v.id === visitId);
     if (target) {
