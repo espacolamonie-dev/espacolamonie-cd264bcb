@@ -63,24 +63,30 @@ export default function GlobalSearch({ variant = "inline" }: GlobalSearchProps) 
     }
   }, [isMobile, open]);
 
-  // Run search (debounced 300ms)
+  // Run search (debounced 300ms) — accent + case insensitive
   useEffect(() => {
-    if (!query.trim() || query.trim().length < 2) {
+    const raw = query.trim();
+    if (raw.length < 2) {
       setResults([]);
+      setLoading(false);
       return;
     }
     let cancelled = false;
+    setLoading(true);
     const timer = setTimeout(async () => {
-      setLoading(true);
       try {
         const [clients, contracts, budgets, visits] = await Promise.all([
-          getClients().catch(() => []),
-          getContracts().catch(() => []),
-          getBudgets().catch(() => []),
-          getVisits().catch(() => []),
+          getClients().catch((e) => { console.warn("[GlobalSearch] getClients failed", e); return []; }),
+          getContracts().catch((e) => { console.warn("[GlobalSearch] getContracts failed", e); return []; }),
+          getBudgets().catch((e) => { console.warn("[GlobalSearch] getBudgets failed", e); return []; }),
+          getVisits().catch((e) => { console.warn("[GlobalSearch] getVisits failed", e); return []; }),
         ]);
         if (cancelled) return;
-        const q = query.toLowerCase();
+
+        const norm = (s: any) =>
+          String(s ?? "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const q = norm(raw);
+        const digits = raw.replace(/\D/g, "");
         const out: SearchResult[] = [];
 
         const clientMap: Record<string, any> = {};
@@ -88,24 +94,24 @@ export default function GlobalSearch({ variant = "inline" }: GlobalSearchProps) 
 
         (clients || [])
           .filter((c: any) =>
-            (c.name || "").toLowerCase().includes(q) ||
-            (c.cpf || "").includes(q) ||
-            (c.phone || "").includes(q)
+            norm(c.name).includes(q) ||
+            (digits && String(c.cpf || "").replace(/\D/g, "").includes(digits)) ||
+            (digits && String(c.phone || "").replace(/\D/g, "").includes(digits)) ||
+            norm(c.email).includes(q)
           )
           .slice(0, 5)
           .forEach((c: any) => out.push({
             id: c.id,
             type: "client",
             title: c.name,
-            subtitle: c.phone || c.cpf || "",
+            subtitle: c.phone || c.cpf || c.email || "",
             to: `/clients?highlight=${c.id}`,
           }));
 
         (contracts || [])
           .filter((c: any) => {
             const client = clientMap[c.clientId];
-            return (client?.name || "").toLowerCase().includes(q) ||
-              (c.eventType || "").toLowerCase().includes(q);
+            return norm(client?.name).includes(q) || norm(c.eventType).includes(q);
           })
           .slice(0, 5)
           .forEach((c: any) => {
@@ -115,16 +121,16 @@ export default function GlobalSearch({ variant = "inline" }: GlobalSearchProps) 
               id: c.id,
               type: "contract",
               title: client?.name || "Contrato",
-              subtitle: `${c.eventType} • ${statusLabel}`,
+              subtitle: `${c.eventType || ""} • ${statusLabel}`,
               to: `/contracts?highlight=${c.id}`,
             });
           });
 
         (visits || [])
           .filter((v: any) =>
-            (v.clientName || "").toLowerCase().includes(q) ||
-            (v.clientPhone || "").includes(q) ||
-            (v.eventTypeDesired || "").toLowerCase().includes(q)
+            norm(v.clientName).includes(q) ||
+            (digits && String(v.clientPhone || "").replace(/\D/g, "").includes(digits)) ||
+            norm(v.eventTypeDesired).includes(q)
           )
           .slice(0, 5)
           .forEach((v: any) => out.push({
@@ -137,8 +143,7 @@ export default function GlobalSearch({ variant = "inline" }: GlobalSearchProps) 
 
         (budgets || [])
           .filter((b: any) =>
-            (b.clientName || "").toLowerCase().includes(q) ||
-            (b.eventType || "").toLowerCase().includes(q)
+            norm(b.clientName).includes(q) || norm(b.eventType).includes(q)
           )
           .slice(0, 5)
           .forEach((b: any) => out.push({
