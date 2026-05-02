@@ -169,6 +169,16 @@ export default function GlobalSearch({ variant = "inline" }: GlobalSearchProps) 
     navigate(r.to);
   };
 
+  const resultsList = (
+    <SearchResults
+      query={query}
+      results={results}
+      loading={loading && query.trim().length >= 2}
+      onSelect={goTo}
+      className="border-0 rounded-none shadow-none max-h-none"
+    />
+  );
+
   // ===== Mobile: icon trigger + fullscreen modal =====
   if (isMobile) {
     return (
@@ -269,9 +279,14 @@ export default function GlobalSearch({ variant = "inline" }: GlobalSearchProps) 
       </div>
 
       {open && query.trim().length >= 2 && (
-        <div className="absolute top-full left-0 right-0 mt-1 rounded-xl border border-border bg-card shadow-xl overflow-hidden z-50 max-h-[60vh] overflow-y-auto">
-          {resultsList}
-        </div>
+        <SearchResults
+          query={query}
+          results={results}
+          loading={loading}
+          onSelect={goTo}
+          className="absolute top-full left-0 right-0 mt-1 z-[9999]"
+          style={{ position: "absolute" }}
+        />
       )}
     </div>
   );
