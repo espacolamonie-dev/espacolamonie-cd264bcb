@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Plus, Search, Pencil, Trash2, Loader2, Phone, Users, Megaphone } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -54,10 +55,24 @@ export default function Clients() {
   const [loadingCep, setLoadingCep] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Client | null>(null);
 
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const load = async () => {
     try { setClients(await getClients()); } catch {}
   };
   useEffect(() => { load(); }, []);
+
+  // Open create modal when arriving via QuickActions ?new=1
+  useEffect(() => {
+    if (searchParams.get("new") === "1") {
+      setEditing(null);
+      setForm(emptyForm);
+      setOpen(true);
+      const next = new URLSearchParams(searchParams);
+      next.delete("new");
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const filtered = clients.filter(
     (c) =>
