@@ -5,6 +5,7 @@ import {
   UserPlus, CalendarPlus, FilePlus,
   CalendarDays, FileText, Users,
   CreditCard, Settings as SettingsIcon, BarChart3,
+  type LucideIcon,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -13,7 +14,7 @@ type Action = {
   label: string;
   description?: string;
   group: "Criar" | "Navegar" | "Financeiro" | "Admin";
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon: LucideIcon;
   /** Tailwind classes for the icon tile (bg + text) */
   tone: string;
   keywords: string[];
