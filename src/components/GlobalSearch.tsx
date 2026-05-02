@@ -1,18 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Users, FileText, Calculator, CalendarCheck, X, ArrowLeft } from "lucide-react";
+import { Search, X, ArrowLeft } from "lucide-react";
 import { getClients, getContracts } from "@/data/store";
 import { getBudgets } from "@/data/budgetStore";
 import { getVisits } from "@/data/visitStore";
 import { useIsMobile } from "@/hooks/use-mobile";
-
-interface SearchResult {
-  id: string;
-  type: "client" | "contract" | "budget" | "visit";
-  title: string;
-  subtitle?: string;
-  to: string;
-}
+import SearchResults, { type SearchResult } from "@/components/SearchResults";
 
 interface GlobalSearchProps {
   variant?: "inline" | "icon";
@@ -22,11 +15,18 @@ export default function GlobalSearch({ variant = "inline" }: GlobalSearchProps) 
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [clients, setClients] = useState<any[]>([]);
+  const [contracts, setContracts] = useState<any[]>([]);
+  const [budgets, setBudgets] = useState<any[]>([]);
+  const [visits, setVisits] = useState<any[]>([]);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const normalize = (s: any) =>
+    String(s ?? "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
   // Close on outside click (only for inline desktop dropdown)
   useEffect(() => {
@@ -63,104 +63,105 @@ export default function GlobalSearch({ variant = "inline" }: GlobalSearchProps) 
     }
   }, [isMobile, open]);
 
-  // Run search (debounced 300ms) — accent + case insensitive
+  // Load real data once; search never depends on empty query-triggered fetches.
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    Promise.all([
+      getClients().catch((e) => { console.warn("[GlobalSearch] getClients failed", e); return []; }),
+      getContracts().catch((e) => { console.warn("[GlobalSearch] getContracts failed", e); return []; }),
+      getBudgets().catch((e) => { console.warn("[GlobalSearch] getBudgets failed", e); return []; }),
+      getVisits().catch((e) => { console.warn("[GlobalSearch] getVisits failed", e); return []; }),
+    ]).then(([loadedClients, loadedContracts, loadedBudgets, loadedVisits]) => {
+      if (cancelled) return;
+      setClients(loadedClients || []);
+      setContracts(loadedContracts || []);
+      setBudgets(loadedBudgets || []);
+      setVisits(loadedVisits || []);
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Filter loaded real data immediately while typing.
   useEffect(() => {
     const raw = query.trim();
     if (raw.length < 2) {
       setResults([]);
-      setLoading(false);
       return;
     }
-    let cancelled = false;
-    setLoading(true);
-    const timer = setTimeout(async () => {
-      try {
-        const [clients, contracts, budgets, visits] = await Promise.all([
-          getClients().catch((e) => { console.warn("[GlobalSearch] getClients failed", e); return []; }),
-          getContracts().catch((e) => { console.warn("[GlobalSearch] getContracts failed", e); return []; }),
-          getBudgets().catch((e) => { console.warn("[GlobalSearch] getBudgets failed", e); return []; }),
-          getVisits().catch((e) => { console.warn("[GlobalSearch] getVisits failed", e); return []; }),
-        ]);
-        if (cancelled) return;
 
-        const norm = (s: any) =>
-          String(s ?? "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        const q = norm(raw);
-        const digits = raw.replace(/\D/g, "");
-        const out: SearchResult[] = [];
+    const q = normalize(raw);
+    const digits = raw.replace(/\D/g, "");
+    const out: SearchResult[] = [];
+    const clientMap: Record<string, any> = {};
+    clients.forEach((client: any) => { clientMap[client.id] = client; });
 
-        const clientMap: Record<string, any> = {};
-        (clients || []).forEach((c: any) => { clientMap[c.id] = c; });
+    clients
+      .filter((client: any) =>
+        normalize(client.name || client.nome).includes(q) ||
+        (digits && String(client.cpf || "").replace(/\D/g, "").includes(digits)) ||
+        (digits && String(client.phone || client.telefone || "").replace(/\D/g, "").includes(digits)) ||
+        normalize(client.email).includes(q)
+      )
+      .slice(0, 6)
+      .forEach((client: any) => out.push({
+        id: client.id,
+        type: "client",
+        title: client.name || client.nome || "Cliente",
+        subtitle: client.phone || client.telefone || client.cpf || client.email || "",
+        to: `/clients?highlight=${client.id}`,
+      }));
 
-        (clients || [])
-          .filter((c: any) =>
-            norm(c.name).includes(q) ||
-            (digits && String(c.cpf || "").replace(/\D/g, "").includes(digits)) ||
-            (digits && String(c.phone || "").replace(/\D/g, "").includes(digits)) ||
-            norm(c.email).includes(q)
-          )
-          .slice(0, 5)
-          .forEach((c: any) => out.push({
-            id: c.id,
-            type: "client",
-            title: c.name,
-            subtitle: c.phone || c.cpf || c.email || "",
-            to: `/clients?highlight=${c.id}`,
-          }));
+    contracts
+      .filter((contract: any) => {
+        const client = clientMap[contract.clientId] || clientMap[contract.client_id];
+        return normalize(client?.name || client?.nome).includes(q) || normalize(contract.eventType || contract.event_type).includes(q);
+      })
+      .slice(0, 5)
+      .forEach((contract: any) => {
+        const client = clientMap[contract.clientId] || clientMap[contract.client_id];
+        const statusLabel = contract.status === "signed" || contract.status === "confirmed" ? "Assinado" : "Pendente";
+        out.push({
+          id: contract.id,
+          type: "contract",
+          title: client?.name || client?.nome || "Contrato",
+          subtitle: `${contract.eventType || contract.event_type || ""} • ${statusLabel}`,
+          to: `/contracts?highlight=${contract.id}`,
+        });
+      });
 
-        (contracts || [])
-          .filter((c: any) => {
-            const client = clientMap[c.clientId];
-            return norm(client?.name).includes(q) || norm(c.eventType).includes(q);
-          })
-          .slice(0, 5)
-          .forEach((c: any) => {
-            const client = clientMap[c.clientId];
-            const statusLabel = c.status === "signed" || c.paymentStatus === "paid" ? "Assinado" : "Pendente";
-            out.push({
-              id: c.id,
-              type: "contract",
-              title: client?.name || "Contrato",
-              subtitle: `${c.eventType || ""} • ${statusLabel}`,
-              to: `/contracts?highlight=${c.id}`,
-            });
-          });
+    visits
+      .filter((visit: any) =>
+        normalize(visit.clientName || visit.client_name).includes(q) ||
+        (digits && String(visit.clientPhone || visit.client_phone || "").replace(/\D/g, "").includes(digits)) ||
+        normalize(visit.eventTypeDesired || visit.event_type_desired).includes(q)
+      )
+      .slice(0, 5)
+      .forEach((visit: any) => out.push({
+        id: visit.id,
+        type: "visit",
+        title: visit.clientName || visit.client_name || "Visita",
+        subtitle: `${visit.visitDate || visit.visit_date || ""}${visit.visitTime || visit.visit_time ? " • " + (visit.visitTime || visit.visit_time) : ""}`,
+        to: `/visits?highlight=${visit.id}`,
+      }));
 
-        (visits || [])
-          .filter((v: any) =>
-            norm(v.clientName).includes(q) ||
-            (digits && String(v.clientPhone || "").replace(/\D/g, "").includes(digits)) ||
-            norm(v.eventTypeDesired).includes(q)
-          )
-          .slice(0, 5)
-          .forEach((v: any) => out.push({
-            id: v.id,
-            type: "visit",
-            title: v.clientName,
-            subtitle: `${v.visitDate || ""}${v.visitTime ? " • " + v.visitTime : ""}`,
-            to: `/visits?highlight=${v.id}`,
-          }));
+    budgets
+      .filter((budget: any) =>
+        normalize(budget.clientName || budget.client_name).includes(q) || normalize(budget.eventType || budget.event_type).includes(q)
+      )
+      .slice(0, 5)
+      .forEach((budget: any) => out.push({
+        id: budget.id,
+        type: "budget",
+        title: budget.clientName || budget.client_name || "Orçamento",
+        subtitle: budget.eventType || budget.event_type || "",
+        to: `/budgets?highlight=${budget.id}`,
+      }));
 
-        (budgets || [])
-          .filter((b: any) =>
-            norm(b.clientName).includes(q) || norm(b.eventType).includes(q)
-          )
-          .slice(0, 5)
-          .forEach((b: any) => out.push({
-            id: b.id,
-            type: "budget",
-            title: b.clientName || "Orçamento",
-            subtitle: b.eventType || "",
-            to: `/budgets?highlight=${b.id}`,
-          }));
-
-        setResults(out);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }, 300);
-    return () => { cancelled = true; clearTimeout(timer); };
-  }, [query]);
+    setResults(out);
+  }, [query, clients, contracts, visits, budgets]);
 
   const goTo = (r: SearchResult) => {
     setOpen(false);
@@ -168,43 +169,14 @@ export default function GlobalSearch({ variant = "inline" }: GlobalSearchProps) 
     navigate(r.to);
   };
 
-  const iconFor = (t: SearchResult["type"]) => {
-    if (t === "client") return <Users size={14} />;
-    if (t === "contract") return <FileText size={14} />;
-    if (t === "visit") return <CalendarCheck size={14} />;
-    return <Calculator size={14} />;
-  };
-
-  const labelFor = (t: SearchResult["type"]) =>
-    t === "client" ? "Cliente" : t === "contract" ? "Contrato" : t === "visit" ? "Visita" : "Orçamento";
-
   const resultsList = (
-    <>
-      {loading && (
-        <div className="px-4 py-3 text-xs text-muted-foreground">Buscando...</div>
-      )}
-      {!loading && query.trim().length >= 2 && results.length === 0 && (
-        <div className="px-4 py-3 text-xs text-muted-foreground">Nenhum resultado encontrado.</div>
-      )}
-      {!loading && results.map((r) => (
-        <button
-          key={`${r.type}-${r.id}`}
-          onClick={() => goTo(r)}
-          className="w-full text-left px-4 py-3 hover:bg-muted/50 active:bg-muted transition-colors flex items-center gap-3 border-b border-border/50 last:border-0"
-        >
-          <span className="text-muted-foreground">{iconFor(r.type)}</span>
-          <span className="flex-1 min-w-0">
-            <span className="block text-sm font-medium truncate">{r.title}</span>
-            {r.subtitle && (
-              <span className="block text-[11px] text-muted-foreground truncate">{r.subtitle}</span>
-            )}
-          </span>
-          <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70 shrink-0">
-            {labelFor(r.type)}
-          </span>
-        </button>
-      ))}
-    </>
+    <SearchResults
+      query={query}
+      results={results}
+      loading={loading && query.trim().length >= 2}
+      onSelect={goTo}
+      className="border-0 rounded-none shadow-none max-h-none"
+    />
   );
 
   // ===== Mobile: icon trigger + fullscreen modal =====
@@ -307,9 +279,14 @@ export default function GlobalSearch({ variant = "inline" }: GlobalSearchProps) 
       </div>
 
       {open && query.trim().length >= 2 && (
-        <div className="absolute top-full left-0 right-0 mt-1 rounded-xl border border-border bg-card shadow-xl overflow-hidden z-50 max-h-[60vh] overflow-y-auto">
-          {resultsList}
-        </div>
+        <SearchResults
+          query={query}
+          results={results}
+          loading={loading}
+          onSelect={goTo}
+          className="absolute top-full left-0 right-0 mt-1 z-[9999]"
+          style={{ position: "absolute" }}
+        />
       )}
     </div>
   );
